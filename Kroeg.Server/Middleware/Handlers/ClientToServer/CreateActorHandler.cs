@@ -17,6 +17,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
         private readonly CollectionTools _collection;
         private readonly EntityData _entityData;
         private readonly APContext _context;
+        public string UserOverride { get; set; }
 
         public CreateActorHandler(StagingEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection, EntityData entityData, APContext context) : base(entityStore, mainObject, actor, targetBox, user)
         {
@@ -75,7 +76,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             await EntityStore.StoreEntity(blocks);
             await EntityStore.StoreEntity(objectEntity);
 
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            var userId = UserOverride ?? User.FindFirst(ClaimTypes.NameIdentifier).Value;
             _context.UserActorPermissions.Add(new UserActorPermission { UserId = userId, ActorId = objectEntity.Id, IsAdmin = true });
 
             var key = new SalmonKey();

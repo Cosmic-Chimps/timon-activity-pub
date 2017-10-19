@@ -27,6 +27,9 @@ using Newtonsoft.Json.Linq;
 using Kroeg.Server.BackgroundTasks;
 using System.IO;
 using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
+using Kroeg.Server.Middleware.Handlers.ClientToServer;
+using Kroeg.Server.Middleware.Handlers.Shared;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -41,15 +44,16 @@ namespace Kroeg.Server.Controllers
         private readonly JwtTokenSettings _tokenSettings;
         private readonly EntityFlattener _entityFlattener;
         private readonly IEntityStore _entityStore;
-        private readonly AtomEntryParser _entryParser;
-        private readonly AtomEntryGenerator _entryGenerator;
         private readonly EntityData _entityConfiguration;
         private readonly IDataProtector _dataProtector;
         private readonly IConfigurationRoot _configuration;
         private readonly DeliveryService _deliveryService;
         private readonly SignatureVerifier _verifier;
+        private readonly IServiceProvider _provider;
+        private readonly CollectionTools _collectionTools;
+        private readonly RelevantEntitiesService _relevantEntities;
 
-        public AuthController(APContext context, UserManager<APUser> userManager, SignInManager<APUser> signInManager, JwtTokenSettings tokenSettings, EntityFlattener entityFlattener, IEntityStore entityStore, AtomEntryParser entryParser, AtomEntryGenerator entryGenerator, EntityData entityConfiguration, IDataProtectionProvider dataProtectionProvider, IConfigurationRoot configuration, DeliveryService deliveryService, SignatureVerifier verifier)
+        public AuthController(APContext context, UserManager<APUser> userManager, SignInManager<APUser> signInManager, JwtTokenSettings tokenSettings, EntityFlattener entityFlattener, IEntityStore entityStore, EntityData entityConfiguration, IDataProtectionProvider dataProtectionProvider, IConfigurationRoot configuration, DeliveryService deliveryService, SignatureVerifier verifier, IServiceProvider provider, CollectionTools collectionTools, RelevantEntitiesService relevantEntities)
         {
             _context = context;
             _userManager = userManager;
@@ -57,13 +61,14 @@ namespace Kroeg.Server.Controllers
             _tokenSettings = tokenSettings;
             _entityFlattener = entityFlattener;
             _entityStore = entityStore;
-            _entryParser = entryParser;
-            _entryGenerator = entryGenerator;
             _entityConfiguration = entityConfiguration;
             _dataProtector = dataProtectionProvider.CreateProtector("OAuth tokens");
             _configuration = configuration;
             _deliveryService = deliveryService;
             _verifier = verifier;
+            _provider = provider;
+            _collectionTools = collectionTools;
+            _relevantEntities = relevantEntities;
         }
 
         public class LoginViewModel
@@ -128,7 +133,7 @@ namespace Kroeg.Server.Controllers
         {
             var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, false, false);
 
-            if (!result.Succeeded) return View("Login");
+            if (!result.Succeeded) return View("Login", model);
             if (!string.IsNullOrEmpty(model.Redirect)) return RedirectPermanent(model.Redirect);
 
             return RedirectToActionPermanent("Index", "Settings");
@@ -150,6 +155,11 @@ namespace Kroeg.Server.Controllers
                 UserName = model.Username,
                 Email = model.Email
             };
+
+            if ((await _relevantEntities.FindEntitiesWithPreferredUsername(model.Username)).Count > 0)
+            {
+                ModelState.AddModelError("", "Username is already in use!");
+            }
 
             if (model.Password != model.VerifyPassword)
             {
@@ -173,6 +183,32 @@ namespace Kroeg.Server.Controllers
             }
 
             await _signInManager.SignInAsync(apuser, false);
+
+            var user = model.Username;
+
+            var obj = new ASObject();
+            obj["type"].Add(new ASTerm("Person"));
+            obj["preferredUsername"].Add(new ASTerm(user));
+            obj["name"].Add(new ASTerm());
+
+            var create = new ASObject();
+            create["type"].Add(new ASTerm("Create"));
+            create["object"].Add(new ASTerm(obj));
+            create["to"].Add(new ASTerm("https://www.w3.org/ns/activitystreams#Public"));
+
+            var stagingStore = new StagingEntityStore(_entityStore);
+            var apo = await _entityFlattener.FlattenAndStore(stagingStore, create);
+            var handler = new CreateActorHandler(stagingStore, apo, null, null, User, _collectionTools, _entityConfiguration, _context);
+            handler.UserOverride = apuser.Id;
+            await handler.Handle();
+
+            await stagingStore.CommitChanges();
+
+            var resultUser = await _entityStore.GetEntity((string) handler.MainObject.Data["object"].First().Primitive, false);
+            var outbox = await _entityStore.GetEntity((string)resultUser.Data["outbox"].First().Primitive, false);
+            var delivery = new DeliveryHandler(stagingStore, handler.MainObject, resultUser, outbox, User, _collectionTools, _provider.GetRequiredService<DeliveryService>());
+            await delivery.Handle();
+
             return RedirectToActionPermanent("Index", "Settings");
         }
 

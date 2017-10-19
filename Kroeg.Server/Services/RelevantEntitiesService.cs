@@ -28,6 +28,12 @@ namespace Kroeg.Server.Services
             public string Actor { get; set; }
         }
 
+        private class PreferredUsernameJson
+        {
+            [JsonProperty("preferredUsername")]
+            public string PreferredUsername { get; set; }
+        }
+
         private class FollowerJson
         {
             [JsonProperty("followers")]
@@ -40,6 +46,12 @@ namespace Kroeg.Server.Services
                 obj, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore })).ToListAsync();
         }
 
+        private async Task<List<APEntity>> _search(object obj, bool isOwner)
+        {
+            return await _context.Entities.FromSql("SELECT * FROM \"Entities\" WHERE \"SerializedData\" @> {0}::jsonb AND \"IsOwner\" = {1}", JsonConvert.SerializeObject(
+                obj, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }), isOwner).ToListAsync();
+        }
+
         public async Task<List<APEntity>> FindRelevantObject(string authorId, string objectType, string objectId)
         {
             return await _search(new RelevantObjectJson { Type = objectType, Object = objectId, Actor = authorId });
@@ -48,6 +60,11 @@ namespace Kroeg.Server.Services
         public async Task<List<APEntity>> FindEntitiesWithFollowerId(string followerId)
         {
             return await _search(new FollowerJson { Followers = followerId });
+        }
+
+        public async Task<List<APEntity>> FindEntitiesWithPreferredUsername(string username)
+        {
+            return await _search(new PreferredUsernameJson { PreferredUsername = username }, true);
         }
     }
 }
