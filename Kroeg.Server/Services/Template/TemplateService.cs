@@ -104,7 +104,6 @@ namespace Kroeg.Server.Services.Template
             if (path == "templates/page.html") PageTemplate = data;
             var templateName = path.Substring(_base.Length, path.Length - _base.Length - 5).Replace('\\', '/');
             Templates[templateName] = TemplateParser.Parse(data);
-            Templates[templateName].Arguments["data-template"] = new List<TemplateItem> { new TemplateItem { Type = TemplateItemType.Text, Data = templateName }};
         }
 
         private object _parse(string data, ASObject obj, Registers regs)
@@ -118,7 +117,6 @@ namespace Kroeg.Server.Services.Template
         private async Task<string> _parseElement(HtmlDocument doc, TemplateItem item, IEntityStore entityStore, ASObject data, Registers regs)
         {
             var result = doc.CreateElement(item.Data);
-            result.Attributes.Add("data-id", (string) data["id"].First().Primitive);
             foreach (var argument in item.Arguments)
             {
                 if (!argument.Key.StartsWith("x-"))
