@@ -1,7 +1,6 @@
-{{wrap div}}
-<h1>{{$name $preferredUsername $id}} <small>{{$id}}</small></h1>
 <div>
-    {{$outbox %totalItems 'unknown}} posts made<br />
-    {{$following %totalItems 'unknown}} people followed<br />
-    Interesting enough for {{$followers %totalItems 'unknown}} followers<br/>
+    <h1>{{AS.take('name', AS.take('preferredUsername', AS.take('id')))}} <small>{{AS.take('id')}}</small></h1>
+    <div>
+        TODO
+    </div>
 </div>

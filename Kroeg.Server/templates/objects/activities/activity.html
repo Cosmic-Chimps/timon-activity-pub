@@ -1,10 +1,8 @@
-{{wrap div class="col-md-12 nopad"}}
-
-{{if is Create}}
-	{{render:objects/activities/create}}
-{{elif is Announce}}
-	{{render:objects/activities/announce}}
-{{elif is Activity}}
-	Activity:
-	{{$object render:object}}
-{{end}}
+<div class="col-md-12 nopad">
+	<div x-render="objects/activities/create" x-if="AS.contains('type', 'Create')"></div>
+	<div x-render="objects/activities/announce" x-if="AS.contains('type', 'Announce')"></div>
+	<div x-if="!AS.containsAny('type', ['Create', 'Announce'])">
+		Activity:
+		<div x-render="object" x-render-id="AS.take('object')"></div>
+	</div>
+</div>

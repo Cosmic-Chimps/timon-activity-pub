@@ -1,23 +1,13 @@
-{{wrap div}}
-{{if $attributedTo}}
-    {{$attributedTo render:objects/sub/user_info}}
-{{end}}
+<div>
+    <div x-render="objects/sub/user_info" x-render-id="AS.take('attributedTo')" x-if="AS.has('attributedTo')"></div>
 
-<div class="list-group">
-    {{$orderedItems $items load}}
-    {{while next}}
-        <div class="list-group-item">
-            {{item render:objects/activities/activity}}
+    <div class="list-group">
+        <div class="list-group-item" x-for-in="AS.get('orderedItems')">
+            <div x-render="objects/activities/activity" x-render-id="item"></div>
         </div>
-    {{end}}
-    {{if $next $prev}}
-        <div class="list-group-item">
-            {{if $prev}}
-                <a class="btn btn-default" href="{{$prev}}">&laquo; Previous</a>
-            {{end}}
-            {{if $next}}
-                <a class="btn btn-default" href="{{$next}}">Next &raquo;</a>
-            {{end}}
+        <div class="list-group-item" x-if="AS.has('next') || AS.has('prev')">
+            <a class="btn btn-default" href="{{AS.take('prev')}}">&laquo; Previous</a>
+            <a class="btn btn-default" href="{{AS.take('next')}}">Next &raquo;</a>
         </div>
-    {{end}}
+    </div>
 </div>

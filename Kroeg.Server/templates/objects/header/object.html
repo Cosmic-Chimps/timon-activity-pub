@@ -1,9 +1,5 @@
-{{wrap div class="col-md-12 nopad"}}
-
-{{if is Note}}
-	{{render:objects/header/note}}
-{{elif is Person}}
-	{{render:objects/header/user}}
-{{else}}
-	ID: <a href="{{$id}}.json">{{$id}}</a>
-{{end}}
+<div class="col-md-12 nopad">
+		<div x-render="objects/header/note" x-if="AS.contains('type', 'Note')"></div>
+		<div x-render="objects/header/user" x-if="AS.contains('type', 'Person')"></div>
+		<span x-if="!AS.containsAny('type', ['Note', 'Person'])">{{AS.take('id')}}</span>
+</div>

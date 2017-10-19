@@ -9,12 +9,16 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using Jint;
+using Kroeg.ActivityStreams;
+using HtmlAgilityPack;
+using Jint.Parser.Ast;
 
 namespace Kroeg.Server.Services.Template
 {
     public class TemplateService
     {
-        public Dictionary<string, List<TemplateItem>> Templates { get; } = new Dictionary<string, List<TemplateItem>>();
+        public Dictionary<string, TemplateItem> Templates { get; } = new Dictionary<string, TemplateItem>();
 
         private string _base = "templates/";
         private EntityData _entityData;
@@ -22,10 +26,61 @@ namespace Kroeg.Server.Services.Template
         public string PageTemplate { get; private set; }
 
         public class Registers {
-            internal List<string> Load { get; set; }
-            internal int Accumulator { get; set; }
-
+            public Engine Engine { get; set; }
+            public ASHandler Handler { get; set; }
+            public RendererData Renderer { get; set; }
             public Dictionary<string, APEntity> UsedEntities { get; set; } = new Dictionary<string, APEntity>();
+        }
+
+        public class ASHandler
+        {
+            public ASObject obj { get; set; }
+
+            public object[] get(string name)
+            {
+                return obj[name].Select(a => a.Primitive ?? a.SubObject).ToArray();
+            }
+
+            public object take(string name, object def)
+            {
+                return obj[name].Select(a => a.Primitive ?? a.SubObject).FirstOrDefault() ?? def;
+            }
+
+            public object take(string name)
+            {
+                return obj[name].Select(a => a.Primitive ?? a.SubObject).FirstOrDefault() ?? "";
+            }
+
+            public bool has(string name)
+            {
+                return obj[name].Count > 0;
+            }
+
+            public bool contains(string name, object val)
+            {
+                return obj[name].Any(a => (string) a.Primitive == (string) val);
+            }
+
+            public bool containsAny(string name, object[] vals)
+            {
+                return vals.Any(a => obj[name].Any(b => (string) b.Primitive == (string) a));
+            }
+        }
+
+        private class doRender {
+            public string Template { get; set; }
+            public string RenderID { get; set; }
+        }
+
+        public class RendererData
+        {
+            public string escape(string data)
+            {
+                return data.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+            }
+
+            public bool server => true;
+            public bool client => false;
         }
 
         public TemplateService(EntityData entityData)
@@ -47,177 +102,124 @@ namespace Kroeg.Server.Services.Template
         {
             var data = File.ReadAllText(path);
             if (path == "templates/page.html") PageTemplate = data;
-            Templates[path.Substring(_base.Length, path.Length - _base.Length - 5).Replace('\\', '/')] = TemplateParser.Parse(data);
+            var templateName = path.Substring(_base.Length, path.Length - _base.Length - 5).Replace('\\', '/');
+            Templates[templateName] = TemplateParser.Parse(data);
+            Templates[templateName].Arguments["data-template"] = new List<TemplateItem> { new TemplateItem { Type = TemplateItemType.Text, Data = templateName }};
         }
 
-        private async Task<bool> _parseCondition(APEntity entity, IEntityStore entityStore, string text, Registers regs)
+        private object _parse(string data, ASObject obj, Registers regs)
         {
-            return await _parseCommand(entity, entityStore, text, regs) != null;
+            var engine = regs.Engine;
+            regs.Handler.obj = obj;
+
+            return regs.Engine.Execute(data).GetCompletionValue().ToObject();
         }
 
-        private async Task<string> _parseCommand(APEntity entity, IEntityStore entityStore, string command, Registers regs)
+        private async Task<string> _parseElement(HtmlDocument doc, TemplateItem item, IEntityStore entityStore, ASObject data, Registers regs)
         {
-            JToken _inbetween = null;
-            bool isHtml = false;
-            var splitCommand = command.Split(' ');
-            for (var i = 0; i < splitCommand.Length; i++)
+            var result = doc.CreateElement(item.Data);
+            result.Attributes.Add("data-id", (string) data["id"].First().Primitive);
+            foreach (var argument in item.Arguments)
             {
-                var asf = splitCommand[i];
-                var isAnd = false;
-                var previousResult = _inbetween;
-                if (asf.StartsWith("&"))
+                if (!argument.Key.StartsWith("x-"))
                 {
-                    isAnd = true;
-                    asf = asf.Substring(1);
-                }
-
-                if (asf.StartsWith("$"))
-                {
-                    var name = asf.Substring(1);
-                    if (_inbetween != null) continue;
-                    var obj = new List<JToken>();
-                    foreach (var item in entity.Data[name])
-                        if (item.SubObject == null)
-                            obj.Add(JToken.FromObject(item.Primitive));
+                    var resultValue = new StringBuilder();
+                    foreach (var subitem in argument.Value)
+                        if (subitem.Type == TemplateItemType.Text)
+                            resultValue.Append(subitem.Data);
                         else
-                            obj.Add(item.SubObject.Serialize(false));
-                    if (obj.Count == 0) _inbetween = null;
-                    else _inbetween = new JArray(obj.ToArray());
+                            resultValue.Append(_parse(subitem.Data, data, regs));
+                    result.Attributes.Add(argument.Key, resultValue.ToString());
                 }
-                else if (asf.StartsWith("%"))
-                {
-                    if (_inbetween == null) continue;
-                    string id;
-                    if (_inbetween.Type == JTokenType.Array)
-                        id = _inbetween[0].ToObject<string>();
-                    else
-                        id = _inbetween.ToObject<string>();
-                    var toCheck = await entityStore.GetEntity(id, true);
-                    regs.UsedEntities[id] = toCheck;
-                    var obj = new List<JToken>();
-                    foreach (var item in toCheck.Data[asf.Substring(1)])
-                        if (item.SubObject == null)
-                            obj.Add(JToken.FromObject(item.Primitive));
-                        else
-                            obj.Add(item.SubObject.Serialize(false));
-                    if (obj.Count == 0) _inbetween = null;
-                    else _inbetween = new JArray(obj.ToArray());
-                }
-                else if (asf.StartsWith("'"))
-                    _inbetween = _inbetween ?? asf.Substring(1);
-                else if (asf == "ishtml")
-                    isHtml = true;
-                else if (asf.StartsWith("render:"))
-                {
-                    var template = asf.Substring("render:".Length);
-                    if (_inbetween == null) return await ParseTemplate(template, entityStore, entity, regs);
-                    string id;
-                    if (_inbetween.Type == JTokenType.Array)
-                        _inbetween = _inbetween[0];
-
-                    if (_inbetween.Type == JTokenType.Object)
-                        id = _inbetween["id"].ToObject<string>();
-                    else
-                        id = _inbetween.ToObject<string>();
-                    var newEntity = await entityStore.GetEntity(id, true);
-                    regs.UsedEntities[id] = newEntity;
-                    return await ParseTemplate(template, entityStore, newEntity, regs);
-                }
-                else if (asf == "load")
-                {
-                    regs.Load = new List<string>();
-                    if (_inbetween != null)
-                    foreach (var item in (JArray) _inbetween)
-                    {
-                        regs.Load.Add(item.Value<string>());
-                    }
-                    regs.Accumulator = -1;
-                    _inbetween = null;
-                }
-                else if (asf == "item")
-                {
-                    if (_inbetween == null && regs.Accumulator >= 0 && regs.Accumulator < regs.Load.Count) _inbetween = regs.Load[regs.Accumulator];
-                }
-                else if (asf == "next")
-                {
-                    regs.Accumulator++;
-                    _inbetween = (regs.Accumulator < regs.Load.Count) ? regs.Load[regs.Accumulator] : null;
-                }
-                else if (asf == "server")
-                {
-                    _inbetween = "server";
-                }
-                else if (asf == "is")
-                {
-                    var test = splitCommand[++i];
-                    if (test == "Activity") _inbetween = _entityData.IsActivity(entity.Data) ? "Activity" : _inbetween;
-                    else if (test == "Collection") _inbetween = entity.Data["type"].Any((a) => (string)a.Primitive == "Collection" || (string)a.Primitive == "OrderedCollection") ? "Collection" : _inbetween;
-                    else if (test == "CollectionPage") _inbetween = entity.Data["type"].Any((a) => (string)a.Primitive == "CollectionPage" || (string)a.Primitive == "OrderedCollectionPage") ? "CollectionPage" : _inbetween;
-                    else _inbetween = entity.Data["type"].Any((a) => (string)a.Primitive == test) ? test : _inbetween;
-                }
-
-                if (isAnd)
-                    _inbetween = previousResult == null ? null : _inbetween;
             }
 
-            if (_inbetween == null) return null;
+            bool parse = true;
 
-            string text;
-            if (_inbetween.Type == JTokenType.Array) text = _inbetween[0].ToObject<string>();
-            else text = _inbetween.ToObject<string>();
+            if (item.Arguments.ContainsKey("x-if"))
+                parse = (bool) _parse(item.Arguments["x-if"][0].Data, data, regs);
+            else if (item.Arguments.ContainsKey("x-else"))
+                parse = !(bool) _parse(item.Arguments["x-else"][0].Data, data, regs);
 
-            if (isHtml) return text;
-            return WebUtility.HtmlEncode(text);
+            if (!parse) return "";
+            
+            if (item.Arguments.ContainsKey("x-render"))
+            {
+                var template = item.Arguments["x-render"][0].Data;
+                string id;
+                if (item.Arguments.ContainsKey("x-render-id"))
+                    id = (string) _parse(item.Arguments["x-render-id"][0].Data, data, regs);
+                else
+                    id = (string) data["id"].First().Primitive;
+
+                ASObject objData = null;
+                if (data["id"].Any(a => (string) a.Primitive == id))
+                    objData = data;
+                else
+                {
+                    var obj = await entityStore.GetEntity(id, true);
+                    if (obj != null)
+                    {
+                        regs.UsedEntities[id] = obj;
+                        objData = obj.Data;
+                    }
+                }
+
+                if (objData != null)
+                    return await _parseTemplate(template, entityStore, objData, regs, doc);
+            }
+
+            var content = new StringBuilder();
+
+            foreach (var subitem in item.Children)
+            {
+                if (subitem.Type == TemplateItemType.Text)
+                    content.Append(subitem.Data);
+                else if (subitem.Type == TemplateItemType.Script)
+                    content.Append((string) _parse(subitem.Data, data, regs));
+                else if (subitem.Type == TemplateItemType.Element)
+                {
+                    if (subitem.Arguments.ContainsKey("x-for-in"))
+                    {
+                        var forItems = (object[]) _parse(subitem.Arguments["x-for-in"][0].Data, data, regs);
+                        var forIn = "item";
+                        foreach (var forItem in forItems)
+                        {
+                            regs.Engine.SetValue(forIn, forItem);
+                            content.Append(await _parseElement(doc, subitem, entityStore, data, regs));
+                        }
+                    }
+                    else
+                         content.Append(await _parseElement(doc, subitem, entityStore, data, regs));
+                }
+            }
+
+            result.InnerHtml = content.ToString();
+
+            return result.OuterHtml;
+        }
+
+        private async Task<string> _parseTemplate(string template, IEntityStore entityStore, ASObject data, Registers regs, HtmlDocument doc)
+        {
+
+            if (!Templates.ContainsKey(template)) throw new InvalidOperationException($"Template {template} does not exist!");
+            var templ = Templates[template];
+            return await _parseElement(doc, templ, entityStore, data, regs);
         }
 
         public async Task<string> ParseTemplate(string template, IEntityStore entityStore, APEntity entity, Registers regs = null)
         {
             if (regs == null) regs = new Registers();
-            if (!Templates.ContainsKey(template)) throw new InvalidOperationException($"Template {template} does not exist!");
-            var templ = Templates[template];
-            var builder = new StringBuilder();
-            var end = "";
+            regs.Handler = new ASHandler();
+            regs.Renderer = new RendererData();
+            var engine = new Engine();
+            engine.SetValue("AS", regs.Handler);
+            engine.SetValue("Renderer", regs.Renderer);
+            regs.Engine = engine;
+            var doc = new HtmlDocument();
 
-            for (int i = 0; i < templ.Count; i++)
-            {
-                var item = templ[i];
-                switch (item.Type)
-                {
-                    case "wrap":
-                        builder.Append($"<{item.Data} data-id=\"{entity.Id}\" data-template=\"{template}\">");
-                        end = $"</{item.Data.Split(' ')[0]}>";
-                        break;
-                    case "text":
-                        builder.Append(item.Data);
-                        break;
-                    case "if":
-                    case "while":
-                        if (!await _parseCondition(entity, entityStore, item.Data.Split(new[] { ' ' }, 2)[1], regs))
-                            i = item.Offset - 1;
-                        break;
-                    case "jump":
-                        i = item.Offset - 1;
-                        break;
-                    case "end":
-                        var begin = templ[item.Offset];
-                        if (begin.Type == "while")
-                            i = item.Offset - 1;
-                        break;
-                    case "command":
-                        if (item.Data.Contains("%")) {
-                            builder.Append("<span>");
-                        }
-                        builder.Append(await _parseCommand(entity, entityStore, item.Data, regs) ?? "");
-                        if (item.Data.Contains("%")) {
-                            builder.Append("</span>");
-                        }
-                        break;
-                }
-            }
+            regs.UsedEntities[entity.Id] = entity;
 
-            builder.Append(end);
-
-            return builder.ToString();
+            return await _parseTemplate(template, entityStore, entity.Data, regs, doc);
         }
     }
 }

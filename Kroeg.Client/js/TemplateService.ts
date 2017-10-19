@@ -1,233 +1,206 @@
 import { EntityStore } from "./EntityStore";
 import * as AS from "./AS";
 
-export class TemplateItem {
-    public type: "command" | "if" | "while" | "else" | "jump" | "end" | "text" | "wrap";
-    public data: string;
-    public offset: number;
+export enum TemplateItemType {
+    Element = 0,
+    Text,
+    Script
 }
 
-export type Template = TemplateItem[];
+export class TemplateItem {
+    public type: TemplateItemType;
+    public data: string;
+    public children: TemplateItem[];
+    public arguments: {[name: string]: TemplateItem[]};
+    public builder: { (regs: Registers): any };
+}
 
 export class TemplateService {
-    private _templatePromise: Promise<{[item: string]: Template}>
+    private _templatePromise: Promise<{[item: string]: TemplateItem}>
 
     constructor() {
         this._templatePromise = this._getTemplates();
     }
 
-    private async _getTemplates(): Promise<{[item: string]: Template}> {
+    private async _getTemplates(): Promise<{[item: string]: TemplateItem}> {
         const result = await fetch("/settings/templates");
         return await result.json();
     }
 
-    public getTemplates(): Promise<{[item: string]: Template}> {
+    public getTemplates(): Promise<{[item: string]: TemplateItem}> {
         return this._templatePromise;
     }
 }
 
 export class RenderResult {
-    public result: string[] = [];
-    public subRender: {id: string, template: string}[] = [];
+    public result: HTMLElement;
+    public subRender: {id: string, into: HTMLElement, template: string}[];
+}
+
+class _ASHandler {
+    constructor(private _regs: Registers) {}
+
+    public get(name: string): any[] {
+        return AS.get(this._regs.object, name);
+    }
+
+    public take(name: string, def?: any) {
+        if (def === undefined)
+            def = "";
+        if (!AS.has(this._regs.object, name)) return def;
+        return this.get(name)[0] || def;
+    }
+
+    public has(name: string) {
+        return AS.has(this._regs.object, name);
+    }
+
+    public contains(name: string, val: any) {
+        return AS.contains(this._regs.object, name, val);
+    }
+
+    public containsAny(name: string, val: any[]) {
+        return AS.containsAny(this._regs.object, name, val);
+    }
+}
+
+class RendererInfo {
+    public get client() { return true; }
+    public get server() { return false; }
+
+    public sanitize(data: string) {
+        return data.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
 }
 
 class Registers {
-    public load: string[];
-    public accumulator: number;
+    public AS: _ASHandler;
+    public Renderer: RendererInfo;
+    public object: AS.ASObject;
+    public item: any;
 }
 
 export class TemplateRenderer {
-    private templates: {[item: string]: Template};
+    private templates: {[item: string]: TemplateItem};
 
     public constructor(private templateService: TemplateService, private entityStore: EntityStore) {
     }
 
     public async prepare() {
         this.templates = await this.templateService.getTemplates();
+
+        for (let templateName in this.templates)
+            TemplateRenderer._buildDelegates(this.templates[templateName]);
     }
 
-    public getWrap(template: string): string {
-        if (template.startsWith("{")) {
-            return JSON.parse(template).wrap;
+    private static _buildDelegates(item: TemplateItem) {
+        if (item.type == TemplateItemType.Element)
+        {
+            for (let i in item.arguments)
+                for (let subItem of item.arguments[i])
+                    TemplateRenderer._buildDelegates(subItem);
+            for (let subItem of item.children)
+                TemplateRenderer._buildDelegates(subItem);
         }
-        if (!(template in this.templates)) return null;
-        if (this.templates[template][0].type != "wrap") return null;
-        return this.templates[template][0].data;
+        else if (item.type == TemplateItemType.Script)
+        {
+            console.log(item.data);
+            item.builder = new Function("regs", `let AS = regs.AS; let Renderer = regs.Renderer; let object = regs.object; let item=regs.item; return (${item.data});`) as (regs: Registers) => any;
+            console.log("done");
+        }
     }
 
-    private _parseCondition(object: AS.ASObject, text: string, reg: Registers): boolean {
-        let result = this._parseCommand(object, text, null, reg);
-        return result != null;
-/*
-        if (text == "next") {
-            reg.accumulator++;
-            return reg.accumulator < reg.load.length;
-        } else if (text == "client") return true;
+    private _parse(item: TemplateItem, data: AS.ASObject, regs: Registers, override?: boolean): any {
+        if (!override && item.type == TemplateItemType.Text) return item.data;
 
-        const split = text.split(' ');
-        if (split.length == 2) {
-            if (text == "is Activity") return "actor" in object;
-            else if (text == "is Collection") return AS.containsAny(object, "type", ["Collection", "OrderedCollection"]);
-            else if (text == "is CollectionPage") return AS.containsAny(object, "type", ["CollectionPage", "OrderedCollectionPage"]);
-            else if (split[0] == "is") return AS.contains(object, "type", split[1]);
-            else if (split[0] == "has") return AS.get(object, split[1]).length > 0;
-            return false;
-        }
-
-        const value = split[0];
-        const arr = AS.get(object, split[2]);
-
-        switch (split[1]) {
-        case "in":
-            return arr.indexOf(value) != -1;
-        }
-
-        return false; */
+        regs.object = data;
+        return item.builder(regs);
     }
 
-    private _parseCommand(object: AS.ASObject, command: string, renderResult: RenderResult, reg: Registers): string|{template: string}
-    {
-        let result: any = null;
-        let isHtml = false;
-        let depend: string = null;
-        if (command.indexOf('%') != -1) {
-            let nodepend = command.split(' %', 1)[0];
-            depend = "$" + command.substring(command.indexOf('%') + 1);
-            command = nodepend;
-        }
-        let splitCommand = command.split(' ')
-        for (let i = 0; i < splitCommand.length; i++) {
-            let asf = splitCommand[i];
-            let prevResult: any = result;
-            let isAnd = false;
-            if (asf.startsWith("&")) {
-                isAnd = true;
-                prevResult = result;
-                asf = asf.substring(1);
-            }
-
-            if (asf.startsWith("$")) {
-                if (result !== null) continue;
-                const name = asf.substring(1);
-                let results = [];
-                for (let item of AS.get(object, name)) {
-                    if ((typeof item) == "object" && !Array.isArray(item)) results.push(JSON.stringify(item));
-                    else results.push(item);
-                }
-
-                if (results.length == 0) result = null;
-                else result = results;
-            } else if (asf.startsWith("'")) {
-                if (result === null) result = asf.substring(1);
-            } else if (asf == "ishtml") {
-                isHtml = true;
-            } else if (asf == "client") {
-                result = "client";
-            } else if (asf == "is") {
-                let test = splitCommand[++i];
-                if (test == "Activity") result = "actor" in object ? "Activity" : result;
-                else if (test == "Collection") result = AS.containsAny(object, "type", ["Collection", "OrderedCollection"]) ? test : result;
-                else if (test == "CollectionPage") result = AS.containsAny(object, "type", ["CollectionPage", "OrderedCollectionPage"]) ? test : result;
-                else result = AS.contains(object, "type", test) ? test : result;
-            } else if (asf == "next") {
-                reg.accumulator++;
-                result = (reg.accumulator < reg.load.length) ? (reg.load[reg.accumulator] || "") : null;
-            } else if (asf.startsWith("render:")) {
-                const template = asf.substring(7);
-                if (result == null) {
-                    return {template};
-                }
-                let id: string = null;
-                if (Array.isArray(result))
-                    id = result[0] as string;
-                else id = result as string;
-
-                renderResult.subRender.push({id, template});
-                return {template: null};
-            } else if (asf == "load") {
-                reg.load = result as string[];
-                if (reg.load == null) reg.load = [];
-                reg.accumulator = -1;
-                result = null;
-            } else if (asf == "item") {
-                if (reg.accumulator < reg.load.length && reg.accumulator >= 0 && result == null) result = reg.load[reg.accumulator];
-            } else if (asf.startsWith("client.")) {
-                if (asf == "client.stats") result = `Preloaded ${Object.keys((window as any).preload).length} items`;
-            }
-            if (isAnd) result = prevResult ? result : null;
-        }
-
-        if (depend != null) {
-            if (Array.isArray(result)) result = result[0];
-            renderResult.subRender.push({template: JSON.stringify({command: depend, wrap: "span"}), id: result});
-            return {template: null};
-        }
-
-        if (result == null) return null;
-
-        let text: string;
-        if (Array.isArray(result)) text = result.length > 0 ? result[0].toString() : "";
-        else text = result == null ? "" : result.toString();
-
-        if (!isHtml) text = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");;
-
-        return text;
-    }
-    
-    public render(template: string, object: AS.ASObject, renderResult?: RenderResult): RenderResult {
-        if (renderResult == null) renderResult = new RenderResult();
-        if (template.startsWith('{')) {
-            // pseudo-template!
-            let data = JSON.parse(template);
-            let parsed = this._parseCommand(object, data.command, renderResult, new Registers());
-            renderResult.result.push(parsed as string);
-            return renderResult;
-        }
-
-        let temp = this.templates[template];
+    private _parseArr(item: TemplateItem[], data: AS.ASObject, regs: Registers): string {
         let result = "";
-        let reg = new Registers();
-        for (let i = 0; i < temp.length; i++) {
-            const item = temp[i];
-            switch (item.type) {
-                case "text":
-                    result += item.data;
-                    break;
-                case "if":
-                case "while":
-                    if (!this._parseCondition(object, item.data.substring(item.data.indexOf(' ') + 1), reg)) i = item.offset - 1;
-                    break;
-                case "jump":
-                    i = item.offset - 1;
-                    break;
-                case "end":
-                    if (temp[item.offset].type == "while")
-                        i = item.offset - 1;
-                    break;
-                case "command":
-                    let parsed = this._parseCommand(object, item.data, renderResult, reg);
-                    if (parsed != null && typeof parsed == "object") {
-                        let template = (parsed as {template: string}).template;
-                        if (template == null) {
-                            renderResult.result.push(result);
-                            result = "";
-                        } else {
-                            let offset = renderResult.result.length;
-                            result += `<${this.templates[template][0].data}>`;
-                            this.render(template, object, renderResult);
-                            renderResult.result[offset] = result + renderResult.result[offset];
-                            result = renderResult.result[renderResult.result.length - 1] + `</${this.templates[template][0].data.split(' ')[0]}>`;
-                            renderResult.result.splice(renderResult.result.length - 1);
+        for (let it of item)
+            result += this._parse(it, data, regs, false);
+
+        return result;
+    }
+
+    private _render(item: TemplateItem, data: AS.ASObject, regs: Registers, renderResult: RenderResult, render: boolean, element?: HTMLElement): HTMLElement {
+        if ("x-render" in item.arguments && render)
+        {
+            let itemId = data.id;
+            let templateName = item.arguments["x-render"][0].data;
+            let template = this.templates[templateName];
+            let renderId = itemId;
+            if ("x-render-id" in item.arguments)
+                renderId = this._parse(item.arguments["x-render-id"][0], data, regs, true) as string;
+            if (renderId != itemId)
+            {
+                let rendered = this._render(template, null, regs, renderResult, false);
+                rendered.dataset["render"] = templateName;
+                rendered.dataset["id"] = renderId;
+                renderResult.subRender.push({id: renderId, into: rendered, template: templateName});
+                return rendered;
+            }
+
+            item = template;
+        }
+        if (element === undefined)
+            element = document.createElement(item.data);
+        else
+            while (element.firstChild) element.removeChild(element.firstChild);
+
+        if (!render) return element;
+
+        for (let arg in item.arguments) {
+            if (!arg.startsWith("x-"))
+                element.setAttribute(arg, this._parseArr(item.arguments[arg], data, regs));
+        }
+
+        if (render) {
+            for (let content of item.children) {
+                if (content.type == TemplateItemType.Text)
+                    element.appendChild(document.createTextNode(content.data));
+                else if (content.type == TemplateItemType.Script)
+                    element.appendChild(document.createTextNode(this._parse(content, data, regs, false)));
+                else
+                {
+                    if ("x-for-in" in content.arguments) {
+                        let resultItems = this._parse(content.arguments["x-for-in"][0], data, regs, true) as any[];
+                        let prevItem = regs.item;
+                        for (let subItem of resultItems) {
+                            regs.item = subItem;
+                            element.appendChild(this._render(content, data, regs, renderResult, true));
                         }
-                    } else if (parsed == null) {
-                    } else {
-                        result += parsed;
+                        regs.item = prevItem;
+
+                        continue;
+                    } else if ("x-if" in content.arguments) {
+                        let result = this._parse(content.arguments["x-if"][0], data, regs, true) as boolean;
+                        if (!result) continue;
+                    } else if ("x-else" in content.arguments) {
+                        let result = this._parse(content.arguments["x-else"][0], data, regs, true) as boolean;
+                        if (result) continue;
                     }
 
-                    break;
+                    element.appendChild(this._render(content, data, regs, renderResult, true));
+                }
             }
         }
-        renderResult.result.push(result);
+
+        return element;
+    }
+
+    public render(template: string, data: AS.ASObject, elem?: HTMLElement): RenderResult {
+        let regs = new Registers();
+        regs.AS = new _ASHandler(regs);
+        regs.Renderer = new RendererInfo();
+
+        let renderResult = new RenderResult();
+        renderResult.subRender = [];
+        let result = this._render(this.templates[template], data, regs, renderResult, true, elem);
+        renderResult.result = result;
+
         return renderResult;
     }
 }

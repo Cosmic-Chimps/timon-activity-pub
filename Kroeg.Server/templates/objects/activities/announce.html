@@ -1,8 +1,9 @@
-{{wrap div class="row" style="padding-left: 58px; position: relative"}}
-<div class="col-md-12">
-	{{$actor render:objects/sub/user_header}}
-	<a href="{{$id}}"><small>announced</small></a>
-</div>
-<div class="col-md-12">
-	{{$object render:objects/header/object}}
+<div class="row" style="padding-left: 58px; position: relative">
+	<div class="col-md-12">
+		<div x-render="objects/sub/user_header" x-render-id="AS.take('actor')"></div>
+		<a href="{{AS.take('object')}}"><small x-if="AS.has('published')">announced at {{AS.take('published')}}</small></a>
+	</div>
+	<div class="col-md-12">
+		<div x-render="objects/header/object" x-render-id="AS.take('object')"></div>
+	</div>
 </div>

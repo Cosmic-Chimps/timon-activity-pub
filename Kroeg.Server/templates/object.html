@@ -1,17 +1,14 @@
-﻿{{wrap div class="col-md-12 nopad"}}
+﻿<div class="col-md-12 nopad">
+	<div class="list-group" x-if="AS.get('actor').length > 0">
+		<div class="list-group-item">
+			<div x-render="objects/activities/activity"></div>
+		</div>
+	</div>
+	<div x-if="AS.containsAny('type', ['Person', 'Group'])" x-render="objects/user"></div>
 
-{{if is Activity}}
-	<div class="list-group">
+	<div class="list-group" x-if="AS.get('actor').length == 0 && !AS.containsAny('type', ['Person', 'Group'])">
 		<div class="list-group-item">
-			{{render:objects/activities/activity}}
+			<div x-render="objects/header/object"></div>
 		</div>
 	</div>
-{{elif is Person}}
-	{{render:objects/user}}
-{{else}}
-	<div class="list-group">
-		<div class="list-group-item">
-			{{render:objects/header/object}}
-		</div>
-	</div>
-{{end}}
+</div>

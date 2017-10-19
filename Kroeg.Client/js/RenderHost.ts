@@ -7,7 +7,7 @@ export class RenderHost {
     private _object: ASObject;
     private _id: string;
     private _template: string;
-    private _dom: Element;
+    private _dom: HTMLElement;
     private _storeActivityToken: StoreActivityToken;
     private _subrender: RenderHost[] = [];
 
@@ -17,7 +17,7 @@ export class RenderHost {
     public get template(): string { return this._template; }
     public set template(value: string) { this._template = value; this.render(); }
 
-    constructor(private renderer: TemplateRenderer, private store: EntityStore, id: string, template: string, dom?: Element, private _parent?: RenderHost) {
+    constructor(private renderer: TemplateRenderer, private store: EntityStore, id: string, template: string, dom?: HTMLElement, private _parent?: RenderHost) {
         this._dom = dom != null ? dom : document.createElement("div");
         this._id = id;
         this._template = template;
@@ -59,28 +59,16 @@ export class RenderHost {
             subrender.deregister();
         this._subrender.splice(0);
 
-        const result = await this.renderer.render(this._template, this._object);
-        let resultText = result.result[0];
-        let counterStart = RenderHost._counter;
-        for (var i = 1; i < result.result.length; i++) {
-            let wrap = this.renderer.getWrap(result.subRender[i - 1].template);
-            if (wrap == null) wrap = "div style=\"border: 1px solid red\"";
-            let endwrap = wrap.split(' ')[0];
-            resultText += `<${wrap} id="_renderhost_holder_${RenderHost._counter}">${JSON.stringify(result.subRender[i - 1])}</${endwrap}>`;
-            RenderHost._counter++;
-            resultText += result.result[i];
-        }
+        const result = await this.renderer.render(this._template, this._object, this._dom);
 
-        this._dom.innerHTML = resultText;
-        for (let i = 0; i < result.subRender.length; i++) {
-            let subrender = result.subRender[i];
-            let holder = document.getElementById(`_renderhost_holder_${counterStart + i}`) as HTMLDivElement;
-            if (holder == null) return; // race conditions in JS :D
-            holder.dataset.id = subrender.id;
-            holder.dataset.template = subrender.template;
-            let host = new RenderHost(this.renderer, this.store, subrender.id, subrender.template, holder, this);
+        for (let old of this._subrender)
+            old.deregister();
+
+        this._subrender = [];
+
+        for (let item of result.subRender) {
+            let host = new RenderHost(this.renderer, this.store, item.id, item.template, item.into, this);
             this._subrender.push(host);
         }
-        this._lastResult = result;
     }
 }

@@ -1,8 +1,9 @@
-﻿{{wrap div class="row" style="padding-left: 58px; position: relative"}}
+﻿<div class="row" style="padding-left: 58px; position: relative">
 <div class="col-md-12">
-	{{$attributedTo render:objects/sub/user_header}}
-	<a href="{{$id}}"><small>at {{$published}}</small></a>
+	<div x-render="objects/sub/user_header" x-render-id="AS.take('attributedTo')"></div>
+	<a href="{{AS.take('id')}}"><small>at {{AS.take('published')}}</small></a>
 </div>
 <div class="col-md-12">
-	{{$content isHtml}}
+	{{AS.take('content')}}
+</div>
 </div>

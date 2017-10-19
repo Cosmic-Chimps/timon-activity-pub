@@ -1,5 +1,6 @@
-{{wrap span}}
-<a href="{{$id}}">
-    <img src="{{$icon '//via.placeholder.com/48x48}}" width="48" height="48" style="margin-left: -58px; border-radius: 100%; position: absolute;" />
-    {{$name}}
-</a>
+<span>
+    <a href="{{AS.take('id')}}">
+        <img src="{{AS.take('icon', '//via.placeholder.com/48x48')}}" width="48" height="48" style="margin-left: -58px; border-radius: 100%; position: absolute;" />
+        {{AS.take('name')}}
+    </a>
+</span>

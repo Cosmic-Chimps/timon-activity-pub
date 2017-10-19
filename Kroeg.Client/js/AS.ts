@@ -8,6 +8,10 @@ export function get(object: ASObject, name: string): any[] {
     return [];
 }
 
+export function has(object: ASObject, name: string): boolean {
+    return name in object;
+}
+
 export function contains(object: ASObject, name: string, value: any): boolean {
     return get(object, name).indexOf(value) != -1;
 }
@@ -21,7 +25,7 @@ export function containsAny(object: ASObject, name: string, values: any[]): bool
 export function set(object: ASObject, name: string, value: any) {
     if (name in object) {
         if (Array.isArray(object[name])) object[name].push(value);
-        object[name] = [object[name], value];
+        else object[name] = [object[name], value];
     }
 
     object[name] = value;

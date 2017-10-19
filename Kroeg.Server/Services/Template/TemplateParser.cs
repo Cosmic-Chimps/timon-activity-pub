@@ -2,118 +2,80 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using HtmlAgilityPack;
 
 namespace Kroeg.Server.Services.Template
 {
+    public enum TemplateItemType
+    {
+        Element,
+        Text,
+        Script
+    }
+
     public struct TemplateItem
     {
-        public string Type { get; set; }
+        public TemplateItemType Type { get; set; }
         public string Data { get; set; }
-        public int Offset { get; set; }
+        public List<TemplateItem> Children { get; set; }
+        public Dictionary<string, List<TemplateItem>> Arguments { get; set; }
     }
 
     public class TemplateParser
     {
-        public static List<TemplateItem> Parse(string template)
+        private static List<TemplateItem> _parseStringOrScript(string data, bool alwaysScript)
         {
-            int start = 0;
-            var result = new List<TemplateItem>();
-            var ifStack = new Stack<int>();
-            do
+            var start = 0;
+            var items = new List<TemplateItem>();
+            while (start < data.Length)
             {
-                int nextCommand = template.IndexOf("{{", start);
-                if (nextCommand < 0) break;
-
-                if (start != nextCommand)
+                var next = data.IndexOf("{{", start);
+                if (next == -1)
                 {
-                    var text = template.Substring(start, nextCommand - start);
-                    result.Add(new TemplateItem { Type = "text", Data = text });
+                    items.Add(new TemplateItem { Type = alwaysScript ? TemplateItemType.Script : TemplateItemType.Text, Data = data.Substring(start)});
+                    break;
                 }
 
-                start = nextCommand;
+                var after = data.IndexOf("}}", next);
+                
+                if (next != start)
+                    items.Add(new TemplateItem { Type = alwaysScript ? TemplateItemType.Script : TemplateItemType.Text, Data = data.Substring(start, next - start - 1) });
+                items.Add(new TemplateItem { Type = TemplateItemType.Script, Data = data.Substring(next + 2, after - next - 2)});
 
-                var end = template.IndexOf("}}", start);
-                if (end < 0) throw new InvalidOperationException("Could not find end of template command!");
-
-                var command = template.Substring(start + 2, end - start - 2);
-                var entry = new TemplateItem { Type = "command", Data = command };
-                // if: { type: if, data: command, offset: location after the else }
-                // else: { type: jump, data: null, offset: location of the end }
-                // end: { type: end, data: null, offset: location of the else/if?? }
-                // {{if }} -> push location on ifstack
-                // {{else }} -> pop, set if offset to here, add jump to ifstack
-                // {{end }} -> pop, set jump offset to here.
-                // {{elif }} -> pop, add jump to ifstack, set if offset to here
-                if (command.StartsWith("if") || command.StartsWith("while"))
-                {
-                    entry.Type = command.Split(' ')[0];
-                    ifStack.Push(-1);
-                    ifStack.Push(result.Count);
-                }
-                else if (command.StartsWith("else"))
-                {
-                    entry.Type = "jump";
-
-                    var lastPos = ifStack.Pop();
-                    var res = result[lastPos];
-                    res.Offset = result.Count + 1;
-                    result[lastPos] = res;
-
-                    ifStack.Push(result.Count);
-                }
-                else if (command.StartsWith("end"))
-                {
-                    entry.Type = "end";
-
-                    while (ifStack.Peek() != -1)
-                    {
-                        var lastPos = ifStack.Pop();
-                        var res = result[lastPos];
-                        
-                        if (res.Type == "while")
-                        {
-                            entry.Type = "jump";
-                            entry.Offset = lastPos;
-                        }
-                        
-                        res.Offset = result.Count + 1;
-                        result[lastPos] = res;
-                    }
-
-                    ifStack.Pop();
-                }
-                else if (command.StartsWith("wrap"))
-                {
-                    entry.Type = "wrap";
-                    entry.Data = entry.Data.Substring(5);
-                }
-                else if (command.StartsWith("elif"))
-                {
-                    var jump = new TemplateItem { Type = "jump" };
-
-                    var lastPos = ifStack.Pop();
-
-                    var res = result[lastPos];
-                    res.Offset = result.Count + 1;
-                    result[lastPos] = res;
-                    ifStack.Push(result.Count);
-                    result.Add(jump);
-                    
-                    entry.Type = "if";
-                    ifStack.Push(result.Count);
-                }
-
-                result.Add(entry);
-
-                start = end + 2;
-            } while (true);
-
-            if (start < template.Length)
-            {
-                result.Add(new TemplateItem { Type = "text", Data = template.Substring(start) });
+                start = after + 2;
             }
 
-            return result;
+            return items;
+        }
+
+        private static HashSet<string> _items = new HashSet<string>() { "x-if", "x-render-id", "x-else", "x-for-in" };
+
+        private static TemplateItem _parseElement(HtmlNode element)
+        {
+            var item = new TemplateItem {
+                Type = TemplateItemType.Element,
+                Data = element.OriginalName,
+                Arguments = element.Attributes.ToDictionary(a => a.Name, a => _parseStringOrScript(a.Value, _items.Contains(a.Name))),
+                Children = new List<TemplateItem>()
+            };
+            
+            foreach (var child in element.ChildNodes)
+            {
+                if (child.NodeType == HtmlNodeType.Text)
+                    item.Children.AddRange(_parseStringOrScript(child.InnerHtml, false));
+                else if (child.NodeType == HtmlNodeType.Element)
+                    item.Children.Add(_parseElement(child));
+            }
+
+            return item;
+        }
+
+        public static TemplateItem Parse(string template)
+        {
+            var doc = new HtmlDocument();
+            doc.LoadHtml(template);
+            var elem = _parseElement(doc.DocumentNode.ChildNodes[0]);
+            return elem;
         }
     }
 }
