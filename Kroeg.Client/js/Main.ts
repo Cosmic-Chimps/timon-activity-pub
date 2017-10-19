@@ -45,10 +45,10 @@ export class Kroeg {
         this._log("Getting your templates...")
         await this._templateRenderer.prepare();
 
-        let container = document.getElementsByClassName("container")[0];
+        let container = document.getElementsByClassName("container")[0] as HTMLElement;
         this._container = new RenderHost(this._templateRenderer, this._entityStore, window.location.toString(), "body", container);
 
-        let navbar = document.getElementsByClassName("navbar")[0];
+        let navbar = document.getElementsByClassName("navbar")[0] as HTMLElement;
         this._navbar = new RenderHost(this._templateRenderer, this._entityStore, this._sessionObjects.navbar, "navbar/bar", navbar);
     }
 

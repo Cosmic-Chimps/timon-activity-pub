@@ -39,7 +39,7 @@ namespace Kroeg.Server.Controllers
             var objectTemplates = regs.UsedEntities.Select(a => new Tuple<string, JToken>(a.Key, a.Value.Data.Serialize(true))).ToDictionary(a => a.Item1, a => a.Item2);
             if (Request.Query.ContainsKey("nopreload")) objectTemplates.Clear();
 
-            var page = _templateService.PageTemplate.Replace("{{render:body}}", text).Replace("{{preload}}", JsonConvert.SerializeObject(objectTemplates));
+            var page = _templateService.PageTemplate.Replace("<div class=\"container\" x-render=\"body\"></div>", text).Replace("{{preload}}", JsonConvert.SerializeObject(objectTemplates));
 
             return Content(page, "text/html");
         }
@@ -59,7 +59,7 @@ namespace Kroeg.Server.Controllers
             var objectTemplates = regs.UsedEntities.Select(a => new Tuple<string, JToken>(a.Key, a.Value.Data.Serialize(true))).ToDictionary(a => a.Item1, a => a.Item2);
             if (Request.Query.ContainsKey("nopreload")) objectTemplates.Clear();
 
-            var page = _templateService.PageTemplate.Replace("{{render:body}}", text).Replace("{{preload}}", JsonConvert.SerializeObject(objectTemplates));
+            var page = _templateService.PageTemplate.Replace("<div class=\"container\" x-render=\"body\"></div>", text).Replace("{{preload}}", JsonConvert.SerializeObject(objectTemplates));
 
             return Content(page, "text/html");
         }
