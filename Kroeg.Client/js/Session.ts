@@ -1,10 +1,8 @@
 import { ASObject } from "./AS";
 
 function getHost(url: string) {
-    const obj = document.createElement('a');
-    // Let the browser do the work
-    obj.href = url;
-    return obj.protocol + "://" + obj.hostname;
+    let data = new URL(url);
+    return data.origin;
 }
 
 
@@ -14,25 +12,27 @@ export class Session {
     }
 
     private _token: string;
-    private _user: string;
     private _host: string;
+    private _userId: string;
 
     private _proxyUrl: string;
     private _uploadMedia: string;
     private _outbox: string;
+    private _user: ASObject;
 
     public get user() { return this._user; }
+    public get outbox() { return this._outbox; }
 
     public async set(token: string, user: string): Promise<void> {
         this._token = token;
-        this._user = user;
+        this._userId = user;
         if (token == null) return;
-        this._host = getHost(this._user);
+        this._host = getHost(this._userId);
 
-        let userData = await (await this.authFetch(user)).json();
-        this._outbox = userData["outbox"];
-        if ("endpoints" in userData) {
-            const endpoints = userData["endpoints"];
+        this._user = await (await this.authFetch(user)).json();
+        this._outbox = this._user["outbox"];
+        if ("endpoints" in this._user) {
+            const endpoints = this._user["endpoints"];
             if ("proxyUrl" in endpoints) this._proxyUrl = endpoints["proxyUrl"];
             if ("uploadMedia" in endpoints) this._uploadMedia = endpoints["uploadMedia"];
         }
@@ -52,6 +52,7 @@ export class Session {
             const parms = new URLSearchParams();
             parms.append("id", url);
             let requestInit: RequestInit = {
+                method: 'POST',
                 body: parms
             };
 

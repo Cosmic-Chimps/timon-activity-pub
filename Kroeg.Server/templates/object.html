@@ -1,4 +1,5 @@
 ﻿<div class="col-md-12 nopad">
+	<div x-render="client/object" x-if="AS.take('id').indexOf('kroeg:') == 0"></div>
 	<div class="list-group" x-if="AS.get('actor').length > 0">
 		<div class="list-group-item">
 			<div x-render="objects/activities/activity"></div>
@@ -6,7 +7,7 @@
 	</div>
 	<div x-if="AS.containsAny('type', ['Person', 'Group'])" x-render="objects/user"></div>
 
-	<div class="list-group" x-if="AS.get('actor').length == 0 && !AS.containsAny('type', ['Person', 'Group'])">
+	<div class="list-group" x-if="AS.take('id').indexOf('kroeg:') != 0 && AS.get('actor').length == 0 && !AS.containsAny('type', ['Person', 'Group'])">
 		<div class="list-group-item">
 			<div x-render="objects/header/object"></div>
 		</div>

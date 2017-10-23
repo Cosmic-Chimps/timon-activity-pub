@@ -8,6 +8,11 @@ export function get(object: ASObject, name: string): any[] {
     return [];
 }
 
+export function take(object: ASObject, name: string, def: any = ""): any {
+    if (name in object) return get(object, name)[0];
+    return def;
+}
+
 export function has(object: ASObject, name: string): boolean {
     return name in object;
 }

@@ -1,5 +1,6 @@
 import { EntityStore } from "./EntityStore";
 import * as AS from "./AS";
+import { Session } from './Session';
 
 export enum TemplateItemType {
     Element = 0,
@@ -35,6 +36,7 @@ export class TemplateService {
 export class RenderResult {
     public result: HTMLElement;
     public subRender: {id: string, into: HTMLElement, template: string}[];
+    public componentHandles: HTMLElement[];
 }
 
 class _ASHandler {
@@ -65,8 +67,12 @@ class _ASHandler {
 }
 
 class RendererInfo {
+    constructor(private session: Session) {}
+
     public get client() { return true; }
     public get server() { return false; }
+
+    public get loggedInAs() { return this.session.user; }
 
     public sanitize(data: string) {
         return data.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -104,9 +110,7 @@ export class TemplateRenderer {
         }
         else if (item.type == TemplateItemType.Script)
         {
-            console.log(item.data);
             item.builder = new Function("regs", `let AS = regs.AS; let Renderer = regs.Renderer; let object = regs.object; let item=regs.item; return (${item.data});`) as (regs: Registers) => any;
-            console.log("done");
         }
     }
 
@@ -157,6 +161,10 @@ export class TemplateRenderer {
                 element.setAttribute(arg, this._parseArr(item.arguments[arg], data, regs));
         }
 
+        if ("data-component" in item.arguments) {
+            renderResult.componentHandles.push(element);
+        }
+
         if (render) {
             for (let content of item.children) {
                 if (content.type == TemplateItemType.Text)
@@ -194,10 +202,11 @@ export class TemplateRenderer {
     public render(template: string, data: AS.ASObject, elem?: HTMLElement): RenderResult {
         let regs = new Registers();
         regs.AS = new _ASHandler(regs);
-        regs.Renderer = new RendererInfo();
+        regs.Renderer = new RendererInfo(this.entityStore.session);
 
         let renderResult = new RenderResult();
         renderResult.subRender = [];
+        renderResult.componentHandles = [];
         let result = this._render(this.templates[template], data, regs, renderResult, true, elem);
         renderResult.result = result;
 

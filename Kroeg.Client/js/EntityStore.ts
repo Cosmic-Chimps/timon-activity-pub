@@ -19,7 +19,7 @@ export class EntityStore {
     private _cache: {[id: string]: ASObject} = {};
     private _get: {[id: string]: Promise<ASObject>} = {};
 
-    constructor(private session: Session) {
+    constructor(public session: Session) {
         if ("preload" in window) {
             let preload = (window as any).preload;
             for (let item in preload)

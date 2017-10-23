@@ -16,3 +16,84 @@
 .nopad {
   padding: 0px;
 }
+
+/** START userpicker **/
+.kroeg-taggy {
+    -webkit-appearance: textfield;
+    -moz-appearance: textfield;
+    appearance: textfield;
+
+    display: inline-flex;
+    padding: 1px;
+    height: 30px;
+    box-sizing: content-box;
+    font: 14px sans-serif;
+    text-align: left;
+    position: relative;
+    line-height: 30px;
+}
+
+.kroeg-taggy-tags {
+    display: block;
+    height: 30px;
+    float: left;
+}
+.kroeg-taggy-tags::after {
+  content: '\a0';
+}
+
+.kroeg-taggy-tag {
+    border-radius: 2px;
+    background: rgb(0, 255, 170);
+    border: rgb(0, 68, 255);
+    display: inline-block;
+    margin: 2.5px 5px;
+    line-height: 25px;
+    height: 25px;
+    position: relative;
+    cursor: default;
+    padding-right: 5px;
+}
+
+.kroeg-taggy-tag img {
+    border-radius: 100%;
+    width: 15px;
+    height: 15px;
+    position: absolute;
+    top: 5px;
+    left: 5px;
+}
+
+.kroeg-taggy-imgtag span {
+    padding-left: 25px;
+}
+
+.kroeg-taggy-input {
+    display: inline-block;
+    position: relative;
+    height: 30px;
+    flex-grow: 1;
+}
+
+.kroeg-taggy input {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    padding: 0;
+    border: 0;
+    font: 14px sans-serif;
+    height: 30px;
+    width: 100%;
+}
+/** END userpicker **/
+
+/** START wysiwyg **/
+.kroeg-wysiwyg-area {
+  padding: 10px;
+}
+
+[contenteditable=true]:empty:before{
+  content: attr(data-placeholder);
+  display: block; /* For Firefox */
+}
+/** END wysiwyg **/
