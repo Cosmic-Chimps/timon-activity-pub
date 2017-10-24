@@ -44,7 +44,7 @@
 
 .kroeg-taggy-tag {
     border-radius: 2px;
-    background: rgb(0, 255, 170);
+    background: #eee;
     border: rgb(0, 68, 255);
     display: inline-block;
     margin: 2.5px 5px;
@@ -53,6 +53,14 @@
     position: relative;
     cursor: default;
     padding-right: 5px;
+}
+
+.kroeg-taggy-tag-error {
+    background: #f00;
+}
+
+.kroeg-taggy-tag-ok {
+    background: rgb(124, 246, 255);
 }
 
 .kroeg-taggy-tag img {

@@ -29,10 +29,16 @@ class Tag {
 
     protected _nameElement: HTMLSpanElement;
     protected _hidden: HTMLInputElement;
+    private _ok: boolean = false;
 
-    constructor(public data: string, public fieldName: string, private entityStore: EntityStore) {
+    constructor(public userPicker: UserPicker, public data: string, public fieldName: string, private entityStore: EntityStore) {
         this.element = document.createElement("span");
+        this.element.addEventListener("click", () => this.click());
         this._startResolve();
+    }
+
+    protected click() {
+        this.userPicker.removeTag(this);
     }
 
     protected async _getId(): Promise<string> {
@@ -46,25 +52,36 @@ class Tag {
 
         this._nameElement.innerText = this.data;
 
-        let id = await this._getId();
-        if (id == null) {
-            this._nameElement.innerText = "error";
+        try {
+            let id = await this._getId();
+            if (id == null) {
+                this._nameElement.innerText = "error";
+                this.element.classList.add("kroeg-taggy-tag-error");
+                return;
+            }
+
+            let obj = await this.entityStore.get(id, true);
+            if (obj == null) {
+                this._nameElement.innerText = "error 2";
+                this.element.classList.add("kroeg-taggy-tag-error");
+                return;
+            }
+
+            this._nameElement.innerText = await this._getName(obj);
+            
+            this._hidden = document.createElement("input");
+            this._hidden.type = "hidden";
+            this._hidden.name = this.fieldName;
+            this._hidden.value = obj.id;
+            this.element.appendChild(this._hidden);
+
+            this.element.classList.add("kroeg-taggy-tag-ok");
+            this._ok = true;
+        } catch(e) {
+            this._nameElement.innerText = "exception";
+            this.element.classList.add("kroeg-taggy-tag-error");
             return;
         }
-
-        let obj = await this.entityStore.get(id, true);
-        if (obj == null) {
-            this._nameElement.innerText = "error 2";
-            return;
-        }
-        
-        this._nameElement.innerText = await this._getName(obj);
-
-        this._hidden = document.createElement("input");
-        this._hidden.type = "hidden";
-        this._hidden.name = this.fieldName;
-        this._hidden.value = obj.id;
-        this.element.appendChild(this._hidden);
     }
 
     private async _getName(obj: AS.ASObject): Promise<string> {
@@ -119,22 +136,34 @@ export class UserPicker implements IComponent {
         this.name = element.dataset.name;
 
         this.inputField.addEventListener("change", (e) => this._onInput(e));
-        this.inputField.addEventListener("keydown", (e) => { if (e.keyCode == 13) this._handleReturn(e); });
+        this.inputField.addEventListener("keydown", (e) => { if (e.keyCode == 13 || e.keyCode == 8)  this._handleSpecial(e); });
     }
 
-    private _handleReturn(e: KeyboardEvent) {
+    private _handleSpecial(e: KeyboardEvent) {
+        if (e.keyCode == 8) {
+            let selection = document.getSelection();
+            if (this.inputField.selectionStart == 0 && this.inputField.selectionEnd == 0) {
+                this.removeTag(this._tags[this._tags.length - 1]);
+            }
+            return;
+        }
+        
         e.preventDefault();
-
         this._createTag(this.inputField.value);
         this.inputField.value = "";
     }
+    public removeTag(tag: Tag) {
+        tag.element.remove();
+        this._tags.splice(this._tags.indexOf(tag), 1);
+    }
+
 
     private _createTag(data: string) {
         let tag: Tag;
         if (data.startsWith("@")) { // webfinger-y
-            tag = new WebfingerTag(data, this.name, this.entityStore);
+            tag = new WebfingerTag(this, data, this.name, this.entityStore);
         } else if (data.startsWith("http")) { // ID-y
-            tag = new Tag(data, this.name, this.entityStore);
+            tag = new Tag(this, data, this.name, this.entityStore);
         } else {
             // ignore
             return;
