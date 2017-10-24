@@ -74,8 +74,39 @@ class RendererInfo {
 
     public get loggedInAs() { return this.session.user; }
 
+    private static _allowed_attributes = /^(href|rel|class)$/;
+    private static _allowed_classes = /^((h|p|u|dt|e)-.*|mention|hashtag|ellipsis|invisible)$/;
+    private static _disallowed_nodes = /^(script|object|embed)$/;
+
     public sanitize(data: string) {
         return data.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    private _clean(data: HTMLElement) {
+        if (data.nodeType == document.TEXT_NODE) return;
+        if (data.nodeType != document.ELEMENT_NODE) return;
+        if (RendererInfo._disallowed_nodes.exec(data.nodeName)) {
+            data.remove();
+            return;
+        }
+        for (let attribute of Array.from(data.attributes)) {
+            if (!RendererInfo._allowed_attributes.exec(attribute.name)) data.attributes.removeNamedItem(attribute.name);
+        }
+
+        for (let cl of Array.from(data.classList)) {
+            if (!RendererInfo._allowed_classes.exec(cl)) data.classList.remove(cl);
+        }
+
+        for (let child of Array.from(data.childNodes)) {
+            this._clean(child as HTMLElement);
+        }
+    }
+
+    public clean(data: string) {
+        let doc = document.createElement("div");
+        doc.insertAdjacentHTML('beforeend', data);
+        this._clean(doc);
+        return doc.innerHTML;
     }
 }
 
@@ -168,9 +199,9 @@ export class TemplateRenderer {
         if (render) {
             for (let content of item.children) {
                 if (content.type == TemplateItemType.Text)
-                    element.appendChild(document.createTextNode(content.data));
+                    element.insertAdjacentHTML('beforeend', content.data);
                 else if (content.type == TemplateItemType.Script)
-                    element.appendChild(document.createTextNode(this._parse(content, data, regs, false)));
+                    element.insertAdjacentHTML('beforeend', this._parse(content, data, regs, false));
                 else
                 {
                     if ("x-for-in" in content.arguments) {

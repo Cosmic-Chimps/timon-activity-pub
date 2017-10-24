@@ -4,6 +4,6 @@
 	<a href="{{AS.take('id')}}"><small>at {{AS.take('published')}}</small></a>
 </div>
 <div class="col-md-12">
-	{{AS.take('content')}}
+	{{Renderer.clean(AS.take('content'))}}
 </div>
 </div>
