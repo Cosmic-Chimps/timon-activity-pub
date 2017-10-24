@@ -50,7 +50,9 @@ class _ASHandler {
         if (def === undefined)
             def = "";
         if (!AS.has(this._regs.object, name)) return def;
-        return this.get(name)[0] || def;
+        let item = this.get(name)[0];
+        if (item === null) return def;
+        return item;
     }
 
     public has(name: string) {

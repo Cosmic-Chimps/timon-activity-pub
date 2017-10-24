@@ -15,9 +15,13 @@ export class Form implements IComponent {
         e.preventDefault();
 
         let formData = new FormData(this.element as HTMLFormElement);
-        let resultJson: {[a: string]: string|string[]} = {"@context": "https://www.w3.org/ns/activitystreams"};
+        let resultJson: {[a: string]: string|string[]|boolean} = {"@context": "https://www.w3.org/ns/activitystreams"};
         for (let item of (formData as any).keys()) {
-            resultJson[item] = formData.getAll(item) as string[];
+            if (item.endsWith(".bool")) {
+                resultJson[item.substr(0, item.length - 5)] = formData.get(item) == "true";
+            } else {
+                resultJson[item] = formData.getAll(item) as string[];
+            }
         }
 
         let headers = new Headers();

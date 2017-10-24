@@ -6,6 +6,6 @@
 <div class="col-md-12">
 	<a href="{{AS.take('id')}}"><h1>{{AS.take('name')}}</h1></a>
 	{{Renderer.sanitize(AS.take('summary'))}}
-	<emph x-if="AS.take('sensitive', false)">(Warning: marked as sensitive)</emph>
+	<b x-if="AS.take('sensitive', false)">(Warning: marked as sensitive)</b>
 </div>
 </div>
