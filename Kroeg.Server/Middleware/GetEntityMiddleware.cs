@@ -31,6 +31,7 @@ using System.Text;
 using System.Net.WebSockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
+using Microsoft.Extensions.Primitives;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -133,6 +134,12 @@ namespace Kroeg.Server.Middleware
                 return;
             }
 
+
+            var acceptHeaders = context.Request.Headers["Accept"];
+            if (acceptHeaders.Count == 0 && context.Request.ContentType != null)
+            {
+                acceptHeaders.Append(context.Request.ContentType);
+            }
 
             foreach (var converterFactory in _converters)
             {
