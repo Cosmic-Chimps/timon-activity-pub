@@ -1,6 +1,7 @@
 <div class="container" style="padding-top: 25px">
     <div x-if="AS.containsAny('type', ['Collection', 'OrderedCollection'])" x-render="collection/full"></div>
     <div x-if="AS.containsAny('type', ['CollectionPage', 'OrderedCollectionPage'])" x-render="collection/page"></div>
-    <div x-if="!AS.containsAny('type', ['Collection', 'CollectionPage', 'OrderedCollection', 'OrderedCollectionPage'])" x-render="object"></div>
+    <div x-if="AS.contains('type', 'Page')" x-render="full/page"></div>
+    <div x-if="!AS.containsAny('type', ['Collection', 'CollectionPage', 'OrderedCollection', 'OrderedCollectionPage', 'Page'])" x-render="object"></div>
     <small>Kroeg pre-alpha - This page has been rendered on the <span x-if="Renderer.server">Server</span><span x-if="Renderer.client">Client</span></small>
 </div>

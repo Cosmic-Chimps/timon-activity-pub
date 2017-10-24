@@ -1,5 +1,6 @@
 <div class="col-md-12 nopad">
 		<div x-render="objects/header/note" x-if="AS.contains('type', 'Note')"></div>
+		<div x-render="objects/header/page" x-if="AS.contains('type', 'Page')"></div>
 		<div x-render="objects/header/user" x-if="AS.contains('type', 'Person')"></div>
 		<span x-if="!AS.containsAny('type', ['Note', 'Person'])">{{AS.take('id')}}</span>
 </div>

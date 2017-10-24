@@ -39,7 +39,7 @@ namespace Kroeg.Server.Services.Template
                 var after = data.IndexOf("}}", next);
                 
                 if (next != start)
-                    items.Add(new TemplateItem { Type = alwaysScript ? TemplateItemType.Script : TemplateItemType.Text, Data = data.Substring(start, next - start - 1) });
+                    items.Add(new TemplateItem { Type = alwaysScript ? TemplateItemType.Script : TemplateItemType.Text, Data = data.Substring(start, next - start) });
                 items.Add(new TemplateItem { Type = TemplateItemType.Script, Data = data.Substring(next + 2, after - next - 2)});
 
                 start = after + 2;

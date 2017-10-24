@@ -80,7 +80,7 @@ namespace Kroeg.Server.Services.Template
             private static Regex _disallowed_nodes = new Regex("^(script|object|embed)$");
 
 
-            public string escape(string data)
+            public string sanitize(string data)
             {
                 return data.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
             }

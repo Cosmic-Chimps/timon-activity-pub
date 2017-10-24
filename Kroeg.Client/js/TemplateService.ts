@@ -197,13 +197,20 @@ export class TemplateRenderer {
         }
 
         if (render) {
+            let text = "";
             for (let content of item.children) {
-                if (content.type == TemplateItemType.Text)
-                    element.insertAdjacentHTML('beforeend', content.data);
-                else if (content.type == TemplateItemType.Script)
-                    element.insertAdjacentHTML('beforeend', this._parse(content, data, regs, false));
+                if (content.type == TemplateItemType.Text || content.type == TemplateItemType.Script) {
+                    if (content.type == TemplateItemType.Text)
+                        text += content.data;
+                    else if (content.type == TemplateItemType.Script)
+                        text += this._parse(content, data, regs, false);
+                }
                 else
                 {
+                    if (text.length > 0) {
+                        element.insertAdjacentHTML("beforeend", text);
+                        text = "";
+                    }
                     if ("x-for-in" in content.arguments) {
                         let resultItems = this._parse(content.arguments["x-for-in"][0], data, regs, true) as any[];
                         let prevItem = regs.item;
@@ -224,6 +231,11 @@ export class TemplateRenderer {
 
                     element.appendChild(this._render(content, data, regs, renderResult, true));
                 }
+            }
+
+            if (text.length > 0) {
+                element.insertAdjacentHTML("beforeend", text);
+                text = "";
             }
         }
 
