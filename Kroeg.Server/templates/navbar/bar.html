@@ -4,9 +4,12 @@
         Rendered!
     </span>
 
-    <div class="navbar-nav">
-        <a class="nav-item nav-link" href="{{AS.take('loggedInAs')}}" x-if="AS.has('loggedInAs')">Logged in as {{AS.take('loggedInAs')}}</a>
-        <a class="nav-item nav-link" x-if="AS.has('loggedInAs')" onclick="Kroeg.logout()">Log out</a>
-        <a class="nav-item nav-link" x-if="!AS.has('loggedInAs')" onclick="Kroeg.login()">Log in</a>
+    <div class="navbar-nav" x-if="AS.has('loggedInAs')">
+        <a class="nav-item nav-link" href="{{AS.take('loggedInAs')}}">Logged in as {{AS.take('loggedInAs')}}</a>
+        <a class="nav-item nav-link" onclick="Kroeg.logout()">Log out</a>
+        <a class='nav-item nav-link' href="kroeg:newnote">New note</a>
+    </div>
+    <div class="navbar-nav" x-if="!AS.has('loggedInAs')">
+        <a class="nav-item nav-link" onclick="Kroeg.login()">Log in</a>
     </div>
 </nav>

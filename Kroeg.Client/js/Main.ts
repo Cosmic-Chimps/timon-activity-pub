@@ -23,7 +23,7 @@ export class Kroeg {
     }
 
     private _isRemote(id: string) {
-        return !id.startsWith(window.location.protocol + "://" + window.location.host);
+        return !id.startsWith(window.location.origin);
     }
 
     constructor() {
