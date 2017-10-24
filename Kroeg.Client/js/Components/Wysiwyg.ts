@@ -22,7 +22,7 @@ export class Wysiwyg implements IComponent {
         element.appendChild(this.resultField);
 
         this.contentEditable.addEventListener("blur", () => this.update());
-        this.contentEditable.addEventListener("keypress", () => this.checkStatus());
+        this.contentEditable.addEventListener("input", () => this.checkStatus());
         this.contentEditable.addEventListener("focus", () => this.checkStatus());
     }
 
@@ -44,7 +44,7 @@ export class Wysiwyg implements IComponent {
     }
 
     private update() {
-        this.resultField.value = this.contentEditable.innerHTML;
+        this.resultField.value = this.contentEditable.innerHTML.replace(/<br><\/p>/g, '</p>');
     }
 
     unbind() {

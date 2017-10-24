@@ -27,9 +27,15 @@ export class Form implements IComponent {
             body: JSON.stringify(resultJson),
             method: 'POST',
             headers
-        }).then((a) => {
-            console.log(a);
-            alert(JSON.stringify(a));
+        }).then(async (a) => {
+            if (a.status == 201) {
+                window.history.pushState({}, document.title, a.headers.get("Location"));
+                window.dispatchEvent(new PopStateEvent('popstate', {state: {}}));
+            } else {
+                let data = await a.text();
+                console.log(data);
+                alert(data);
+            }
         })
         return false;
     }
