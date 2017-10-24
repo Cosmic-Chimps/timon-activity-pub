@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                for (let item of Array.from(document.getElementsByClassName("kroeg-taggy-tag"))) {
+                    item.addEventListener("click", (e) => {
+                        let item = e.currentTarget;
+                        
+                    });
+                }
+            });
+        </script>
+    </head>
+    <body>
+        <div class="kroeg-taggy">
+            <span class="kroeg-taggy-tags">
+                <span class="kroeg-taggy-tag kroeg-taggy-imgtag">
+                    <img src="http://via.placeholder.com/25x25" />
+                    <span>
+                        Puck Meerburg
+                    </span>
+                </span>
+            </span>
+            <div class="kroeg-taggy-input">
+                <input type="text" value="test" />
+                <div class="kroeg-taggy-dropdown">
+                    <span>User</span>
+                    <span>Followers (+)</span>
+                    <span>Following (+)</span>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

@@ -22,14 +22,30 @@ export class Kroeg {
         statusUpdate.innerText = msg;
     }
 
+    private _isRemote(id: string) {
+        return !id.startsWith(window.location.origin);
+    }
+
     constructor() {
-        if (window.location.hash.length > 0)
+        if (window.location.hash.startsWith("#oauth"))
             this._finish_oauth();
 
         this._session = new Session();
+        this._setup();
+    }
+
+    private _getLocation(): string {
+        if (window.location.hash.startsWith("#id="))
+            return window.location.hash.substring(4);
+        return window.location.toString().split('#')[0];
+    }
+
+    private async _setup() {
         if (window.localStorage.getItem("expires") != null)
-            if (parseInt(window.localStorage.expires, 10) > +(new Date))
-                this._session.set(window.localStorage.access_token, window.localStorage.id);
+            if (parseInt(window.localStorage.expires, 10) > +(new Date)) {
+                this._log("Logging you in...")
+                await this._session.set(window.localStorage.access_token, window.localStorage.id);
+            }
 
         this._entityStore = new EntityStore(this._session);
         this._templateRenderer = new TemplateRenderer(new TemplateService(), this._entityStore);
@@ -37,16 +53,12 @@ export class Kroeg {
         this._sessionObjects = new SessionObjects(this._entityStore, this._session);
         
         document.addEventListener("click", (e) => this._handleClick(e), true);
-        window.addEventListener("popstate", (e) => this._update(window.location.toString()));
-        this._setup();
-    }
-
-    private async _setup() {
+        window.addEventListener("popstate", (e) => this._update(this._getLocation()));
         this._log("Getting your templates...")
         await this._templateRenderer.prepare();
 
         let container = document.getElementsByClassName("container")[0] as HTMLElement;
-        this._container = new RenderHost(this._templateRenderer, this._entityStore, window.location.toString(), "body", container);
+        this._container = new RenderHost(this._templateRenderer, this._entityStore, this._getLocation(), "body", container);
 
         let navbar = document.getElementsByClassName("navbar")[0] as HTMLElement;
         this._navbar = new RenderHost(this._templateRenderer, this._entityStore, this._sessionObjects.navbar, "navbar/bar", navbar);
@@ -83,7 +95,11 @@ export class Kroeg {
 
         e.preventDefault();
         e.stopPropagation();
-        window.history.pushState({id: link.href}, document.title, link.href);
+        let href = link.href;
+        if (this._isRemote(href)) {
+            href = window.location.toString().split('#')[0] + "#id=" + link.href;
+        }
+        window.history.pushState({id: link.href}, document.title, href);
         this._update(link.href);
     }
 
@@ -94,7 +110,7 @@ export class Kroeg {
         let endpoints = await this._entityStore.get(data["endpoints"]);
         let oauthEndpoint = endpoints["oauthAuthorizationEndpoint"] as string;
         if (oauthEndpoint.indexOf("?") == -1) oauthEndpoint += "?"; else oauthEndpoint += "&";
-        oauthEndpoint += `state=${encodeURIComponent(id)}&response_type=token&redirect_uri=${window.location.toString()}`;
+        oauthEndpoint += `state=${encodeURIComponent(id)}&response_type=token&redirect_uri=${window.location.toString()}%23oauth=1`;
         window.location.assign(oauthEndpoint);
     }
 

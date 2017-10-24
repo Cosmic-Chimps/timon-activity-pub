@@ -13,6 +13,7 @@ using Jint;
 using Kroeg.ActivityStreams;
 using HtmlAgilityPack;
 using Jint.Parser.Ast;
+using System.Text.RegularExpressions;
 
 namespace Kroeg.Server.Services.Template
 {
@@ -74,9 +75,50 @@ namespace Kroeg.Server.Services.Template
 
         public class RendererData
         {
+            private static Regex _allowed_attributes = new Regex("^(href|rel|class)$");
+            private static Regex _allowed_classes = new Regex("^((h|p|u|dt|e)-.*|mention|hashtag|ellipsis|invisible)$");
+            private static Regex _disallowed_nodes = new Regex("^(script|object|embed)$");
+
+
             public string escape(string data)
             {
                 return data.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+            }
+
+            private void _clean(HtmlNode node)
+            {
+                if (node.NodeType != HtmlNodeType.Element && node.NodeType != HtmlNodeType.Document) return;
+                if (node.NodeType == HtmlNodeType.Element)
+                {
+                    if (_disallowed_nodes.IsMatch(node.Name.ToLower()))
+                    {
+                        node.Remove();
+                        return;
+                    }
+
+                    foreach (var attribute in node.Attributes.ToArray())
+                    {
+                        if (!_allowed_attributes.IsMatch(attribute.Name)) node.Attributes.Remove(attribute);
+                    }
+
+                    if (node.Attributes.Contains("class"))
+                    foreach (var cl in node.Attributes["class"].Value.Split(' '))
+                    {
+                        if (!_allowed_classes.IsMatch(cl)) node.RemoveClass(cl);
+                    }
+                }
+
+                foreach (var child in node.ChildNodes.ToArray()) {
+                    _clean(child);
+                }
+            }
+
+            public string clean(string data)
+            {
+                var doc = new HtmlDocument();
+                doc.LoadHtml(data);
+                _clean(doc.DocumentNode);
+                return doc.DocumentNode.InnerHtml;
             }
 
             public bool server => true;

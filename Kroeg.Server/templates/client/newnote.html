@@ -1,0 +1,33 @@
+<div>
+    <h1>New note</h1>
+
+    <form data-component="form" data-endpoint="{{Renderer.loggedInAs.outbox}}">
+        <input type="hidden" name="type" value="Note" />
+        <div class="form-group">
+            <label for="_name">Name:</label>
+            <input type="text" class="form-control" name="name" id="_name" />
+        </div>
+        <div class="form-group">
+            <label for="_content">Content:</label>
+            <div class="form-control" data-component="wysiwyg" data-placeholder="Enter your content here" data-name="content" id="_content"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="_taggyTo">Send to:</label>
+            <div class="kroeg-taggy form-control" data-component="userpicker" data-name="to"><span class="kroeg-taggy-tags"></span><div class="kroeg-taggy-input"><input type="text" id="_taggyTo" value="" /></div></div>
+            <label class="form-check-label">
+                <input type="checkbox" class="form-check-input" name="to" value="https://www.w3.org/ns/activitystreams#Public">
+                Also send publicly
+            </label>
+        </div>
+        <div class="form-group">
+            <label for="_taggyCC">CC these people:</label>
+            <div class="kroeg-taggy form-control" data-component="userpicker" data-name="cc"><span class="kroeg-taggy-tags"></span><div class="kroeg-taggy-input"><input type="text" id="_taggyCC" value="" /></div></div>
+            <label class="form-check-label">
+                <input type="checkbox" class="form-check-input" name="to" value="https://www.w3.org/ns/activitystreams#Public">
+                Also CC publicly
+            </label>
+        </div>
+
+        <input type="submit" value="Submit" class="btn btn-primary" />
+    </form>
+</div>
