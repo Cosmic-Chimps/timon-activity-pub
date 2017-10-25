@@ -121,7 +121,31 @@ namespace Kroeg.Server.Controllers
         {
             if (User.FindFirstValue(JwtTokenSettings.ActorClaim) == null) return Unauthorized();
 
-            var entity = await _entityStore.GetEntity(id, true);
+            APEntity entity = null;
+            if (id.StartsWith('@'))
+            {
+                id = id.Substring(1);
+                var spl = id.Split(new char[] { '@' } , 2);
+                var host = spl.Length > 1 ? spl[2] : Request.Host.ToString();
+                var ent = await _relevantEntities.FindEntitiesWithPreferredUsername(spl[0]);
+                var withHost = ent.FirstOrDefault(a => new Uri(a.Id).Host == host);
+                if (withHost == null && spl.Length == 1) return NotFound();
+
+                entity = withHost;
+
+                if (entity == null && spl.Length > 1)
+                {
+                    var hc = new HttpClient();
+                    var webfinger = JsonConvert.DeserializeObject<WellKnownController.WebfingerResult>(await hc.GetStringAsync($"https://{host}/.well-known/webfinger?resource=acct:{id}"));
+                    var activityStreams = webfinger.links.FirstOrDefault(a => a.rel == "self" && (a.type == "application/activity+json" || a.type == "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""));
+                    if (activityStreams == null) return NotFound();
+
+                    id = activityStreams.href;
+                }
+            }
+            
+            if (entity == null) entity = await _entityStore.GetEntity(id, true);
+
             if (entity == null) return NotFound();
 
             var unflattened = await _entityFlattener.Unflatten(_entityStore, entity);

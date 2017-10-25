@@ -109,18 +109,6 @@ class Tag {
     }
 }
 
-class WebfingerTag extends Tag {
-    protected async _getId(): Promise<string> {
-        // magick this!
-        let spl = this.data.substr(1).split('@');
-        if (spl.length == 1) {
-            spl.push(window.location.origin);
-        }
-        if (!spl[1].startsWith("http")) spl[1] = "https://" + spl[1];
-        return `${spl[1]}/users/${spl[0]}`;
-    }
-}
-
 export class UserPicker implements IComponent {
     private taggyInput: HTMLElement;
     private taggyTags: HTMLElement;
@@ -160,9 +148,7 @@ export class UserPicker implements IComponent {
 
     private _createTag(data: string) {
         let tag: Tag;
-        if (data.startsWith("@")) { // webfinger-y
-            tag = new WebfingerTag(this, data, this.name, this.entityStore);
-        } else if (data.startsWith("http")) { // ID-y
+        if (data.startsWith("@") || data.startsWith("http")) {
             tag = new Tag(this, data, this.name, this.entityStore);
         } else {
             // ignore
