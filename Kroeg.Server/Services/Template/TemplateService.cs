@@ -181,8 +181,11 @@ namespace Kroeg.Server.Services.Template
                 parse = !(bool) _parse(item.Arguments["x-else"][0].Data, data, regs);
 
             if (!parse) return "";
+
+            if (item.Arguments.ContainsKey("x-render-if"))
+                parse = (bool) _parse(item.Arguments["x-render-if"][0].Data, data, regs);
             
-            if (item.Arguments.ContainsKey("x-render"))
+            if (item.Arguments.ContainsKey("x-render") && parse)
             {
                 var template = item.Arguments["x-render"][0].Data;
                 string id;

@@ -48,7 +48,7 @@ namespace Kroeg.Server.Services.Template
             return items;
         }
 
-        private static HashSet<string> _items = new HashSet<string>() { "x-if", "x-render-id", "x-else", "x-for-in" };
+        private static HashSet<string> _items = new HashSet<string>() { "x-if", "x-render-id", "x-else", "x-for-in", "x-render-if" };
 
         private static TemplateItem _parseElement(HtmlNode element)
         {

@@ -17,6 +17,14 @@
   padding: 0px;
 }
 
+.kroeg-content .invisible {
+  display: none;
+}
+
+.kroeg-content .ellipsis:after {
+  content: '\2026';
+}
+
 /** START userpicker **/
 .kroeg-taggy {
     -webkit-appearance: textfield;

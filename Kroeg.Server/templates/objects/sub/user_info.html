@@ -1,5 +1,9 @@
 <div>
     <h1>{{AS.take('name', AS.take('preferredUsername', AS.take('id')))}} <small>{{AS.take('id')}}</small></h1>
+    <div x-if="AS.take('id') == 'https://puckipedia.com/'">
+        <p>Hey! This is an experiment, I'm running my own social network server, <a data-nav="nav" href="https://github.com/puckipedia/Kroeg">Kroeg</a>, which can communicate with Mastodon and other ActivityPub-compatible servers. I'll be trying to mirror a bit of what I do on here, but it might just randomly break as well.</p>
+        <p>My old content can be found <a href="/index.html" data-nav="nav">here.</a>
+    </div>
     <div>
         {{AS.take('summary')}}
     </div>

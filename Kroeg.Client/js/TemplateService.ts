@@ -150,7 +150,7 @@ export class TemplateRenderer {
     private _parse(item: TemplateItem, data: AS.ASObject, regs: Registers, override?: boolean): any {
         if (!override && item.type == TemplateItemType.Text) return item.data;
 
-        regs.object = data;
+        regs.object = data || {};
         return item.builder(regs);
     }
 
@@ -163,6 +163,9 @@ export class TemplateRenderer {
     }
 
     private _render(item: TemplateItem, data: AS.ASObject, regs: Registers, renderResult: RenderResult, render: boolean, element?: HTMLElement): HTMLElement {
+        if ("x-render-if" in item.arguments && render) {
+            render = this._parse(item.arguments["x-render-if"][0], data, regs, true) as boolean;
+        }
         if ("x-render" in item.arguments && render)
         {
             let itemId = data.id;
@@ -187,12 +190,12 @@ export class TemplateRenderer {
         else
             while (element.firstChild) element.removeChild(element.firstChild);
 
-        if (!render) return element;
-
         for (let arg in item.arguments) {
             if (!arg.startsWith("x-"))
                 element.setAttribute(arg, this._parseArr(item.arguments[arg], data, regs));
         }
+
+        if (!render) return element;
 
         if ("data-component" in item.arguments) {
             renderResult.componentHandles.push(element);
