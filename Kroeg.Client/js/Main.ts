@@ -90,6 +90,7 @@ export class Kroeg {
     }
 
     private _handleClick(e: MouseEvent) {
+        if (e.button != 0) return;
         let target = e.target as Element;
         while (target != null && target.tagName != "A") target = target.parentElement;
         if (target == null) return;
