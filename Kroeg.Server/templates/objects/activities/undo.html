@@ -1,0 +1,9 @@
+<div class="row" style="padding-left: 58px; position: relative">
+	<div class="col-md-12">
+		<div x-render="objects/sub/user_header" x-render-id="AS.take('actor')"></div>
+		<a href="{{AS.take('id')}}"><small>undid <span x-if="AS.has('published')">at {{AS.take('published')}}</span></small></a>
+	</div>
+	<div class="col-md-12">
+		<div x-render="objects/activities/activity" x-render-id="AS.take('object')"></div>
+	</div>
+</div>

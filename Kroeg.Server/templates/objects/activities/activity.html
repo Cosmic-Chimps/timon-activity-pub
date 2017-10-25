@@ -1,7 +1,10 @@
 <div class="col-md-12 nopad">
 	<div x-render="objects/activities/create" x-if="AS.contains('type', 'Create')"></div>
 	<div x-render="objects/activities/announce" x-if="AS.contains('type', 'Announce')"></div>
-	<div x-if="!AS.containsAny('type', ['Create', 'Announce'])">
+	<div x-render="objects/activities/follow" x-if="AS.contains('type', 'Follow')"></div>
+	<div x-render="objects/activities/undo" x-if="AS.contains('type', 'Undo')"></div>
+	<div x-render="objects/activities/accept" x-if="AS.contains('type', 'Accept')"></div>
+	<div x-if="!AS.containsAny('type', ['Create', 'Announce', 'Follow', 'Undo', 'Accept'])">
 		Activity:
 		<div x-render="object" x-render-id="AS.take('object')"></div>
 	</div>

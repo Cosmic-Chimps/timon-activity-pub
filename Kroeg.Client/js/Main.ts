@@ -41,13 +41,17 @@ export class Kroeg {
     }
 
     private async _setup() {
+        let loggedIn = false;
         if (window.localStorage.getItem("expires") != null)
             if (parseInt(window.localStorage.expires, 10) > +(new Date)) {
                 this._log("Logging you in...")
                 await this._session.set(window.localStorage.access_token, window.localStorage.id);
+                loggedIn = true;
             }
 
         this._entityStore = new EntityStore(this._session);
+        if (loggedIn) this._entityStore.clear();
+
         this._templateRenderer = new TemplateRenderer(new TemplateService(), this._entityStore);
 
         this._sessionObjects = new SessionObjects(this._entityStore, this._session);
@@ -91,7 +95,7 @@ export class Kroeg {
         if (target == null) return;
 
         let link = target as HTMLAnchorElement;
-        if (link.href.length == 0 || link.href.startsWith("javascript:")) return;
+        if (link.href.length == 0 || link.href.startsWith("javascript:") || "nav" in link.dataset) return;
 
         e.preventDefault();
         e.stopPropagation();

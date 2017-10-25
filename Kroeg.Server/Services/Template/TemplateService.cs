@@ -196,7 +196,7 @@ namespace Kroeg.Server.Services.Template
                     objData = data;
                 else
                 {
-                    var obj = await entityStore.GetEntity(id, true);
+                    APEntity obj = await entityStore.GetEntity(id, true);
                     if (obj != null)
                     {
                         regs.UsedEntities[id] = obj;

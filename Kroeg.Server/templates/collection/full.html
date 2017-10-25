@@ -1,3 +1,4 @@
 <div>
-    <div x-render="collection/page" x-render-id="AS.get('first')[0]"></div>
+    <div x-render="collection/page" x-render-id="AS.take('first')" x-if="AS.has('first')"></div>
+    <div x-render="collection/page" x-render-id="AS.take('id')" x-if="AS.has('orderedItems') || AS.has('items')"></div>
 </div>
