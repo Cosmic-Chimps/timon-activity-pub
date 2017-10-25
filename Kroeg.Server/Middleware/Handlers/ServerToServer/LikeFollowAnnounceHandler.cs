@@ -9,6 +9,7 @@ using Kroeg.Server.Services.EntityStore;
 using Kroeg.Server.Tools;
 using Kroeg.ActivityStreams;
 using Microsoft.Extensions.DependencyInjection;
+using Kroeg.Server.Configuration;
 
 namespace Kroeg.Server.Middleware.Handlers.ServerToServer
 {
@@ -39,6 +40,10 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
                     accept.Replace("object", new ASTerm(MainObject.Id));
 
                     var claims = new ClaimsPrincipal();
+                    var id = new ClaimsIdentity();
+                    id.AddClaim(new Claim(JwtTokenSettings.ActorClaim, Actor.Id));
+                    claims.AddIdentity(id);
+
                     var handler = ActivatorUtilities.CreateInstance<GetEntityMiddleware.GetEntityHandler>(_serviceProvider, claims);
                     var outbox = await EntityStore.GetEntity((string)Actor.Data["outbox"].First().Primitive, false);
                     await handler.ClientToServer(outbox, accept);
