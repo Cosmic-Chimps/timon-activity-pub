@@ -59,7 +59,7 @@ namespace Kroeg.Server.Models
         {
             get => ASObject.Parse(SerializedData);
 
-            set => SerializedData = value.Serialize().ToString(Newtonsoft.Json.Formatting.None);
+            set => SerializedData = value.Serialize(false).ToString(Newtonsoft.Json.Formatting.None);
         }
     }
 }

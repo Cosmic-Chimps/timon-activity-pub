@@ -29,7 +29,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
         {
             if (MainObject.Type == "Follow")
             {
-                if (Actor.Data["_:locked"].Any(a => !(bool) a.Primitive) || Actor.Data["locked"].Any(a => !(bool) a.Primitive))
+                if (Actor.Data["manuallyApprovesFollowers"].Any(a => !(bool) a.Primitive))
                 {
                     var accept = new ASObject();
                     accept.Replace("type", new ASTerm("Accept"));

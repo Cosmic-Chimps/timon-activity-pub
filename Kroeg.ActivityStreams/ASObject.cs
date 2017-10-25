@@ -12,6 +12,9 @@ namespace Kroeg.ActivityStreams
         private Dictionary<string, List<ASTerm>> _terms = new Dictionary<string, List<ASTerm>>();
         private static Dictionary<string, string> _languageMapMap = new Dictionary<string, string> { ["content"] = "contentMap", ["name"] = "nameMap", ["summary"] = "summaryMap" };
         private static HashSet<string> _alwaysArray = new HashSet<string> { "items", "orderedItems" };
+        private static JToken _context = new JArray("https://www.w3.org/ns/activitystreams", new JObject() {
+            ["manuallyApprovesFollowers"] = "as:manuallyApprovesFollowers"
+        });
 
         public List<ASTerm> this[string value] => _terms.ContainsKey(value) ? _terms[value] : (_terms[value] = new List<ASTerm>());
 
@@ -96,7 +99,7 @@ namespace Kroeg.ActivityStreams
         {
             var result = new JObject();
             if (includeContext)
-                result["@context"] = "https://www.w3.org/ns/activitystreams";
+                result["@context"] = _context;
 
             foreach (var kv in _terms)
             {

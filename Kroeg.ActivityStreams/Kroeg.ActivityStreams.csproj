@@ -8,4 +8,8 @@
     <PackageReference Include="Newtonsoft.Json" Version="*" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Kroeg.JsonLD\Kroeg.JsonLD.csproj" />
+  </ItemGroup>
+
 </Project>
