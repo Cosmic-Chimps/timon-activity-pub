@@ -493,9 +493,6 @@ namespace Kroeg.Server.Middleware
                 var collection = entity.Data;
                 bool seePrivate = collection["attributedTo"].Any() && _user.FindFirstValue(JwtTokenSettings.ActorClaim) == (string)collection["attributedTo"].First().Primitive;
 
-                collection["current"].Add(new ASTerm(entity.Id));
-                collection["totalItems"].Add(new ASTerm(await _collectionTools.Count(entity.Id)));
-
                 if (from_id != null)
                 {
                     var fromId = int.Parse(from_id);
@@ -509,29 +506,21 @@ namespace Kroeg.Server.Middleware
                     if (collection["attributedTo"].Any())
                         page["attributedTo"].Add(collection["attributedTo"].First());
                     if (items.Count > 10)
-                        page["next"].Add(new ASTerm(entity.Id + "?from_id=" + (items.Last().CollectionItemId - 1).ToString()));
+                        page["next"].Add(new ASTerm(entity.Id + "?from_id=" + (items[9].CollectionItemId - 1).ToString()));
                     page["orderedItems"].AddRange(items.Take(10).Select(a => new ASTerm(a.ElementId)));
 
                     return page;
                 }
                 else
                 {
-                    var items = await _collectionTools.GetItems(entity.Id, count: 10);
+                    var items = await _collectionTools.GetItems(entity.Id, count: 1);
                     var hasItems = items.Any();
-                    var page = new ASObject();
-                    page["type"].Add(new ASTerm("OrderedCollectionPage"));
-                    page["id"].Add(new ASTerm(entity.Id + "?from_id=" + (hasItems ? items.First().CollectionItemId + 1 : 0)));
-                    page["partOf"].Add(new ASTerm(entity.Id));
-                    if (collection["attributedTo"].Any())
-                        page["attributedTo"].Add(collection["attributedTo"].First());
-                    if (items.Count > 0)
-                        page["next"].Add(new ASTerm(entity.Id + "?from_id=" + (items.Last().CollectionItemId - 1)));
-                    page["orderedItems"].AddRange(items.Select(a => new ASTerm(a.ElementId)));
-
+                    var page = entity.Id + "?from_id=" + (hasItems ? items.First().CollectionItemId + 1 : 0);
+                    collection["current"].Add(new ASTerm(entity.Id));
+                    collection["totalItems"].Add(new ASTerm(await _collectionTools.Count(entity.Id)));
                     collection["first"].Add(new ASTerm(page));
+                    return collection;
                 }
-
-                return collection;
             }
 
             internal async Task<ASObject> Post(HttpContext context, string fullpath, ASObject @object)
