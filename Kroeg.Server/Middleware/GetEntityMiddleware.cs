@@ -581,7 +581,7 @@ namespace Kroeg.Server.Middleware
 
                 var subjectUri = new Uri(subject);
                 var prefix = $"{subjectUri.Scheme}://{subjectUri.Host}";
-                if (subjectUri.Port != 0) prefix += $":{subjectUri.Port}";
+                if (!subjectUri.IsDefaultPort) prefix += $":{subjectUri.Port}";
                 prefix += "/";
 
                 var id = (string) activity["id"].Single().Primitive;
