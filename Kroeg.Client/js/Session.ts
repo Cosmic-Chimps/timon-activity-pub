@@ -1,8 +1,12 @@
 import { ASObject } from "./AS";
 
 function getHost(url: string) {
-    let data = new URL(url);
-    return data.origin;
+    try {
+        let data = new URL(url);
+        return data.origin;
+    } catch (e) {
+        return null;
+    }
 }
 
 

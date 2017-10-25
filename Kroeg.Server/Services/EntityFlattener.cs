@@ -87,6 +87,10 @@ namespace Kroeg.Server.Tools
         {
 
             var entity = new APEntity();
+            if (@object["href"].Any()) // Link
+            {
+                return null;
+            }
 
             if (@object["id"].Count == 0)
             {

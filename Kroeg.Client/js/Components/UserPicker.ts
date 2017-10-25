@@ -2,6 +2,7 @@ import { EntityStore, StoreActivityToken } from "../EntityStore";
 import * as AS from "../AS";
 import { RenderHost } from "../RenderHost";
 import { IComponent } from "../IComponent";
+import { Form } from "./Form";
 
 /*
     <div class="kroeg-taggy">
@@ -114,8 +115,10 @@ export class UserPicker implements IComponent {
     private taggyTags: HTMLElement;
     private inputField: HTMLInputElement;
     private name: string;
-
     private _tags: Tag[] = [];
+    private _form: HTMLFormElement;
+
+    public static formMap: WeakMap<HTMLFormElement, {[name: string]: UserPicker}> = new WeakMap();
 
     constructor(public host: RenderHost, private entityStore: EntityStore, public element: HTMLElement) {
         this.taggyInput = element.getElementsByClassName("kroeg-taggy-input")[0] as HTMLElement;
@@ -125,6 +128,16 @@ export class UserPicker implements IComponent {
 
         this.inputField.addEventListener("change", (e) => this._onInput(e));
         this.inputField.addEventListener("keydown", (e) => { if (e.keyCode == 13 || e.keyCode == 8)  this._handleSpecial(e); });
+
+        this._form = Form.find(element);
+        if (!UserPicker.formMap.has(this._form))
+            UserPicker.formMap.set(this._form, {});
+
+        UserPicker.formMap.get(this._form)[this.name] = this;
+
+        if ("default" in element.dataset) {
+            this.addTag(element.dataset.default);
+        }
     }
 
     private _handleSpecial(e: KeyboardEvent) {
@@ -137,7 +150,7 @@ export class UserPicker implements IComponent {
         }
         
         e.preventDefault();
-        this._createTag(this.inputField.value);
+        this.addTag(this.inputField.value);
         this.inputField.value = "";
     }
     public removeTag(tag: Tag) {
@@ -145,8 +158,7 @@ export class UserPicker implements IComponent {
         this._tags.splice(this._tags.indexOf(tag), 1);
     }
 
-
-    private _createTag(data: string) {
+    public addTag(data: string) {
         let tag: Tag;
         if (data.startsWith("@") || data.startsWith("http")) {
             tag = new Tag(this, data, this.name, this.entityStore);

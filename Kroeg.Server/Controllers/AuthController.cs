@@ -126,7 +126,7 @@ namespace Kroeg.Server.Controllers
             {
                 id = id.Substring(1);
                 var spl = id.Split(new char[] { '@' } , 2);
-                var host = spl.Length > 1 ? spl[2] : Request.Host.ToString();
+                var host = spl.Length > 1 ? spl[1] : Request.Host.ToString();
                 var ent = await _relevantEntities.FindEntitiesWithPreferredUsername(spl[0]);
                 var withHost = ent.FirstOrDefault(a => new Uri(a.Id).Host == host);
                 if (withHost == null && spl.Length == 1) return NotFound();

@@ -112,4 +112,11 @@
   content: attr(data-placeholder);
   display: block; /* For Firefox */
 }
+
+.kroeg-wysiwyg-area span.mention {
+  background: orangered;
+  color: white;
+  padding: 2px;
+  border-radius: 2px;
+}
 /** END wysiwyg **/

@@ -102,6 +102,7 @@ export class EntityStore {
         } 
 
         delete this._get[id];
+        if (!(id in this._cache)) return this._cache[data.id];
         return this._cache[id];
     }
 

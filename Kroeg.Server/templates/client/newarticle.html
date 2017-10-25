@@ -17,11 +17,11 @@
         </div>
         <div class="form-group">
             <label for="_content">Content:</label>
-            <div class="form-control" data-component="wysiwyg" data-placeholder="Enter your content here" data-name="content" id="_content"></textarea>
+            <div class="form-control" data-component="wysiwyg" data-tags="to" data-placeholder="Enter your content here" data-name="content" id="_content"></textarea>
         </div>
         <div class="form-group">
             <label for="_taggyTo">Send to:</label>
-            <div class="kroeg-taggy form-control" data-component="userpicker" data-name="to"><span class="kroeg-taggy-tags"></span><div class="kroeg-taggy-input"><input type="text" id="_taggyTo" value="" /></div></div>
+            <div class="kroeg-taggy form-control" data-component="userpicker" data-default="{{Renderer.loggedInAs.followers}}" data-name="to"><span class="kroeg-taggy-tags"></span><div class="kroeg-taggy-input"><input type="text" id="_taggyTo" value="" /></div></div>
             <label class="form-check-label">
                 <input type="checkbox" class="form-check-input" name="to" value="https://www.w3.org/ns/activitystreams#Public">
                 Also send publicly
