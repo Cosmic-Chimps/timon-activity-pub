@@ -61,7 +61,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             await AddCollection(objectData, "outbox", id);
             await AddCollection(objectData, "following", id);
             await AddCollection(objectData, "followers", id);
-            await AddCollection(objectData, "likes", id);
+            await AddCollection(objectData, "liked", id);
 
             var blocks = await AddCollection(objectData, "blocks", id);
             var blocked = await _collection.NewCollection(EntityStore, null, "_blocked", blocks.Id);

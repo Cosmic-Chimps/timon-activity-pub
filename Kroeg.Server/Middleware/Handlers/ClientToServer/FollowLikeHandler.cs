@@ -28,7 +28,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             var userData = Actor.Data;
             string targetCollectionId = null;
             if (MainObject.Type == "Like")
-                targetCollectionId = (string)userData["likes"].Single().Primitive;
+                targetCollectionId = (string) userData["liked"].SingleOrDefault()?.Primitive;
 
             if (targetCollectionId == null) return true;
 
