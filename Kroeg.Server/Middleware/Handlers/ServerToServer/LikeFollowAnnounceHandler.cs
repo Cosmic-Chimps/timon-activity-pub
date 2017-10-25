@@ -23,6 +23,8 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
         {
             _collection = collection;
             _data = data;
+            _relevantEntities = relevantEntities;
+            _serviceProvider = serviceProvider;
         }
 
         public override async Task<bool> Handle()

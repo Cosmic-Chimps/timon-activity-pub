@@ -32,6 +32,7 @@ using System.Net.WebSockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
 using Microsoft.Extensions.Primitives;
+using Microsoft.EntityFrameworkCore.Storage;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -684,8 +685,10 @@ namespace Kroeg.Server.Middleware
                 }
 
                 var flattened = await _flattener.FlattenAndStore(stagingStore, activity);
-
-                using (var transaction = _context.Database.BeginTransaction())
+                IDbContextTransaction transaction = null;
+                if (_context.Database.CurrentTransaction == null)
+                    transaction = _context.Database.BeginTransaction();
+                try
                 {
                     foreach (var type in _clientToServerHandlers)
                     {
@@ -698,9 +701,13 @@ namespace Kroeg.Server.Middleware
 
                     await _context.SaveChangesAsync();
 
-                    transaction.Commit();
+                    transaction?.Commit();
 
                     return flattened.Data;
+                }
+                finally
+                {
+                    transaction?.Dispose();
                 }
             }
         }
