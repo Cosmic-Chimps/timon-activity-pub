@@ -34,7 +34,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
             if (toUndo.Type == "Follow")
             {
                 collectionId = (string) toFollowOrLike.Data["followers"].SingleOrDefault()?.Primitive;
-                objectToAdd = (string) toFollowOrLike.Data["actor"].Single().Primitive;
+                objectToAdd = (string) toUndo.Data["actor"].Single().Primitive;
             }
             else if (toUndo.Type == "Like")
             {

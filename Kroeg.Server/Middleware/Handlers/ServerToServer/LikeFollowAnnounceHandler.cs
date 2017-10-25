@@ -44,7 +44,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
                     id.AddClaim(new Claim(JwtTokenSettings.ActorClaim, Actor.Id));
                     claims.AddIdentity(id);
 
-                    var handler = ActivatorUtilities.CreateInstance<GetEntityMiddleware.GetEntityHandler>(_serviceProvider, claims);
+                    var handler = ActivatorUtilities.CreateInstance<GetEntityMiddleware.GetEntityHandler>(_serviceProvider, claims, EntityStore);
                     var outbox = await EntityStore.GetEntity((string)Actor.Data["outbox"].First().Primitive, false);
                     await handler.ClientToServer(outbox, accept);
                 }
