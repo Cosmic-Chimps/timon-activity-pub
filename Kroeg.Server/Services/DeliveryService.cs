@@ -24,7 +24,6 @@ namespace Kroeg.Server.Services
         private readonly EntityData _configuration;
         private readonly CollectionTools _collectionTools;
         private readonly IEntityStore _store;
-        private readonly JwtTokenSettings _tokenSettings;
         private readonly RelevantEntitiesService _relevantEntities;
 
         public DeliveryService(APContext context, CollectionTools collectionTools, EntityData configuration, IEntityStore store, RelevantEntitiesService relevantEntities)

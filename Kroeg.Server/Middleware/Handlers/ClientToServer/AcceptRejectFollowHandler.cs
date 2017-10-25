@@ -30,13 +30,8 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
 
             if (subObject.Type != "Follow") return true;
 
-            if ((string)subObject.Data["object"].Single().Primitive != Actor.Id) throw new InvalidOperationException("Cannot Accept or Reject a Follow from another actor!");
+            if ((string)subObject.Data["object"].Single().Primitive != Actor.Id) return true;
             
-            if (MainObject.Type != "Like" && MainObject.Type != "Follow") return true;
-            var audience = DeliveryService.GetAudienceIds(MainObject.Data);
-            if (!audience.Contains(requestedUser.Id))
-                throw new InvalidOperationException("Accepts/Rejects of Follows should be sent to the actor of the follower!");
-
             bool isAccept = MainObject.Type == "Accept";
             var followers = await EntityStore.GetEntity((string)Actor.Data["followers"].Single().Primitive, false);
 
