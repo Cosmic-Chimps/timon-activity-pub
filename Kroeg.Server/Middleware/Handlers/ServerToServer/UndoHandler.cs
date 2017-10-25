@@ -23,7 +23,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
             if (MainObject.Type != "Undo") return true;
 
             var toUndo = await EntityStore.GetEntity((string) MainObject.Data["object"].Single().Primitive, true);
-            if (toUndo == null) throw new InvalidOperationException("Well, I can't undo an unknown object.");
+            if (toUndo == null) return true; 
 
             string collectionId = null, objectToAdd = null;
 
