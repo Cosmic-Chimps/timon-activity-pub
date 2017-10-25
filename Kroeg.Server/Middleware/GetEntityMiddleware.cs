@@ -189,11 +189,13 @@ namespace Kroeg.Server.Middleware
             catch (UnauthorizedAccessException e)
             {
                 context.Response.StatusCode = 403;
+                Console.WriteLine(e);
                 await context.Response.WriteAsync(e.Message);
             }
             catch (InvalidOperationException e)
             {
                 context.Response.StatusCode = 401;
+                Console.WriteLine(e);
                 await context.Response.WriteAsync(e.Message);
             }
 
