@@ -402,7 +402,7 @@ namespace Kroeg.Server.OStatusCompat
         private string _getId(ASTerm term)
         {
             if (term.Primitive != null) return (string) term.Primitive;
-            return (string) term.SubObject["id"].Single().Primitive;
+            return term.SubObject.Id;
         }
 
         private async Task<bool> _isSelf(string id)

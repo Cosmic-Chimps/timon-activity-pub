@@ -105,7 +105,7 @@ namespace Kroeg.Server.OStatusCompat
                     elem.Add(_buildAvatarLink(icon.SubObject));
             }
 
-            var id = ao["id"].First().Primitive;
+            var id = ao.Id;
 
             var selfAlternate = ao["_:atomAlternate"].FirstOrDefault()?.Primitive ?? id;
             elem.Add(
@@ -175,7 +175,7 @@ namespace Kroeg.Server.OStatusCompat
 
         private async Task _buildActivityObject(XElement elem, ASObject ao, string mainActor, bool sub)
         {
-            var idval = (string)ao["id"].First().Primitive;
+            var idval = ao.Id;
             if (_entityConfiguration.IsActivity(ao))
             {
                 await _buildActivity(elem, ao, mainActor);
@@ -244,7 +244,7 @@ namespace Kroeg.Server.OStatusCompat
                         new XElement(Atom + "link",
                             new XAttribute(NoNamespace + "rel", "alternate"),
                             new XAttribute(NoNamespace + "type", "text/html"),
-                            new XAttribute(NoNamespace + "href", ao["id"].First().Primitive)));
+                            new XAttribute(NoNamespace + "href", ao.Id)));
             }
 
             if ((string)ao["_:origin"].FirstOrDefault()?.Primitive != "atom")
@@ -252,7 +252,7 @@ namespace Kroeg.Server.OStatusCompat
                     new XAttribute(NoNamespace + "rel", sub ? "object" : "self"),
                     new XAttribute(NoNamespace + "type",
                         "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""),
-                    new XAttribute(NoNamespace + "href", ao["id"].First().Primitive)));
+                    new XAttribute(NoNamespace + "href", ao.Id)));
 
             foreach (var attachment in ao["attachment"])
             {
@@ -278,7 +278,7 @@ namespace Kroeg.Server.OStatusCompat
         private async Task<XElement> _buildActivity(XElement elem, ASObject ao, string mainActor, bool isRoot = false)
         {
             if (isRoot) _setNamespaces(elem);
-            var idval = (string) ao["id"].First().Primitive;
+            var idval = ao.Id;
             var verb = (string)ao["type"].First().Primitive;
             if (VerbTranslation.ContainsKey(verb)) verb = VerbTranslation[verb];
 
@@ -308,7 +308,7 @@ namespace Kroeg.Server.OStatusCompat
                 elem.Add(_createAuthor(author));
             }
 
-            var self = (string) ao["_:atomRetrieveUrl"].Concat(ao["id"]).First().Primitive;
+            var self = ao["atomUri"].Select(a => (string) a.Primitive).Concat(new[] { ao.Id }).First();
 
             if ((string)ao["_:origin"].FirstOrDefault()?.Primitive == "atom")
             {
@@ -334,11 +334,11 @@ namespace Kroeg.Server.OStatusCompat
                     new XElement(Atom + "link",
                         new XAttribute(NoNamespace + "rel", "alternate"),
                         new XAttribute(NoNamespace + "type", "text/html"),
-                        new XAttribute(NoNamespace + "href", ao["id"].First().Primitive)),
+                        new XAttribute(NoNamespace + "href", ao.Id)),
                     new XElement(Atom + "link",
                         new XAttribute(NoNamespace + "rel", "self"),
                         new XAttribute(NoNamespace + "type", "application/atom+xml"),
-                        new XAttribute(NoNamespace + "href", _makeAtomUrl((string)ao["id"].First().Primitive))));
+                        new XAttribute(NoNamespace + "href", _makeAtomUrl(ao.Id))));
             }
 
             if (targetObject == null) return elem;
@@ -390,7 +390,7 @@ namespace Kroeg.Server.OStatusCompat
             var elem = new XElement(Atom + "feed");
             _setNamespaces(elem);
 
-            elem.Add(new XElement(Atom + "id", ao["id"].First().Primitive));
+            elem.Add(new XElement(Atom + "id", ao.Id));
 
             if (ao["attributedTo"].Any())
                 elem.Add(_createAuthor(await _get(ao["attributedTo"].First())));
@@ -408,18 +408,18 @@ namespace Kroeg.Server.OStatusCompat
             elem.Add(new XElement(Atom + "link",
                 new XAttribute(NoNamespace + "rel", "self"),
                 new XAttribute(NoNamespace + "type", "application/atom+xml"),
-                new XAttribute(NoNamespace + "href", (isNativeAtom ? ao["id"].First().Primitive : _makeAtomUrl((string)ao["id"].First().Primitive)))));
+                new XAttribute(NoNamespace + "href", (isNativeAtom ? ao.Id : _makeAtomUrl(ao.Id)))));
 
             if (!isNativeAtom)
                 elem.Add(
                     new XElement(Atom + "link",
                         new XAttribute(NoNamespace + "rel", "alternate"),
                         new XAttribute(NoNamespace + "type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""),
-                        new XAttribute(NoNamespace + "href", ao["id"].First().Primitive)),
+                        new XAttribute(NoNamespace + "href", ao.Id)),
                     new XElement(Atom + "link",
                         new XAttribute(NoNamespace + "rel", "alternate"),
                         new XAttribute(NoNamespace + "type", "text/html"),
-                        new XAttribute(NoNamespace + "href", ao["id"].First().Primitive)));
+                        new XAttribute(NoNamespace + "href", ao.Id)));
 
             foreach (var url in ao["url"])
                 elem.Add(new XElement(Atom + "link",

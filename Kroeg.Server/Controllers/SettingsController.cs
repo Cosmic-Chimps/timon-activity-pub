@@ -229,7 +229,7 @@ namespace Kroeg.Server.Controllers
             }
             else
             {
-                obj["id"].Clear();
+                obj.Id = null;
                 obj.Replace("attributedTo", ASTerm.MakeId(User.FindFirstValue(JwtTokenSettings.ActorClaim)));
                 obj = (await _flattener.FlattenAndStore(_entityStore, obj)).Data;
                 await _entityStore.CommitChanges();

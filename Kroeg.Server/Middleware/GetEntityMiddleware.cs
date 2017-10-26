@@ -670,9 +670,9 @@ namespace Kroeg.Server.Middleware
 
                 if (activity.Type.Contains("https://www.w3.org/ns/activitystreams#Create"))
                 {
-                    activity["id"].Clear();
+                    activity.Id = null;
                     if (activity["object"].SingleOrDefault()?.SubObject != null)
-                        activity["object"].Single().SubObject["id"].Clear();
+                        activity["object"].Single().SubObject.Id = null;
                 }
 
                 var flattened = await _flattener.FlattenAndStore(stagingStore, activity);
