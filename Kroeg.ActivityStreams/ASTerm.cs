@@ -60,7 +60,7 @@ namespace Kroeg.ActivityStreams
             if (obj["@type"] != null && obj["@value"] == null)
                 return new ASTerm { SubObject = ASObject.Parse(obj) };
             else if (obj["@id"] != null)
-                return new ASTerm { Primitive = obj["@id"].ToObject<string>(), Id = obj["@id"].ToObject<string>() };
+                return new ASTerm { Id = obj["@id"].ToObject<string>() };
             else if (obj["@type"] != null && obj["@value"] != null)
                 return new ASTerm { Primitive = obj["@value"].ToObject<object>(), Type = obj["@type"].ToObject<string>() };
             else if (obj["@value"] != null)
