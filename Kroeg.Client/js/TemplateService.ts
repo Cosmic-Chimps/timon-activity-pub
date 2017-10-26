@@ -174,6 +174,10 @@ export class TemplateRenderer {
             let renderId = itemId;
             if ("x-render-id" in item.arguments)
                 renderId = this._parse(item.arguments["x-render-id"][0], data, regs, true) as string;
+
+            if (typeof renderId == "object")
+                return this._render(template, renderId as AS.ASObject, regs, renderResult, true);
+
             if (renderId != itemId)
             {
                 let rendered = this._render(template, null, regs, renderResult, false);
