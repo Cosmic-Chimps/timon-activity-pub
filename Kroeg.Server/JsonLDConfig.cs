@@ -27,8 +27,8 @@ namespace Kroeg.Server {
                 ["uploadMedia"] = new JObject { ["@id"] = "as:uploadMedia", ["@type"] = "@id" },
 
                 ["kroeg"] = "https://puckipedia.com/kroeg/ns#",
-                ["settingsEndpoint"] = "kroeg:settingsEndpoint",
-                ["relevantObjects"] = "kroeg:relevantObjects",
+                ["settingsEndpoint"] = new JObject { ["@id"] = "kroeg:settingsEndpoint", ["@type"] = "@id" },
+                ["relevantObjects"] = new JObject { ["@id"] = "kroeg:relevantObjects", ["@type"] = "@id" }
             }
         );
     }

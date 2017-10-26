@@ -72,7 +72,9 @@ namespace Kroeg.Server.Tools
             "https://www.w3.org/ns/activitystreams#audience", "http://www.w3.org/ns/ldp#inbox",
             "https://www.w3.org/ns/activitystreams#outbox", "https://www.w3.org/ns/activitystreams#followers",
             "https://www.w3.org/ns/activitystreams#following", "https://www.w3.org/ns/activitystreams#followers",
-            "https://www.w3.org/ns/activitystreams#partOf"
+            "https://www.w3.org/ns/activitystreams#partOf", "https://www.w3.org/ns/activitystreams#jwks",
+            "https://www.w3.org/ns/activitystreams#uploadMedia", "https://puckipedia.com/kroeg/ns#settingsEndpoint",
+            "https://puckipedia.com/kroeg/ns#relevantObjects",
         };
 
         private static readonly HashSet<string> UnflattenIfOwner = new HashSet<string>

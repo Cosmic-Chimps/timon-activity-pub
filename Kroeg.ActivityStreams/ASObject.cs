@@ -24,6 +24,7 @@ namespace Kroeg.ActivityStreams
         private static JsonLD.API _api = new JsonLD.API(_resolve);
         private static string _contextUrl;
 
+        public List<string> CompactedTypes => Type.Select(_ldContext.CompactIRI).ToList();
         public static async Task SetContext(JToken context, string contextUrl)
         {
             _context = context;
@@ -111,11 +112,12 @@ namespace Kroeg.ActivityStreams
         {
             var newObject = new JObject();
             if (Id != null) newObject["@id"] = Id;
-            newObject["@type"] = new JArray(Type);
+            if (Type.Count > 0)
+                newObject["@type"] = new JArray(Type);
             foreach (var kv in _terms)
                 if (kv.Value.Count == 0)
                     continue;
-                else if (_ldContext.Has(kv.Key) && _ldContext[kv.Key].ContainerMapping == "@list")
+                else if (_ldContext.TermDefinitions.Any(a => a.Value.IriMapping == kv.Key && a.Value.ContainerMapping == "@list"))
                     newObject[kv.Key] = new JArray(new JObject { ["@list"] = new JArray(kv.Value.Select(a => a.Serialize(false)).ToArray()) });
                 else
                     newObject[kv.Key] = new JArray(kv.Value.Select(a => a.Serialize(false)).ToArray());

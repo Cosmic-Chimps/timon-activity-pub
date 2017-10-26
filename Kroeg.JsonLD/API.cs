@@ -480,141 +480,6 @@ namespace Kroeg.JsonLD
             return result;
         }
 
-        private string _compactIri(Context activeContext, InverseContext inverseContext, string iri, JToken value = null, bool vocab = false, bool reverse = false)
-        {
-            if (iri == null) return null;
-            if (vocab && inverseContext.Data.ContainsKey(iri))
-            {
-                var defaultLanguage = activeContext.DefaultLanguage ?? "@none";
-                var containers = new List<string>();
-                var typeLanguage = "@language";
-                var typeLanguageValue = "@null";
-                if (value != null && value.Type == JTokenType.Object) containers.Add("@index");
-                if (reverse)
-                {
-                    typeLanguage = "@type";
-                    typeLanguageValue = "@reverse";
-                    containers.Add("@set");
-                }
-                if (value?.Type == JTokenType.Object && value["@list"] != null)
-                {
-                    if (value["@index"] == null) containers.Add("@list");
-                    var list = (JArray)value["@list"];
-                    string commonType = null;
-                    string commonLanguage = null;
-                    if (list.Count == 0) commonLanguage = defaultLanguage;
-                    foreach (var item in list)
-                    {
-                        var itemLanguage = "@none";
-                        var itemType = "@none";
-                        if (item["@value"] != null)
-                        {
-                            if (item["@language"] != null) itemLanguage = item["@language"].ToObject<string>();
-                            else if (item["@type"] != null) itemType = item["@type"].ToObject<string>();
-                            else itemLanguage = "@null";
-                        }
-                        else itemType = "@id";
-
-                        if (commonLanguage == null) commonLanguage = itemLanguage;
-                        else if (commonLanguage != itemLanguage && item["@value"] != null) commonLanguage = "@none";
-
-                        if (commonType == null) commonType = itemType;
-                        else if (itemType != commonType) commonType = "@none";
-
-                        if (commonLanguage == "@none" && commonType == "@none") break;
-                    }
-
-                    if (commonLanguage == null) commonLanguage = "@none";
-                    if (commonType == null) commonType = "@none";
-                    if (commonType != "@none") typeLanguage = "@type"; typeLanguageValue = commonType;
-                }
-                else
-                {
-                    if (value?.Type == JTokenType.Object && value["@value"] != null)
-                    {
-                        if (value["@language"] != null && value["@index"] == null)
-                        {
-                            typeLanguageValue = value["@language"].ToObject<string>();
-                            containers.Add("@language");
-                        }
-                        else if (value["@type"] != null)
-                        {
-                            typeLanguageValue = value["@type"].ToObject<string>();
-                            typeLanguage = "@type";
-                        }
-                    }
-                    else
-                    {
-                        typeLanguage = "@type";
-                        typeLanguageValue = "@id";
-                    }
-
-                    containers.Add("@set");
-                }
-
-                containers.Add("@none");
-                if (typeLanguageValue == null) typeLanguageValue = "@null";
-
-                var preferredValues = new List<string>();
-                if (typeLanguageValue == "@reverse") preferredValues.Add("@reverse");
-                if ((typeLanguageValue == "@id" || typeLanguageValue == "@reverse") && (value?.Type == JTokenType.Object && value["@id"] != null))
-                {
-                    var term = _compactIri(activeContext, inverseContext, value["@id"].ToObject<string>(), null, true, true);
-                    if (activeContext.Has(term))
-                        preferredValues.AddRange(new[] { "@vocab", "@id", "@none" });
-                    else
-                        preferredValues.AddRange(new[] { "@id", "@vocab", "@none" });
-                }
-                else
-                    preferredValues.AddRange(new[] { typeLanguageValue, "@none" });
-
-                var resultTerm = _selectTerm(inverseContext, iri, containers, typeLanguage, preferredValues);
-                if (resultTerm != null) return resultTerm;
-
-            }
-
-            if (vocab && activeContext.VocabularyMapping != null)
-            {
-                if (iri.StartsWith(activeContext.VocabularyMapping) && iri.Length > activeContext.VocabularyMapping.Length)
-                {
-                    var suffix = iri.Substring(activeContext.VocabularyMapping.Length);
-                    if (!activeContext.Has(suffix)) return suffix;
-                }
-            }
-
-            string compactIri = null;
-            foreach (var kv in activeContext.TermDefinitions)
-            {
-                var term = kv.Key;
-                var termDefinition = kv.Value;
-                if (term.Contains(":")) continue;
-                if (termDefinition == null || termDefinition.IriMapping == iri || !iri.StartsWith(termDefinition.IriMapping)) continue;
-                var candidate = term + ":" + iri.Substring(termDefinition.IriMapping.Length);
-                if (compactIri == null || candidate.Length < compactIri.Length || candidate.CompareTo(compactIri) < 0) compactIri = candidate;
-            }
-
-            if (compactIri != null) return compactIri;
-            if (!vocab && activeContext.BaseIri != null) iri = (new Uri(iri)).MakeRelativeUri(new Uri(activeContext.BaseIri)).ToString();
-            return iri;
-        }
-
-        private string _selectTerm(InverseContext inverseContext, string iri, List<string> containers, string typeLanguage, List<string> preferredValues)
-        {
-            var containerMap = inverseContext.Data[iri];
-            foreach (var container in containers)
-            {
-                if (!containerMap.ContainsKey(container)) continue;
-
-                var typeLanguageMap = containerMap[container];
-
-                var valueMap = typeLanguage == "@language" ? typeLanguageMap.Language : typeLanguageMap.Type;
-                foreach (var item in preferredValues)
-                    if (valueMap.ContainsKey(item)) return valueMap[item];
-            }
-
-            return null;
-        }
-
         private JToken _compactValue(Context activeContext, InverseContext inverseContext, string activeProperty, JObject value)
         {
             var numberMembers = value.Count;
@@ -622,8 +487,8 @@ namespace Kroeg.JsonLD
             if (numberMembers > 2) return value;
             if (value["@id"] != null)
             {
-                if (numberMembers == 1 && activeContext[activeProperty]?.TypeMapping == "@id") return _compactIri(activeContext, inverseContext, value["@id"].ToObject<string>());
-                else if (numberMembers == 1 && activeContext[activeProperty]?.TypeMapping == "@vocab") return _compactIri(activeContext, inverseContext, value["@id"].ToObject<string>(), null, true);
+                if (numberMembers == 1 && activeContext[activeProperty]?.TypeMapping == "@id") return activeContext._compactIri(inverseContext, value["@id"].ToObject<string>());
+                else if (numberMembers == 1 && activeContext[activeProperty]?.TypeMapping == "@vocab") return activeContext._compactIri(inverseContext, value["@id"].ToObject<string>(), null, true);
                 else return value;
             }
 
@@ -668,19 +533,19 @@ namespace Kroeg.JsonLD
                 {
 
                     if (expandedValue.Type == JTokenType.String)
-                        compactedValue = _compactIri(activeContext, inverseContext, expandedValue.ToObject<string>(), null, expandedProperty == "@type");
+                        compactedValue = activeContext._compactIri(inverseContext, expandedValue.ToObject<string>(), null, expandedProperty == "@type");
                     else
                     {
                         var arr = new JArray();
                         foreach (var kv2 in (JArray)expandedValue)
-                            arr.Add(_compactIri(activeContext, inverseContext, kv2.ToObject<string>(), null, true));
+                            arr.Add(activeContext._compactIri(inverseContext, kv2.ToObject<string>(), null, true));
                         if (arr.Count == 1)
                             compactedValue = arr[0];
                         else
                             compactedValue = arr;
                     }
 
-                    var alias = _compactIri(activeContext, inverseContext, expandedProperty, null, true);
+                    var alias = activeContext._compactIri(inverseContext, expandedProperty, null, true);
                     result[alias] = compactedValue;
                     continue;
                 }
@@ -721,7 +586,7 @@ namespace Kroeg.JsonLD
 
                     if (compactedValue.HasValues)
                     {
-                        var alias = _compactIri(activeContext, inverseContext, "@reverse", null, true);
+                        var alias = activeContext._compactIri(inverseContext, "@reverse", null, true);
                         result[alias] = compactedValue;
                     }
                     continue;
@@ -730,14 +595,14 @@ namespace Kroeg.JsonLD
                 if (expandedProperty == "@index" && activeContext[activeProperty]?.ContainerMapping == "@index") continue;
                 if (expandedProperty == "@index" || expandedProperty == "@value" || expandedProperty == "@language")
                 {
-                    var alias = _compactIri(activeContext, inverseContext, expandedProperty, null, true);
+                    var alias = activeContext._compactIri(inverseContext, expandedProperty, null, true);
                     result[alias] = expandedValue;
                     continue;
                 }
 
                 if (((JArray)expandedValue).Count == 0)
                 {
-                    var itemActiveProperty = _compactIri(activeContext, inverseContext, expandedProperty, expandedValue, true, insideReverse);
+                    var itemActiveProperty = activeContext._compactIri(inverseContext, expandedProperty, expandedValue, true, insideReverse);
                     if (result[itemActiveProperty] == null) result[itemActiveProperty] = new JArray();
                     else if (result[itemActiveProperty].Type != JTokenType.Array) result[itemActiveProperty] = new JArray(result[itemActiveProperty]);
                 }
@@ -746,7 +611,7 @@ namespace Kroeg.JsonLD
                     var ar = (JArray)expandedValue;
                     foreach (var expandedItem in ar)
                     {
-                        var itemActiveProperty = _compactIri(activeContext, inverseContext, expandedProperty, expandedItem, true, insideReverse);
+                        var itemActiveProperty = activeContext._compactIri(inverseContext, expandedProperty, expandedItem, true, insideReverse);
                         var container = activeContext[itemActiveProperty]?.ContainerMapping;
                         var compactedItem = _compact(activeContext, inverseContext, itemActiveProperty, expandedItem["@list"] != null ? expandedItem["@list"] : expandedItem);
                         if (expandedItem["@list"] != null)
@@ -755,13 +620,13 @@ namespace Kroeg.JsonLD
                             if (container != "@list")
                             {
                                 var resObj = new JObject();
-                                resObj[_compactIri(activeContext, inverseContext, "@list", compactedItem)] = compactedItem;
+                                resObj[activeContext._compactIri(inverseContext, "@list", compactedItem)] = compactedItem;
                                 compactedItem = resObj;
 
                                 if (expandedItem["@index"] != null)
-                                    compactedItem[_compactIri(activeContext, inverseContext, "@index")] = expandedItem["@index"];
+                                    compactedItem[activeContext._compactIri(inverseContext, "@index")] = expandedItem["@index"];
                             }
-                            else
+                            else if (result[itemActiveProperty] != null)
                             {
                                 throw new Exception("compaction to list of lists");
                             }
@@ -1011,7 +876,9 @@ namespace Kroeg.JsonLD
 
         public async Task<Context> BuildContext(JToken data)
         {
-            return await _processContext(new Context(), data);
+            var context = await _processContext(new Context(), data);
+            context._inverseContext = _createInverseContext(context);
+            return context;
         }
 
         private Triple _objectToRdf(JObject obj)
@@ -1167,14 +1034,150 @@ namespace Kroeg.JsonLD
         public string VocabularyMapping { get; set; }
         public string DefaultLanguage { get; set; }
 
-        internal Dictionary<string, TermDefinition> TermDefinitions { get; } = new Dictionary<string, TermDefinition>();
+        public Dictionary<string, TermDefinition> TermDefinitions { get; } = new Dictionary<string, TermDefinition>();
 
         public bool Has(string term) => TermDefinitions.ContainsKey(term);
         internal void Add(string term, TermDefinition definition) => TermDefinitions[term] = definition;
         internal void Remove(string term) => TermDefinitions.Remove(term);
         public TermDefinition this[string term] => Has(term) ? TermDefinitions[term] : null;
 
+        internal InverseContext _inverseContext;
 
+        internal string _compactIri(InverseContext inverseContext, string iri, JToken value = null, bool vocab = false, bool reverse = false)
+        {
+            if (iri == null || iri == "https://www.w3.org/ns/activitystreams#Public") // XX remove once the spec gets its shit together
+                return iri;
+            if (vocab && inverseContext.Data.ContainsKey(iri))
+            {
+                var defaultLanguage = DefaultLanguage ?? "@none";
+                var containers = new List<string>();
+                var typeLanguage = "@language";
+                var typeLanguageValue = "@null";
+                if (value != null && value.Type == JTokenType.Object) containers.Add("@index");
+                if (reverse)
+                {
+                    typeLanguage = "@type";
+                    typeLanguageValue = "@reverse";
+                    containers.Add("@set");
+                }
+                if (value?.Type == JTokenType.Object && value["@list"] != null)
+                {
+                    if (value["@index"] == null) containers.Add("@list");
+                    var list = (JArray)value["@list"];
+                    string commonType = null;
+                    string commonLanguage = null;
+                    if (list.Count == 0) commonLanguage = defaultLanguage;
+                    foreach (var item in list)
+                    {
+                        var itemLanguage = "@none";
+                        var itemType = "@none";
+                        if (item["@value"] != null)
+                        {
+                            if (item["@language"] != null) itemLanguage = item["@language"].ToObject<string>();
+                            else if (item["@type"] != null) itemType = item["@type"].ToObject<string>();
+                            else itemLanguage = "@null";
+                        }
+                        else itemType = "@id";
+
+                        if (commonLanguage == null) commonLanguage = itemLanguage;
+                        else if (commonLanguage != itemLanguage && item["@value"] != null) commonLanguage = "@none";
+
+                        if (commonType == null) commonType = itemType;
+                        else if (itemType != commonType) commonType = "@none";
+
+                        if (commonLanguage == "@none" && commonType == "@none") break;
+                    }
+
+                    if (commonLanguage == null) commonLanguage = "@none";
+                    if (commonType == null) commonType = "@none";
+                    if (commonType != "@none") typeLanguage = "@type"; typeLanguageValue = commonType;
+                }
+                else
+                {
+                    if (value?.Type == JTokenType.Object && value["@value"] != null)
+                    {
+                        if (value["@language"] != null && value["@index"] == null)
+                        {
+                            typeLanguageValue = value["@language"].ToObject<string>();
+                            containers.Add("@language");
+                        }
+                        else if (value["@type"] != null)
+                        {
+                            typeLanguageValue = value["@type"].ToObject<string>();
+                            typeLanguage = "@type";
+                        }
+                    }
+                    else
+                    {
+                        typeLanguage = "@type";
+                        typeLanguageValue = "@id";
+                    }
+
+                    containers.Add("@set");
+                }
+
+                containers.Add("@none");
+                if (typeLanguageValue == null) typeLanguageValue = "@null";
+
+                var preferredValues = new List<string>();
+                if (typeLanguageValue == "@reverse") preferredValues.Add("@reverse");
+                if ((typeLanguageValue == "@id" || typeLanguageValue == "@reverse") && (value?.Type == JTokenType.Object && value["@id"] != null))
+                {
+                    var term = _compactIri(inverseContext, value["@id"].ToObject<string>(), null, true, true);
+                    if (Has(term))
+                        preferredValues.AddRange(new[] { "@vocab", "@id", "@none" });
+                    else
+                        preferredValues.AddRange(new[] { "@id", "@vocab", "@none" });
+                }
+                else
+                    preferredValues.AddRange(new[] { typeLanguageValue, "@none" });
+
+                var resultTerm = _selectTerm(inverseContext, iri, containers, typeLanguage, preferredValues);
+                if (resultTerm != null) return resultTerm;
+
+            }
+
+            if (vocab && VocabularyMapping != null)
+            {
+                if (iri.StartsWith(VocabularyMapping) && iri.Length > VocabularyMapping.Length)
+                {
+                    var suffix = iri.Substring(VocabularyMapping.Length);
+                    if (!Has(suffix)) return suffix;
+                }
+            }
+
+            string compactIri = null;
+            foreach (var kv in TermDefinitions)
+            {
+                var term = kv.Key;
+                var termDefinition = kv.Value;
+                if (term.Contains(":")) continue;
+                if (termDefinition == null || termDefinition.IriMapping == iri || !iri.StartsWith(termDefinition.IriMapping)) continue;
+                var candidate = term + ":" + iri.Substring(termDefinition.IriMapping.Length);
+                if (compactIri == null || candidate.Length < compactIri.Length || candidate.CompareTo(compactIri) < 0) compactIri = candidate;
+            }
+
+            if (compactIri != null) return compactIri;
+            if (!vocab && BaseIri != null) iri = (new Uri(iri)).MakeRelativeUri(new Uri(BaseIri)).ToString();
+            return iri;
+        }
+
+        private static string _selectTerm(InverseContext inverseContext, string iri, List<string> containers, string typeLanguage, List<string> preferredValues)
+        {
+            var containerMap = inverseContext.Data[iri];
+            foreach (var container in containers)
+            {
+                if (!containerMap.ContainsKey(container)) continue;
+
+                var typeLanguageMap = containerMap[container];
+
+                var valueMap = typeLanguage == "@language" ? typeLanguageMap.Language : typeLanguageMap.Type;
+                foreach (var item in preferredValues)
+                    if (valueMap.ContainsKey(item)) return valueMap[item];
+            }
+
+            return null;
+        }
 
         /// <summary>
         /// 6.2
@@ -1346,6 +1349,11 @@ namespace Kroeg.JsonLD
         public string ExpandIRI(string value, bool documentRelative = false, bool vocab = true)
         {
             return _expandIri(value, documentRelative, vocab);
+        }
+
+        public string CompactIRI(string value)
+        {
+            return _compactIri(_inverseContext, value, null, true);
         }
 
         public Context Clone()

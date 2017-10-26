@@ -150,7 +150,7 @@ export class TemplateRenderer {
     private _parse(item: TemplateItem, data: AS.ASObject, regs: Registers, override?: boolean): any {
         if (!override && item.type == TemplateItemType.Text) return item.data;
 
-        regs.object = data || {};
+        regs.object = data || {id: null};
         return item.builder(regs);
     }
 

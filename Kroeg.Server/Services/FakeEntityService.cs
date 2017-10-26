@@ -50,7 +50,7 @@ namespace Kroeg.Server.Services
                 endpoints.Replace("relevantObjects", ASTerm.MakeId(basePath + "settings/relevant"));
                 endpoints.Replace("proxyUrl", ASTerm.MakeId(basePath + "auth/proxy"));
                 endpoints.Replace("jwks", ASTerm.MakeId(basePath + "auth/jwks?id=" + Uri.EscapeDataString(entity.Id)));
-                endpoints.Replace("sharedInbox", ASTerm.MakeId(basePath + "/auth/sharedInbox"));
+                endpoints.Replace("sharedInbox", ASTerm.MakeId(basePath + "auth/sharedInbox"));
                 endpoints.Id = entity.Id + "#endpoints";
                 return endpoints;
             }

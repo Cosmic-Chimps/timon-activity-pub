@@ -95,7 +95,8 @@ export class EntityStore {
         let processor = new jsonld.JsonLdProcessor();
         
         let data = await this.session.getObject(id);
-        let flattened = await processor.flatten(data, data as any) as any;
+        let context = {"@context": window.location.origin + "/render/context"};
+        let flattened = await processor.flatten(data, context as any) as any;
 
         for (let item of flattened["@graph"]) {
             this._addToCache(item["id"], item);

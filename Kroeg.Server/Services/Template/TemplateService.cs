@@ -39,32 +39,37 @@ namespace Kroeg.Server.Services.Template
 
             public object[] get(string name)
             {
+                if (name == "id")
+                    if (obj.Id != null) return new object[] { obj.Id };
+                    else return new object[] {};
+                if (name == "type") return obj.CompactedTypes.ToArray();
                 return obj[name].Select(a => a.Id ?? a.Primitive ?? a.SubObject).ToArray();
             }
 
             public object take(string name, object def)
             {
-                return obj[name].Select(a => a.Id ?? a.Primitive ?? a.SubObject).FirstOrDefault() ?? def;
+                return get(name).FirstOrDefault() ?? def;
             }
 
             public object take(string name)
             {
-                return obj[name].Select(a => a.Id ?? a.Primitive ?? a.SubObject).FirstOrDefault() ?? "";
+                return get(name).FirstOrDefault() ?? "";
             }
 
             public bool has(string name)
             {
-                return obj[name].Count > 0;
+                return get(name).Length > 0;
             }
 
             public bool contains(string name, object val)
             {
-                return obj[name].Any(a => (string) a.Primitive == (string) val);
+                return get(name).Any(a => a is string && (string) a == (string) val);
             }
 
             public bool containsAny(string name, object[] vals)
             {
-                return vals.Any(a => obj[name].Any(b => (string) b.Primitive == (string) a));
+                var check = get(name);
+                return vals.Any(a => a is string && check.Any(b => (string) b == (string) a));
             }
         }
 
