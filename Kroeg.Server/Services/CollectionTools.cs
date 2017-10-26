@@ -94,7 +94,7 @@ namespace Kroeg.Server.Services
             {
                 Collection = collection,
                 Element = entity,
-                IsPublic = DeliveryService.IsPublic(entity.Data)
+                IsPublic = DeliveryService.IsPublic(entity.Data) || _configuration.IsActor(entity.Data)
             };
 
             await _context.CollectionItems.AddAsync(ci);
