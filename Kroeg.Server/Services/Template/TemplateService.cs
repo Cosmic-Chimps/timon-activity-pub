@@ -188,16 +188,20 @@ namespace Kroeg.Server.Services.Template
             if (item.Arguments.ContainsKey("x-render") && parse)
             {
                 var template = item.Arguments["x-render"][0].Data;
-                string id;
-                if (item.Arguments.ContainsKey("x-render-id"))
-                    id = (string) _parse(item.Arguments["x-render-id"][0].Data, data, regs);
+                string id = null;
+                ASObject objData = null;
+                if (item.Arguments.ContainsKey("x-render-id")) 
+                {
+                    var res = _parse(item.Arguments["x-render-id"][0].Data, data, regs);
+                    if (res is ASObject) objData = (ASObject) res;
+                    else id = (string) res;
+                }
                 else
                     id = (string) data["id"].First().Primitive;
 
-                ASObject objData = null;
-                if (data["id"].Any(a => (string) a.Primitive == id))
+                if (objData == null && data["id"].Any(a => (string) a.Primitive == id))
                     objData = data;
-                else
+                else if (objData == null)
                 {
                     APEntity obj = await entityStore.GetEntity(id, true);
                     if (obj != null)
