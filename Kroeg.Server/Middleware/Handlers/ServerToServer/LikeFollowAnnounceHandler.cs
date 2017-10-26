@@ -38,6 +38,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
                     accept.Type.Add("https://www.w3.org/ns/activitystreams#Accept");
                     accept.Replace("actor", ASTerm.MakeId(Actor.Id));
                     accept.Replace("object", ASTerm.MakeId(MainObject.Id));
+                    accept["to"].AddRange(MainObject.Data["actor"]);
 
                     var claims = new ClaimsPrincipal();
                     var id = new ClaimsIdentity();
