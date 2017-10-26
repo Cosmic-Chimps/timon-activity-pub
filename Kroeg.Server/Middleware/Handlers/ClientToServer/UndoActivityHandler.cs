@@ -22,34 +22,34 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
         public override async Task<bool> Handle()
         {
             if (MainObject.Type != "Undo") return true;
-            var toUndoId = (string) MainObject.Data["object"].Single().Primitive;
+            var toUndoId = MainObject.Data["object"].Single().Id;
             var toUndo = await EntityStore.GetEntity(toUndoId, false);
 
             if (toUndo == null || !toUndo.IsOwner) throw new InvalidOperationException("Object to undo does not exist!");
             if (toUndo.Type != "Like" && toUndo.Type != "Follow" && toUndo.Type != "Block") throw new InvalidOperationException("Cannot undo this type of object!");
-            if (!toUndo.Data["actor"].Any(a => (string) a.Primitive == Actor.Id)) throw new InvalidOperationException("You are not allowed to undo this activity!");
+            if (!toUndo.Data["actor"].Any(a => a.Id == Actor.Id)) throw new InvalidOperationException("You are not allowed to undo this activity!");
 
             var userData = Actor.Data;
             string targetCollectionId = null;
             if (toUndo.Type == "Block")
             {
-                var blocksCollection = await EntityStore.GetEntity((string)userData["blocks"].Single().Primitive, false);
-                var blockedCollection = await EntityStore.GetEntity((string)blocksCollection.Data["_blocked"].Single().Primitive, false);
+                var blocksCollection = await EntityStore.GetEntity(userData["blocks"].Single().Id, false);
+                var blockedCollection = await EntityStore.GetEntity(blocksCollection.Data["_blocked"].Single().Id, false);
 
                 await _collection.RemoveFromCollection(blocksCollection, toUndo);
 
-                var blockedUser = (string) toUndo.Data["object"].Single().Primitive;
+                var blockedUser = toUndo.Data["object"].Single().Id;
                 await _collection.RemoveFromCollection(blockedCollection, blockedUser);
 
                 return true;
             }
             else if (toUndo.Type == "Like")
-                targetCollectionId = (string)userData["likes"].Single().Primitive;
+                targetCollectionId = userData["likes"].Single().Id;
             else if (toUndo.Type == "Follow")
-                targetCollectionId = (string)userData["following"].Single().Primitive;
+                targetCollectionId = userData["following"].Single().Id;
 
             var targetCollection = await EntityStore.GetEntity(targetCollectionId, false);
-            var targetId = (string) MainObject.Data["object"].Single().Primitive;
+            var targetId = MainObject.Data["object"].Single().Id;
 
             await _collection.RemoveFromCollection(targetCollection, targetId);
             return true;

@@ -23,7 +23,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             if (MainObject.Type != "Remove" && MainObject.Type != "Add") return true;
             var activityData = MainObject.Data;
 
-            var targetEntity = await EntityStore.GetEntity((string) activityData["target"].Single().Primitive, false);
+            var targetEntity = await EntityStore.GetEntity(activityData["target"].Single().Id, false);
             if (targetEntity == null)
                 throw new InvalidOperationException("Cannot add or remove from a non-existant collection!");
 
@@ -35,7 +35,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
 
             // XXX todo: add authorization on here
 
-            var objectId = (string) activityData["object"].Single().Primitive;
+            var objectId = activityData["object"].Single().Id;
 
             if (MainObject.Type == "Add")
             {

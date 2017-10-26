@@ -23,14 +23,14 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             if (MainObject.Type != "Block") return true;
             var activityData = MainObject.Data;
 
-            var toBlock = (string) activityData["object"].First().Primitive;
+            var toBlock = activityData["object"].First().Id;
             var entity = await EntityStore.GetEntity(toBlock, true);
             if (entity == null) throw new InvalidOperationException("Cannot block a non-existant object");
 
-            var blockscollection = await EntityStore.GetEntity((string)Actor.Data["blocks"].First().Primitive, false);
+            var blockscollection = await EntityStore.GetEntity(Actor.Data["blocks"].First().Id, false);
             await _collection.AddToCollection(blockscollection, MainObject);
 
-            var blockedcollection = await EntityStore.GetEntity((string)blockscollection.Data["_blocked"].First().Primitive, false);
+            var blockedcollection = await EntityStore.GetEntity(blockscollection.Data["_blocked"].First().Id, false);
             await _collection.AddToCollection(blockedcollection, entity);
 
             return true;

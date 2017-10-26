@@ -43,7 +43,7 @@ namespace Kroeg.Server.Services.EntityStore
             {
                 if (item.StartsWith(prefix)) continue;
                 var data = _entities[item].Data;
-                if (data["_:origin"].Any((a) => (string) a.Primitive == "atom") && data["_:atomRetrieveUrl"].Any((a) => ((string) a.Primitive).StartsWith(prefix))) continue;
+                if (data["_:origin"].Any((a) => (string) a.Primitive == "atom") && data["atomUri"].Any((a) => ((string) a.Primitive).StartsWith(prefix))) continue;
 
                 _entities.Remove(item);
             }

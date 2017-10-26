@@ -43,7 +43,7 @@ namespace Kroeg.Server.BackgroundTasks
             if (targetActor == null || actor == null) return;
 
             var hubUrl = (string) targetActor.Data["_:hubUrl"].FirstOrDefault()?.Primitive;
-            var topicUrl = (string)targetActor.Data["_:atomRetrieveUrl"].FirstOrDefault()?.Primitive;
+            var topicUrl = (string)targetActor.Data["atomUri"].FirstOrDefault()?.Primitive;
             if (hubUrl == null || topicUrl == null) return;
 
             var clientObject = await _context.WebSubClients.FirstOrDefaultAsync(a => a.ForUserId == Data.ActorID && a.TargetUserId == Data.ToFollowID);
@@ -88,7 +88,7 @@ namespace Kroeg.Server.BackgroundTasks
                 ["hub.mode"] = "subscribe",
                 ["hub.topic"] = topicUrl,
                 ["hub.secret"] = clientObject.Secret,
-                ["hub.callback"] = ((string) actor.Data["inbox"].First().Primitive) + ".atom",
+                ["hub.callback"] = (actor.Data["inbox"].First().Id) + ".atom",
                 ["hub.lease_seconds"] = TimeSpan.FromDays(1).TotalSeconds.ToString()
             });
 

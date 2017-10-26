@@ -45,7 +45,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
                     claims.AddIdentity(id);
 
                     var handler = ActivatorUtilities.CreateInstance<GetEntityMiddleware.GetEntityHandler>(_serviceProvider, claims, EntityStore);
-                    var outbox = await EntityStore.GetEntity((string)Actor.Data["outbox"].First().Primitive, false);
+                    var outbox = await EntityStore.GetEntity(Actor.Data["outbox"].First().Id, false);
                     await handler.ClientToServer(outbox, accept);
                 }
 
@@ -54,22 +54,22 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
 
             if (MainObject.Type != "Like" && MainObject.Type != "Announce") return true;
 
-            var toFollowOrLike = await EntityStore.GetEntity((string) MainObject.Data["object"].Single().Primitive, false);
+            var toFollowOrLike = await EntityStore.GetEntity(MainObject.Data["object"].Single().Id, false);
             if (toFollowOrLike == null || !toFollowOrLike.IsOwner) return true; // not going to update side effects now.
 
             // sent to not the owner, so not updating!
-            if ((string)toFollowOrLike.Data["attributedTo"].Single().Primitive != Actor.Id) return true;
+            if (toFollowOrLike.Data["attributedTo"].Single().Id != Actor.Id) return true;
 
             string collectionId = null, objectToAdd = null;
 
             switch (MainObject.Type)
             {
                 case "Like":
-                    collectionId = (string) toFollowOrLike.Data["likes"].SingleOrDefault()?.Primitive;
+                    collectionId = toFollowOrLike.Data["likes"].SingleOrDefault()?.Id;
                     objectToAdd = MainObject.Id;
                     break;
                 case "Announce":
-                    collectionId = (string)toFollowOrLike.Data["shares"].SingleOrDefault()?.Primitive;
+                    collectionId = toFollowOrLike.Data["shares"].SingleOrDefault()?.Id;
                     objectToAdd = MainObject.Id;
                     break;
             }

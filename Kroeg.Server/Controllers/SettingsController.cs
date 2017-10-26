@@ -209,7 +209,7 @@ namespace Kroeg.Server.Controllers
 
             mainObj.Replace("url", ASTerm.MakePrimitive(uploadUri + fileName));
 
-            if (obj["type"].Any(a => (string)a.Primitive == "Create"))
+            if (obj.Type.Contains("https://www.w3.org/ns/activitystreams#Create"))
             {
                 try
                 {
@@ -287,8 +287,8 @@ namespace Kroeg.Server.Controllers
             var handler = new CreateActorHandler(stagingStore, apo, null, null, User, _collectionTools, _entityData, _context);
             await handler.Handle();
 
-            var resultUser = await _entityStore.GetEntity((string) handler.MainObject.Data["object"].First().Primitive, false);
-            var outbox = await _entityStore.GetEntity((string)resultUser.Data["outbox"].First().Primitive, false);
+            var resultUser = await _entityStore.GetEntity(handler.MainObject.Data["object"].First().Id, false);
+            var outbox = await _entityStore.GetEntity(resultUser.Data["outbox"].First().Id, false);
             var delivery = new DeliveryHandler(stagingStore, handler.MainObject, resultUser, outbox, User, _collectionTools, _provider.GetRequiredService<DeliveryService>());
             await delivery.Handle();
 

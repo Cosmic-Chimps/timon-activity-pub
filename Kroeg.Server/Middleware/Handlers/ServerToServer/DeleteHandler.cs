@@ -21,7 +21,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
         {
             if (MainObject.Type != "Delete") return true;
 
-            var oldObject = await EntityStore.GetEntity((string) MainObject.Data["object"].Single().Primitive, true);
+            var oldObject = await EntityStore.GetEntity(MainObject.Data["object"].Single().Id, true);
             var newData = oldObject.Data;
             foreach (var kv in newData)
             {

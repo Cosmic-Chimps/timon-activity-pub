@@ -52,7 +52,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             if (MainObject.Type != "Create") return true;
 
             var activityData = MainObject.Data;
-            var objectEntity = await EntityStore.GetEntity((string) activityData["object"].First().Primitive, false);
+            var objectEntity = await EntityStore.GetEntity(activityData["object"].First().Id, false);
             if (!_entityData.IsActor(objectEntity.Data)) return true;
             var objectData = objectEntity.Data;
             var id = objectEntity.Id;

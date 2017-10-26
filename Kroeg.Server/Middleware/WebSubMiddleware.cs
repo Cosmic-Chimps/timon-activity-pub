@@ -51,7 +51,7 @@ namespace Kroeg.Server.Middleware
             var box = await entityStore.GetEntity(fullpath, false);
             if (box == null || box.Type != "_inbox")
                 goto error;
-            var user = await entityStore.GetEntity((string)box.Data["attributedTo"].First().Primitive, false);
+            var user = await entityStore.GetEntity(box.Data["attributedTo"].First().Id, false);
             if (user == null) goto error;
 
             var mode = context.Request.Query["hub.mode"].First();

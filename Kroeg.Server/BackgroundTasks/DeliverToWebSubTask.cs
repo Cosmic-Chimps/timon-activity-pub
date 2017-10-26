@@ -31,7 +31,7 @@ namespace Kroeg.Server.BackgroundTasks
         private async Task<ASObject> _object()
         {
             var user = (await _entityStore.GetEntity(Data.SourceUserId, false)).Data;
-            var outboxId = (string)user["outbox"].First().Primitive;
+            var outboxId = user["outbox"].First().Id;
 
             var page = new ASObject();
             page.Type.Add("https://www.w3.org/ns/activitystreams#OrderedCollectionPage");

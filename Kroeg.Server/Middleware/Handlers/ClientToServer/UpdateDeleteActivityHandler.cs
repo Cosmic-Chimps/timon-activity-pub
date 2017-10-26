@@ -23,9 +23,9 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
 
         private static bool _isEqual(ASTerm a, ASTerm b)
         {
-            return a.Primitive.GetType() == b.Primitive.GetType() && (a.Primitive is string
+            return (a.Id == b.Id) || (a.Primitive.GetType() == b.Primitive.GetType() && (a.Primitive is string
                        ? (string) a.Primitive == (string) b.Primitive
-                       : a.Primitive == b.Primitive);
+                       : a.Primitive == b.Primitive));
         }
 
         public override async Task<bool> Handle()
@@ -35,7 +35,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             var activityData = MainObject.Data;
 
             var oldObject =
-                await EntityStore.Bypass.GetEntity((string) activityData["object"].Single().Primitive, false);
+                await EntityStore.Bypass.GetEntity(activityData["object"].Single().Id, false);
 
             if (oldObject == null)
                 throw new InvalidOperationException("Cannot remove or update a non-existant object!");
@@ -43,12 +43,12 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             if (!oldObject.IsOwner) throw new InvalidOperationException("Cannot remove or update an object not on this server!");
 
             var originatingCreate = await _activityService.DetermineOriginatingCreate(oldObject.Id);
-            if ((string) originatingCreate.Data["actor"].Single().Primitive != Actor.Id)
+            if (originatingCreate.Data["actor"].Single().Id != Actor.Id)
                 throw new InvalidOperationException("Cannot remove or update objects that weren't made by you!");
 
             if (MainObject.Type == "Update")
             {
-                var newObject = await EntityStore.GetEntity((string) activityData["object"].Single().Primitive, false);
+                var newObject = await EntityStore.GetEntity(activityData["object"].Single().Id, false);
                 if (newObject == oldObject) throw new InvalidOperationException("No new object passed!");
 
                 var data = oldObject.Data;

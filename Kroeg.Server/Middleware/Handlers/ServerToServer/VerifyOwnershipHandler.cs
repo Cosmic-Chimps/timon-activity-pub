@@ -20,7 +20,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
 
             await Task.Yield();
 
-            var idToVerify = (string) MainObject.Data["object"].Single().Primitive;
+            var idToVerify = MainObject.Data["object"].Single().Id;
             var idToCheckAgainst = MainObject.Id;
 
             if (!MainObject.Data["actor"].Any()) throw new InvalidOperationException("Activity has no actor!");

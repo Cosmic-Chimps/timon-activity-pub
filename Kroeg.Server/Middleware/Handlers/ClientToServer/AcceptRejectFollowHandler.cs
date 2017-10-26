@@ -25,15 +25,15 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
         {
             if (MainObject.Type != "Accept" && MainObject.Type != "Reject") return true;
 
-            var subObject = await EntityStore.GetEntity((string)MainObject.Data["object"].Single().Primitive, true);
-            var requestedUser = await EntityStore.GetEntity((string) subObject.Data["actor"].First().Primitive, true);
+            var subObject = await EntityStore.GetEntity(MainObject.Data["object"].Single().Id, true);
+            var requestedUser = await EntityStore.GetEntity(subObject.Data["actor"].First().Id, true);
 
             if (subObject.Type != "Follow") return true;
 
-            if ((string)subObject.Data["object"].Single().Primitive != Actor.Id) return true;
+            if (subObject.Data["object"].Single().Id != Actor.Id) return true;
             
             bool isAccept = MainObject.Type == "Accept";
-            var followers = await EntityStore.GetEntity((string)Actor.Data["followers"].Single().Primitive, false);
+            var followers = await EntityStore.GetEntity(Actor.Data["followers"].Single().Id, false);
 
             if (isAccept && !await _collection.Contains(followers.Id, requestedUser.Id))
                 await _collection.AddToCollection(followers, requestedUser);

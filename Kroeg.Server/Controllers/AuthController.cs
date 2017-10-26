@@ -228,8 +228,8 @@ namespace Kroeg.Server.Controllers
 
             await stagingStore.CommitChanges();
 
-            var resultUser = await _entityStore.GetEntity((string) handler.MainObject.Data["object"].First().Primitive, false);
-            var outbox = await _entityStore.GetEntity((string)resultUser.Data["outbox"].First().Primitive, false);
+            var resultUser = await _entityStore.GetEntity(handler.MainObject.Data["object"].First().Id, false);
+            var outbox = await _entityStore.GetEntity(resultUser.Data["outbox"].First().Id, false);
             var delivery = new DeliveryHandler(stagingStore, handler.MainObject, resultUser, outbox, User, _collectionTools, _provider.GetRequiredService<DeliveryService>());
             await delivery.Handle();
 
@@ -256,7 +256,7 @@ namespace Kroeg.Server.Controllers
             var data = ASObject.Parse(await reader.ReadToEndAsync());
 
             if (!_entityConfiguration.IsActivity(data)) return StatusCode(403, "Not an activity?");
-            if (!data["actor"].Any((a) => (string)a.Primitive == userId)) return StatusCode(403, "Invalid signature!");
+            if (!data["actor"].Any((a) => a.Id == userId)) return StatusCode(403, "Invalid signature!");
 
             var temporaryStore = new StagingEntityStore(_entityStore);
             var resultEntity = await _entityFlattener.FlattenAndStore(temporaryStore, data, false);
@@ -268,7 +268,7 @@ namespace Kroeg.Server.Controllers
             foreach (var user in users)
             {
                 if (user.IsOwner)
-                    _context.EventQueue.Add(DeliverToActivityPubTask.Make(new DeliverToActivityPubData { ObjectId = resultEntity.Id, TargetInbox = (string) user.Data["inbox"].First().Primitive }));
+                    _context.EventQueue.Add(DeliverToActivityPubTask.Make(new DeliverToActivityPubData { ObjectId = resultEntity.Id, TargetInbox = user.Data["inbox"].First().Id }));
             }
 
             await _context.SaveChangesAsync();

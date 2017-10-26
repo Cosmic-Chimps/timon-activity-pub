@@ -46,7 +46,7 @@ namespace Kroeg.Server.Services
                 endpoints.Replace("oauthAuthorizationEndpoint", ASTerm.MakeId(basePath + "auth/oauth?id=" + Uri.EscapeDataString(entity.Id)));
                 endpoints.Replace("oauthTokenEndpoint", ASTerm.MakeId(basePath + "auth/token?"));
                 endpoints.Replace("settingsEndpoint", ASTerm.MakeId(basePath + "settings/auth"));
-                endpoints.Replace("uploadMedia", ASTerm.MakeId((string)data["outbox"].Single().Primitive));
+                endpoints.Replace("uploadMedia", data["outbox"].Single());
                 endpoints.Replace("relevantObjects", ASTerm.MakeId(basePath + "settings/relevant"));
                 endpoints.Replace("proxyUrl", ASTerm.MakeId(basePath + "auth/proxy"));
                 endpoints.Replace("jwks", ASTerm.MakeId(basePath + "auth/jwks?id=" + Uri.EscapeDataString(entity.Id)));

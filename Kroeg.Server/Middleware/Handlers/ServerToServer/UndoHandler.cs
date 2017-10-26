@@ -22,28 +22,28 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
         {
             if (MainObject.Type != "Undo") return true;
 
-            var toUndo = await EntityStore.GetEntity((string) MainObject.Data["object"].Single().Primitive, true);
+            var toUndo = await EntityStore.GetEntity(MainObject.Data["object"].Single().Id, true);
             if (toUndo == null) return true; 
 
             string collectionId = null, objectToAdd = null;
 
-            var toFollowOrLike = await EntityStore.GetEntity((string) toUndo.Data["object"].Single().Primitive, true);
+            var toFollowOrLike = await EntityStore.GetEntity(toUndo.Data["object"].Single().Id, true);
             if (toFollowOrLike == null || !toFollowOrLike.IsOwner) return true; // can't undo side effects.
-            if ((toUndo.Type == "Follow" && Actor.Id != toFollowOrLike.Id) || (toUndo.Type != "Follow" && (string)toFollowOrLike.Data["attributedTo"].Single().Primitive != Actor.Id)) return true;
+            if ((toUndo.Type == "Follow" && Actor.Id != toFollowOrLike.Id) || (toUndo.Type != "Follow" && toFollowOrLike.Data["attributedTo"].Single().Id != Actor.Id)) return true;
 
             if (toUndo.Type == "Follow")
             {
-                collectionId = (string) toFollowOrLike.Data["followers"].SingleOrDefault()?.Primitive;
-                objectToAdd = (string) toUndo.Data["actor"].Single().Primitive;
+                collectionId = toFollowOrLike.Data["followers"].SingleOrDefault()?.Id;
+                objectToAdd = toUndo.Data["actor"].Single().Id;
             }
             else if (toUndo.Type == "Like")
             {
-                collectionId = (string)toFollowOrLike.Data["likes"].SingleOrDefault()?.Primitive;
+                collectionId = toFollowOrLike.Data["likes"].SingleOrDefault()?.Id;
                 objectToAdd = toUndo.Id;
             }
             else if (toUndo.Type == "Announce")
             {
-                collectionId = (string)toFollowOrLike.Data["shares"].SingleOrDefault()?.Primitive;
+                collectionId = toFollowOrLike.Data["shares"].SingleOrDefault()?.Id;
                 objectToAdd = toUndo.Id;
             }
 

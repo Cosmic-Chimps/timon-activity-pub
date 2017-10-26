@@ -126,7 +126,7 @@ namespace Kroeg.Server.Middleware
             if (needRead)
             {
                 if (targetEntity?.Type == "_inbox")
-                    target = (string)targetEntity.Data["attributedTo"].Single().Primitive;
+                    target = targetEntity.Data["attributedTo"].Single().Id;
             }
 
             if (targetEntity == null)
@@ -272,7 +272,7 @@ namespace Kroeg.Server.Middleware
                 var userId = _user.FindFirstValue(JwtTokenSettings.ActorClaim);
                 var entity = await _mainStore.GetEntity(url, false);
                 if (entity == null) return null;
-                if (entity.Type == "_blocks" && !entity.Data["attributedTo"].Any(a => (string)a.Primitive == userId)) throw new UnauthorizedAccessException("Blocks are private!");
+                if (entity.Type == "_blocks" && !entity.Data["attributedTo"].Any(a => a.Id == userId)) throw new UnauthorizedAccessException("Blocks are private!");
                 if (entity.Type == "_blocked") throw new UnauthorizedAccessException("This collection is only used internally for optimization reasons");
                 if (entity.Type == "OrderedCollection" || entity.Type.StartsWith("_")) return await _getCollection(entity, arguments);
                 if (entity.IsOwner && _entityData.IsActor(entity.Data)) return entity.Data;
@@ -283,7 +283,7 @@ namespace Kroeg.Server.Middleware
                     userId = await _verifier.Verify(url, context);
                 }
 
-                if (entity.Data["attributedTo"].Concat(entity.Data["actor"]).All(a => (string)a.Primitive != userId) && !audience.Contains("https://www.w3.org/ns/activitystreams#Public") && (userId == null || !audience.Contains(userId)))
+                if (entity.Data["attributedTo"].Concat(entity.Data["actor"]).All(a => a.Id != userId) && !audience.Contains("https://www.w3.org/ns/activitystreams#Public") && (userId == null || !audience.Contains(userId)))
                 {
                     throw new UnauthorizedAccessException("No access");
                 }
@@ -306,7 +306,7 @@ namespace Kroeg.Server.Middleware
                 var claims = tokenHandler.ValidateToken(authToken[0], _tokenSettings.ValidationParameters, out SecurityToken validatedToken);
                 var entityClaim = claims.FindFirstValue(JwtTokenSettings.ActorClaim);
                 if (entityClaim == null) return;
-                if (entity.Data["attributedTo"].TrueForAll(a => (string)a.Primitive != entityClaim))
+                if (entity.Data["attributedTo"].TrueForAll(a => a.Id != entityClaim))
                 {
                     context.Response.StatusCode = 403;
                     await context.Response.WriteAsync("Not authorized to view this item live");
@@ -405,7 +405,7 @@ namespace Kroeg.Server.Middleware
                 var claims = tokenHandler.ValidateToken(authToken[0], _tokenSettings.ValidationParameters, out SecurityToken validatedToken);
                 var entityClaim = claims.FindFirstValue(JwtTokenSettings.ActorClaim);
                 if (entityClaim == null) return;
-                if (entity.Data["attributedTo"].TrueForAll(a => (string)a.Primitive != entityClaim))
+                if (entity.Data["attributedTo"].TrueForAll(a => a.Id != entityClaim))
                 {
                     context.Response.StatusCode = 403;
                     await context.Response.WriteAsync("Not authorized to view this item live");
@@ -491,7 +491,7 @@ namespace Kroeg.Server.Middleware
             {
                 var from_id = arguments["from_id"].FirstOrDefault();
                 var collection = entity.Data;
-                bool seePrivate = collection["attributedTo"].Any() && _user.FindFirstValue(JwtTokenSettings.ActorClaim) == (string)collection["attributedTo"].First().Primitive;
+                bool seePrivate = collection["attributedTo"].Any() && _user.FindFirstValue(JwtTokenSettings.ActorClaim) == collection["attributedTo"].First().Id;
 
                 if (from_id != null)
                 {
@@ -532,14 +532,14 @@ namespace Kroeg.Server.Middleware
                 {
                     case "_inbox":
                         var actorObj = @object["actor"].First();
-                        string subjectId = (string)actorObj.Primitive ?? (string) actorObj.SubObject["id"].First().Primitive;
+                        string subjectId = actorObj.Id ?? actorObj.SubObject.Id;
                         subjectId = await _verifier.Verify(fullpath, context) ?? subjectId;
                         if (subjectId == null) throw new UnauthorizedAccessException("Invalid signature");
                         return await ServerToServer(original, @object, subjectId);
                     case "_outbox":
                         var userId = original.Data["attributedTo"].FirstOrDefault() ?? original.Data["actor"].FirstOrDefault();
-                        if (userId == null || _user.FindFirst(JwtTokenSettings.ActorClaim).Value ==
-                            (string) userId.Primitive) return await ClientToServer(original, @object);
+                        if (userId == null || _user.FindFirst(JwtTokenSettings.ActorClaim).Value == userId.Id)
+                            return await ClientToServer(original, @object);
                         throw new UnauthorizedAccessException("Cannot post to the outbox of another actor");
                 }
 
@@ -563,7 +563,7 @@ namespace Kroeg.Server.Middleware
             public async Task<ASObject> ServerToServer(APEntity inbox, ASObject activity, string subject = null)
             {
                 var stagingStore = new StagingEntityStore(_mainStore);
-                var userId = (string) inbox.Data["attributedTo"].Single().Primitive;
+                var userId = inbox.Data["attributedTo"].Single().Id;
                 var user = await _mainStore.GetEntity(userId, false);
 
                 APEntity flattened;
@@ -573,21 +573,21 @@ namespace Kroeg.Server.Middleware
                 if (!subjectUri.IsDefaultPort) prefix += $":{subjectUri.Port}";
                 prefix += "/";
 
-                var id = (string) activity["id"].Single().Primitive;
+                var id = activity.Id;
                 flattened = await _mainStore.GetEntity(id, false);
                 if (flattened == null)
                     flattened = await _flattener.FlattenAndStore(stagingStore, activity, false);
 
                 stagingStore.TrimDown(prefix); // remove all staging entities that may be faked
 
-                var sentBy = (string)activity["actor"].First().Primitive;
+                var sentBy = activity["actor"].First().Id;
                 if (subject != null && sentBy != subject)
                     throw new UnauthorizedAccessException("Invalid authorization header for this subject!");
 
                 if (user.Data["blocks"].Any())
                 {
-                    var blocks = await _mainStore.GetEntity((string)user.Data["blocks"].First().Primitive, false);
-                    if (await _collectionTools.Contains((string)blocks.Data["_blocked"].First().Primitive, sentBy))
+                    var blocks = await _mainStore.GetEntity(user.Data["blocks"].First().Id, false);
+                    if (await _collectionTools.Contains(blocks.Data["_blocked"].First().Id, sentBy))
                         throw new UnauthorizedAccessException("You are blocked.");
                 }
 
@@ -644,13 +644,13 @@ namespace Kroeg.Server.Middleware
             public async Task<ASObject> ClientToServer(APEntity outbox, ASObject activity)
             {
                 var stagingStore = new StagingEntityStore(_mainStore);
-                var userId = (string) outbox.Data["attributedTo"].Single().Primitive;
+                var userId =  outbox.Data["attributedTo"].Single().Id;
                 var user = await _mainStore.GetEntity(userId, false);
 
                 if (!_entityData.IsActivity(activity))
                 {
 #pragma warning disable CS0618 // Type or member is obsolete
-                    if (_entityData.IsActivity((string) activity["type"].First().Primitive))
+                    if (_entityData.IsActivity(activity.Type.First()))
 #pragma warning restore CS0618 // Type or member is obsolete
                     {
                         throw new UnauthorizedAccessException("Sending an Activity without an actor isn't allowed. Are you sure you wanted to do that?");
@@ -668,7 +668,7 @@ namespace Kroeg.Server.Middleware
                     activity = createActivity;
                 }
 
-                if (activity["type"].Any(a => (string)a.Primitive == "Create"))
+                if (activity.Type.Contains("https://www.w3.org/ns/activitystreams#Create"))
                 {
                     activity["id"].Clear();
                     if (activity["object"].SingleOrDefault()?.SubObject != null)

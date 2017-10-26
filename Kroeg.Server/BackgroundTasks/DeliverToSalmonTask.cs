@@ -41,7 +41,7 @@ namespace Kroeg.Server.BackgroundTasks
             var actorId = entity.Data["actor"].Concat(entity.Data["attributedTo"]).FirstOrDefault();
             if (actorId == null) return; // ???
 
-            var key = await _context.GetKey((string) actorId.Primitive);
+            var key = await _context.GetKey(actorId.Id);
 
             var doc = await _entryGenerator.Build(entity.Data);
 

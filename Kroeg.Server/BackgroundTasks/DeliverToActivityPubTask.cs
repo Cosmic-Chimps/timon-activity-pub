@@ -78,7 +78,7 @@ namespace Kroeg.Server.BackgroundTasks
         public async Task PostToServer()
         {
             var entity = await _entityStore.GetEntity(Data.ObjectId, false);
-            var owner = await _entityStore.GetEntity((string) entity.Data["actor"].First().Primitive, false);
+            var owner = await _entityStore.GetEntity(entity.Data["actor"].First().Id, false);
             var unflattened = await _entityFlattener.Unflatten(_entityStore, entity);
 
             var token = await _verifier.BuildJWS(owner, Data.TargetInbox);

@@ -23,12 +23,12 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
         public override async Task<bool> Handle()
         {
             if (MainObject.Type != "Accept") return true;
-            var followObject = await EntityStore.GetEntity((string)MainObject.Data["object"].Single().Primitive, false);
+            var followObject = await EntityStore.GetEntity(MainObject.Data["object"].Single().Id, false);
             if (followObject.Type != "Follow") return true;
-            if ((string)followObject.Data["object"].First().Primitive != (string)MainObject.Data["actor"].First().Primitive) throw new InvalidOperationException("I won't let you do that, Starfox!");
-            var followUser = (string)followObject.Data["object"].First().Primitive;
+            if (followObject.Data["object"].First().Id != MainObject.Data["actor"].First().Id) throw new InvalidOperationException("I won't let you do that, Starfox!");
+            var followUser = followObject.Data["object"].First().Id;
 
-            if (Actor.Id != (string)followObject.Data["object"].First().Primitive) return true; // doesn't involve us, so meh
+            if (Actor.Id != followObject.Data["object"].First().Id) return true; // doesn't involve us, so meh
 
             if (!followObject.IsOwner) throw new InvalidOperationException("Follow isn't made on this server?");
 
@@ -41,8 +41,8 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
                 if (relevant != null) throw new InvalidOperationException("Follow has already been Accepted before!");
             }
 
-            var following = await EntityStore.GetEntity((string) Actor.Data["following"].Single().Primitive, false);
-            var user = await EntityStore.GetEntity((string)MainObject.Data["actor"].Single().Primitive, true);
+            var following = await EntityStore.GetEntity(Actor.Data["following"].Single().Id, false);
+            var user = await EntityStore.GetEntity(MainObject.Data["actor"].Single().Id, true);
             if (MainObject.Type == "Accept" && !await _collection.Contains(following.Id, user.Id))
                 await _collection.AddToCollection(following, user);
             else if (MainObject.Type == "Reject")

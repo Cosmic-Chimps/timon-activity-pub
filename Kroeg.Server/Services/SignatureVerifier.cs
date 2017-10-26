@@ -40,8 +40,8 @@ namespace Kroeg.Server.Services
             var key = await _entityStore.GetEntity(parameters["keyId"], true);
             if (key == null) return new Tuple<bool, string>(false, null);
 
-            var owner = await _entityStore.GetEntity((string)key.Data["owner"].First().Primitive, true);
-            if (!owner.Data["publicKey"].Any((a) => (string)a.Primitive == key.Id)) return new Tuple<bool, string>(false, null);
+            var owner = await _entityStore.GetEntity(key.Data["owner"].First().Id, true);
+            if (!owner.Data["publicKey"].Any((a) => a.Id == key.Id)) return new Tuple<bool, string>(false, null);
 
             var stringKey = (string)key.Data["publicKeyPem"].First().Primitive;
             if (!stringKey.StartsWith("-----BEGIN PUBLIC KEY-----")) return new Tuple<bool, string>(false, null);
@@ -108,12 +108,12 @@ namespace Kroeg.Server.Services
                     var endpoints = actor.Data["endpoints"].FirstOrDefault();
                     if (endpoints == null) return null;
                     ASObject endpointsData;
-                    if (endpoints.Primitive != null)
-                        endpointsData = (await _entityStore.GetEntity((string)endpoints.Primitive, true)).Data;
+                    if (endpoints.Id != null)
+                        endpointsData = (await _entityStore.GetEntity(endpoints.Id, true)).Data;
                     else
                         endpointsData = endpoints.SubObject;
 
-                    var jwks = (string)endpointsData["jwks"].FirstOrDefault()?.Primitive; // not actually an entity!
+                    var jwks = endpointsData["jwks"].FirstOrDefault()?.Id; // not actually an entity!
                     if (jwks == null) return null;
 
                     var keys = await _getKey(jwks);

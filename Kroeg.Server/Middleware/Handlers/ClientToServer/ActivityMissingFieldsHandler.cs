@@ -23,7 +23,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             var data = MainObject.Data;
             if (data["actor"].Count != 1)
                 throw new InvalidOperationException("Cannot create an activity with no or more than one actor!");
-            if ((string) data["actor"].First().Primitive != User.FindFirstValue(JwtTokenSettings.ActorClaim)) 
+            if (data["actor"].First().Id != User.FindFirstValue(JwtTokenSettings.ActorClaim)) 
                 throw new InvalidOperationException("Cannot create an activity with an actor that isn't the one you log in to");
 
             // add published and updated.

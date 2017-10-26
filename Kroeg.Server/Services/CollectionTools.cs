@@ -56,7 +56,7 @@ namespace Kroeg.Server.Services
             var isOwner = false;
             var entity = await _context.Entities.FirstOrDefaultAsync(a => a.Id == id && a.IsOwner);
             var user = _getUser();
-            if (entity != null && entity.Data["attributedTo"].Any(a => (string)a.Primitive == user)) isOwner = true;
+            if (entity != null && entity.Data["attributedTo"].Any(a => a.Id == user)) isOwner = true;
 
             IQueryable<CollectionItem> data = _context.CollectionItems.Where(a => a.CollectionId == id && a.CollectionItemId < fromId).Include(a => a.Element).OrderByDescending(a => a.CollectionItemId);
             if (user == null)

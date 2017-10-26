@@ -99,7 +99,7 @@ namespace Kroeg.Server.Salmon
             var authorId = (string)obj["email"].FirstOrDefault()?.Primitive;
             if (authorId == null)
             {
-                authorId = obj["name"].FirstOrDefault()?.Primitive + "@" + new Uri((string)obj["id"].First().Primitive).Host;
+                authorId = obj["name"].FirstOrDefault()?.Primitive + "@" + new Uri(obj.Id).Host;
             }
 
             var domain = authorId.Split('@')[1];

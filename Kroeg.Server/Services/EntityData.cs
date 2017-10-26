@@ -163,7 +163,7 @@ namespace Kroeg.Server.Tools
 
         public async Task<string> UriFor(IEntityStore store, ASObject @object, string category = null, string parentId = null)
         {
-            var types = @object["type"].Select(a => (string)a.Primitive).ToList();
+            var types = @object.Type;
 
             if (category == null)
                 if (@object["actor"].Any())
@@ -187,7 +187,7 @@ namespace Kroeg.Server.Tools
 
         public async Task<string> FindUnusedID(IEntityStore entityStore, ASObject @object, string category = null, string parentId = null)
         {
-            var types = @object["type"].Select(a => (string)a.Primitive).ToList();
+            var types = @object.Type;
             var format = _getFormat(types, category, parentId != null);
 
             string uri = await UriFor(entityStore, @object, category, parentId);

@@ -72,7 +72,7 @@ namespace Kroeg.Server.Middleware.Renderers
             {
                 response.ContentType = "application/atom+xml";
 
-                var user = await _entityStore.GetEntity((string) toRender["actor"].Single().Primitive, false);
+                var user = await _entityStore.GetEntity(toRender["actor"].Single().Id, false);
                 var key = await _context.GetKey(user.Id);
                 var magicKey = key != null ? new MagicKey(key.PrivateKey) : MagicKey.Generate();
 

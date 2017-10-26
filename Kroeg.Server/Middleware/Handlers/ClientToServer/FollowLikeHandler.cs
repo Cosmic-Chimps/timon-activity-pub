@@ -28,12 +28,12 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             var userData = Actor.Data;
             string targetCollectionId = null;
             if (MainObject.Type == "Like")
-                targetCollectionId = (string) userData["liked"].SingleOrDefault()?.Primitive;
+                targetCollectionId = userData["liked"].SingleOrDefault()?.Id;
 
             if (targetCollectionId == null) return true;
 
             var targetCollection = await EntityStore.GetEntity(targetCollectionId, false);
-            var objectEntity = await EntityStore.GetEntity((string) MainObject.Data["object"].Single().Primitive, true);
+            var objectEntity = await EntityStore.GetEntity(MainObject.Data["object"].Single().Id, true);
             if (objectEntity == null) throw new InvalidOperationException($"Cannot {MainObject.Type.ToLower()} a non-existant object!");
 
             await _collection.AddToCollection(targetCollection, objectEntity);

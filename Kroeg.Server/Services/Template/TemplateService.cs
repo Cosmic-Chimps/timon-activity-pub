@@ -39,17 +39,17 @@ namespace Kroeg.Server.Services.Template
 
             public object[] get(string name)
             {
-                return obj[name].Select(a => a.Primitive ?? a.SubObject).ToArray();
+                return obj[name].Select(a => a.Id ?? a.Primitive ?? a.SubObject).ToArray();
             }
 
             public object take(string name, object def)
             {
-                return obj[name].Select(a => a.Primitive ?? a.SubObject).FirstOrDefault() ?? def;
+                return obj[name].Select(a => a.Id ?? a.Primitive ?? a.SubObject).FirstOrDefault() ?? def;
             }
 
             public object take(string name)
             {
-                return obj[name].Select(a => a.Primitive ?? a.SubObject).FirstOrDefault() ?? "";
+                return obj[name].Select(a => a.Id ?? a.Primitive ?? a.SubObject).FirstOrDefault() ?? "";
             }
 
             public bool has(string name)
@@ -197,9 +197,9 @@ namespace Kroeg.Server.Services.Template
                     else id = (string) res;
                 }
                 else
-                    id = (string) data["id"].First().Primitive;
+                    id = data.Id;
 
-                if (objData == null && data["id"].Any(a => (string) a.Primitive == id))
+                if (objData == null && data.Id == id)
                     objData = data;
                 else if (objData == null)
                 {

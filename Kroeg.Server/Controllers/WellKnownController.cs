@@ -132,8 +132,8 @@ namespace Kroeg.Server.Controllers
 
             var item = items.First();
 
-            var outbox = (string)item.Data["outbox"].First().Primitive + $".atom?from_id={int.MaxValue}";
-            var inbox = (string)item.Data["inbox"].First().Primitive;
+            var outbox = item.Data["outbox"].First().Id + $".atom?from_id={int.MaxValue}";
+            var inbox = item.Data["inbox"].First().Id;
 
             var result = new WebfingerResult()
             {

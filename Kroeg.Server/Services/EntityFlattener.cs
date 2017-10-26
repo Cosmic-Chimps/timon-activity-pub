@@ -120,7 +120,8 @@ namespace Kroeg.Server.Tools
                     var subObject = await _flatten(store, value.SubObject, generateId, entities, entity.Id);
                     if (subObject == null) continue;
 
-                    value.Primitive = subObject.Id;
+                    value.Id = subObject.Id;
+                    value.Primitive = null;
                     value.SubObject = null;
                 }
             }
