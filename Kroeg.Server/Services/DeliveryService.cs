@@ -140,7 +140,7 @@ namespace Kroeg.Server.Services
                 var entity = await _store.GetEntity(item, true);
                 var data = entity.Data;
                 // if it's local collection, or we don't need the forwarding thing
-                var iscollection = data["type"].Any(a => (string)a.Primitive == "Collection" || (string)a.Primitive == "OrderedCollection");
+                var iscollection = data.Type.Contains("https://www.w3.org/ns/activitystreams#Collection") || data.Type.Contains("https://www.w3.org/ns/activitystreams#OrderedCollection");
                 var shouldForward = entity.IsOwner && (forward == null || data["attributedTo"].Any(a => (string)a.Primitive == forward));
                 if (!iscollection || shouldForward)
                     stack.Push(new Tuple<int, APEntity, bool>(0, entity, false));
@@ -151,7 +151,7 @@ namespace Kroeg.Server.Services
                 var entity = stack.Pop();
 
                 var data = entity.Item2.Data;
-                var iscollection = data["type"].Any(a => (string)a.Primitive == "Collection" || (string)a.Primitive == "OrderedCollection");
+                var iscollection = data.Type.Contains("https://www.w3.org/ns/activitystreams#Collection") || data.Type.Contains("https://www.w3.org/ns/activitystreams#OrderedCollection");
                 var shouldForward = entity.Item2.IsOwner && (forward == null || data["attributedTo"].Any(a => (string)a.Primitive == forward));
                 var useSharedInbox = (entity.Item2.IsOwner && entity.Item2.Type == "_following");
                 if ((iscollection && shouldForward) && entity.Item1 < depth)

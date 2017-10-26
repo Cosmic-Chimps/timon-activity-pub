@@ -21,6 +21,8 @@ namespace Kroeg.Server.OStatusCompat
         {
             if (type == null) return null;
 
+            type = type.Replace("https://www.w3.org/ns/activitystreams#", "");
+
             if (isReply && type == "Note") type = "Comment";
 
             if (type == "Unfollow")
@@ -52,7 +54,7 @@ namespace Kroeg.Server.OStatusCompat
             var elem = new XElement(Atom + "link",
                 new XAttribute(NoNamespace + "rel", "avatar"));
 
-            if (ao["type"].All(a => (string) a.Primitive != "Image")) return elem;
+            if (!ao.Type.Contains("https://www.w3.org/ns/activitystreams#Image")) return elem;
 
             if (ao["mediaType"].Any())
                 elem.Add(new XAttribute(NoNamespace + "type", ao["mediaType"].First().Primitive));
@@ -124,15 +126,15 @@ namespace Kroeg.Server.OStatusCompat
 
         private static readonly Dictionary<string, string> VerbTranslation = new Dictionary<string, string>
         {
-            ["Create"] = "Post",
-            ["Announce"] = "Share",
-            ["Like"] = "Favorite"
+            ["https://www.w3.org/ns/activitystreams#Create"] = "Post",
+            ["https://www.w3.org/ns/activitystreams#Announce"] = "Share",
+            ["https://www.w3.org/ns/activitystreams#Like"] = "Favorite"
         };
 
         private XElement _buildMention(ASTerm term)
         {
             var objectType = "Person";
-            var  s = (string) term.Primitive;
+            var  s = (string) term.Id;
 
             if (s == "https://www.w3.org/ns/activitystreams#Public")
             {
@@ -192,7 +194,7 @@ namespace Kroeg.Server.OStatusCompat
             if (!sub)
                 elem.Add(new XElement(Atom + "id", idval));
 
-            var objectType = (string)ao["type"].First().Primitive;
+            var objectType = ao.Type.First();
             if (VerbTranslation.ContainsKey(objectType)) objectType = VerbTranslation[objectType];
             elem.Add(new XElement(ActivityStreams + "object-type", _typeToObjectType(objectType, ao["inReplyTo"].Any())));
 
@@ -221,9 +223,8 @@ namespace Kroeg.Server.OStatusCompat
 
             foreach (var tag in ao["tag"])
             {
-                var obj = tag.Primitive != null ? (await _get(tag.Primitive)) : tag.SubObject;
-                // XXX: why is there no hashtag object?
-                if ((string) obj["type"].First().Primitive == "Tag")
+                var obj = tag.Id != null ? (await _get(tag.Id)) : tag.SubObject;
+                if (obj.Type.Contains("https://www.w3.org/ns/activitystreams#Hashtag"))
                 {
                     var hashtag = ((string)obj["name"].First().Primitive).Replace("#", "");
 
@@ -256,7 +257,7 @@ namespace Kroeg.Server.OStatusCompat
 
             foreach (var attachment in ao["attachment"])
             {
-                elem.Add(_buildAttachment(attachment.Primitive == null ? attachment.SubObject : await _get(attachment.Primitive)));
+                elem.Add(_buildAttachment(attachment.Id == null ? attachment.SubObject : await _get(attachment.Id)));
             }
 
             foreach (var target in ao["to"])
@@ -265,7 +266,7 @@ namespace Kroeg.Server.OStatusCompat
 
         private async Task<APEntity> _fixupPointing(ASTerm term)
         {
-            var id = (string)term.Primitive;
+            var id = term.Id;
             var entity = await _entityStore.GetEntity(id, false);
             if (entity == null) return null;
 
@@ -279,16 +280,16 @@ namespace Kroeg.Server.OStatusCompat
         {
             if (isRoot) _setNamespaces(elem);
             var idval = ao.Id;
-            var verb = (string)ao["type"].First().Primitive;
+            var verb = ao.Type.First();
             if (VerbTranslation.ContainsKey(verb)) verb = VerbTranslation[verb];
 
             var targetObject = ao["object"].FirstOrDefault();
-            if (verb == "Undo" && targetObject != null)
+            if (verb == "https://www.w3.org/ns/activitystreams#Undo" && targetObject != null)
             {
-                var toUndo = await _get(targetObject.Primitive);
+                var toUndo = await _get(targetObject.Id);
                 targetObject = toUndo["object"].First();
-                if ((string)toUndo["type"].First().Primitive == "Like") verb = "Unfavorite";
-                if ((string)toUndo["type"].First().Primitive == "Follow") verb = "Unfollow";
+                if (toUndo.Type.Contains("https://www.w3.org/ns/activitystreams#Like")) verb = "Unfavorite";
+                if (toUndo.Type.Contains("https://www.w3.org/ns/activitystreams#Follow")) verb = "Unfollow";
             }
             elem.Add(new XElement(ActivityStreams + "verb", _typeToObjectType(verb)));
 
@@ -301,9 +302,9 @@ namespace Kroeg.Server.OStatusCompat
             if (ao["updated"].Any())
                 elem.Add(new XElement(Atom + "updated", ao["updated"].First().Primitive));
 
-            if (ao["actor"].Any(a => (string) a.Primitive != mainActor))
+            if (ao["actor"].Any(a => a.Id != mainActor))
             {
-                var author = await _get(ao["actor"].First(a => (string) a.Primitive != mainActor).Primitive);
+                var author = await _get(ao["actor"].First(a => a.Id != mainActor).Id);
 
                 elem.Add(_createAuthor(author));
             }
@@ -345,7 +346,7 @@ namespace Kroeg.Server.OStatusCompat
 
             if (verb == "Post")
             {
-                await _buildActivityObject(elem, await _get(targetObject.Primitive), mainActor, true);
+                await _buildActivityObject(elem, await _get(targetObject.Id), mainActor, true);
             }
             else
             {
@@ -354,7 +355,7 @@ namespace Kroeg.Server.OStatusCompat
                 if (verb == "Share" || verb == "Favorite" || verb == "Unfavorite")
                     obj = (await _fixupPointing(targetObject)).Data;
                 else
-                    obj = await _get(targetObject.Primitive);
+                    obj = await _get(targetObject.Id);
                 await _buildActivityObject(e, obj, mainActor, false);
                 elem.Add(e);
 
@@ -380,8 +381,8 @@ namespace Kroeg.Server.OStatusCompat
 
         private async Task<ASObject> _get(ASTerm id)
         {
-            if (id.Primitive != null)
-                return (await _entityStore.GetEntity((string)id.Primitive, false)).Data;
+            if (id.Id != null)
+                return (await _entityStore.GetEntity((string)id.Id, false)).Data;
             return id.SubObject;
         }
 
@@ -433,7 +434,7 @@ namespace Kroeg.Server.OStatusCompat
                     new XAttribute(NoNamespace + "href", ao["_:salmonUrl"].First().Primitive)));
             else if (!isNativeAtom)
             {
-                var inbox = (string) (await _get(ao["attributedTo"].First()))["inbox"].First().Primitive;
+                var inbox = (string) (await _get(ao["attributedTo"].First().Id))["inbox"].First().Id;
 
                 elem.Add(new XElement(Atom + "link",
                     new XAttribute(NoNamespace + "rel", "salmon"),
@@ -448,25 +449,25 @@ namespace Kroeg.Server.OStatusCompat
             {
                 elem.Add(new XElement(Atom + "link",
                     new XAttribute(NoNamespace + "rel", "hub"),
-                    new XAttribute(NoNamespace + "href", (string)ao["attributedTo"].First().Primitive + "?hub")));
+                    new XAttribute(NoNamespace + "href", ao["attributedTo"].First().Id + "?hub")));
             }
 
             if (ao["next"].Any())
                 elem.Add(new XElement(Atom + "link",
                     new XAttribute(NoNamespace + "rel", "next"),
                     new XAttribute(NoNamespace + "type", "application/atom+xml"),
-                    new XAttribute(NoNamespace + "href", isNativeAtom ? ao["next"].First().Primitive : _makeAtomUrl((string)ao["next"].First().Primitive))));
+                    new XAttribute(NoNamespace + "href", isNativeAtom ? ao["next"].First().Id : _makeAtomUrl((string)ao["next"].First().Primitive))));
 
             if (ao["prev"].Any())
                 elem.Add(new XElement(Atom + "link",
                     new XAttribute(NoNamespace + "rel", "prev"),
                     new XAttribute(NoNamespace + "type", "application/atom+xml"),
-                    new XAttribute(NoNamespace + "href", isNativeAtom ? ao["prev"].First().Primitive : _makeAtomUrl((string)ao["prev"].First().Primitive))));
+                    new XAttribute(NoNamespace + "href", isNativeAtom ? ao["prev"].First().Id : _makeAtomUrl((string)ao["prev"].First().Primitive))));
 
             foreach (var item in ao["orderedItems"])
             {
                 var e = new XElement(Atom + "entry");
-                await _buildActivity(e, await _get(item.Primitive), (string) ao["attributedTo"].FirstOrDefault()?.Primitive);
+                await _buildActivity(e, await _get(item.Id), (string) ao["attributedTo"].FirstOrDefault()?.Primitive);
                 elem.Add(e);
             }
 
@@ -485,7 +486,7 @@ namespace Kroeg.Server.OStatusCompat
             var tmpOldStore = _entityStore;
             _entityStore = newStore ?? _entityStore;
             XElement e;
-            if ((string)ao["type"].First().Primitive == "OrderedCollectionPage")
+            if (ao.Type.Contains("https://www.w3.org/ns/activitystreams#OrderedCollectionPage"))
                 e = await _buildFeed(ao);
             else
             {

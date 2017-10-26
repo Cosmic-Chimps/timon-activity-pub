@@ -137,9 +137,9 @@ namespace Kroeg.Server.OStatusCompat
         {
             var entity = await _entityStore.GetEntity(atomId, true);
             if (entity == null) return atomId;
-            if (entity.Data["type"].Any(a => (string) a.Primitive == "Create"))
+            if (entity.Type.Contains("https://www.w3.org/ns/activitystreams#Create"))
             {
-                return (string) entity.Data["object"].Single().Primitive;
+                return entity.Data["object"].Single().Id;
             }
             return atomId;
         }
@@ -152,7 +152,7 @@ namespace Kroeg.Server.OStatusCompat
             if (entity != null)
             {
                 if (entity.Type.Contains("https://www.w3.org/ns/activitystreams#Create"))
-                    return ASTerm.MakeId((string)entity.Data["object"].First().Primitive);
+                    return ASTerm.MakeId(entity.Data["object"].First().Id);
 
                 return ASTerm.MakeId(element.Element(Atom + "id")?.Value);
             }
