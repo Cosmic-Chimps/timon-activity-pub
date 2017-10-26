@@ -151,7 +151,7 @@ namespace Kroeg.Server
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        public async void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
@@ -168,6 +168,9 @@ namespace Kroeg.Server
 
             app.ApplicationServices.GetRequiredService<APContext>().Database.Migrate();
             app.ApplicationServices.GetRequiredService<BackgroundTaskQueuer>(); // kickstart background tasks!
+
+            var sevc = app.ApplicationServices.GetRequiredService<EntityData>();
+            await ActivityStreams.ASObject.SetContext(JsonLDConfig.Context, sevc.BaseUri + "render/context");
         }
     }
 }

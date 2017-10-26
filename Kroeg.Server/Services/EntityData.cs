@@ -30,12 +30,18 @@ namespace Kroeg.Server.Tools
 
         private static readonly HashSet<string> Activities = new HashSet<string>
         {
-            "Create", "Update", "Delete", "Follow", "Add", "Remove", "Like", "Block", "Undo", "Announce"
+            "https://www.w3.org/ns/activitystreams#Create", "https://www.w3.org/ns/activitystreams#Update",
+            "https://www.w3.org/ns/activitystreams#Delete", "https://www.w3.org/ns/activitystreams#Follow",
+            "https://www.w3.org/ns/activitystreams#Add", "https://www.w3.org/ns/activitystreams#Remove",
+            "https://www.w3.org/ns/activitystreams#Like", "https://www.w3.org/ns/activitystreams#Block",
+            "https://www.w3.org/ns/activitystreams#Undo", "https://www.w3.org/ns/activitystreams#Announce"
         };
 
         private static readonly HashSet<string> Actors = new HashSet<string>
         {
-            "Actor", "Application", "Group", "Organization", "Person", "Service"
+            "https://www.w3.org/ns/activitystreams#Actor", "https://www.w3.org/ns/activitystreams#Application",
+            "https://www.w3.org/ns/activitystreams#Group", "https://www.w3.org/ns/activitystreams#Organization",
+            "https://www.w3.org/ns/activitystreams#Person", "https://www.w3.org/ns/activitystreams#Service"
         };
 
         [Obsolete("hardcoded single type")]
@@ -51,7 +57,7 @@ namespace Kroeg.Server.Tools
 
         public bool IsActor(ASObject @object)
         {
-            return @object["type"].Any(a => Actors.Contains((string)a.Primitive));
+            return @object.Type.Any(Actors.Contains);
         }
 
         private string _getFormat(IEnumerable<string> type, string category, bool isRelative)

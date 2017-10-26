@@ -36,8 +36,8 @@ namespace Kroeg.Server.Services.EntityStore
             if (id == "https://www.w3.org/ns/activitystreams#Public")
             {
                 var aso = new ASObject();
-                aso.Replace("type", new ASTerm("Collection"));
-                aso.Replace("id", new ASTerm("https://www.w3.org/ns/activitystreams#Public"));
+                aso.Type.Add("https://www.w3.org/ns/activitystreams#Collection");
+                aso.Id = "https://www.w3.org/ns/activitystreams#Public";
 
                 var ent = APEntity.From(aso);
                 return ent;

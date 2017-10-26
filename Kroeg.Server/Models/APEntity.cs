@@ -22,14 +22,13 @@ namespace Kroeg.Server.Models
 
         public static APEntity From(string id, ASObject @object)
         {
-            var type = (string)@object["type"].FirstOrDefault()?.Primitive;
+            var type = @object.Type.FirstOrDefault();
             if (type?.StartsWith("_") != false) type = "Unknown";
 
-            @object.Replace("id", new ASTerm(id));
-
+            @object.Id = id;
             return new APEntity
             {
-                Id = id,
+                Id = @object.Id,
                 Data = @object,
                 Type = type,
                 Updated = DateTime.Now
@@ -39,14 +38,12 @@ namespace Kroeg.Server.Models
 
         public static APEntity From(ASObject @object, bool isOwner = false)
         {
-            var type = (string)@object["type"].FirstOrDefault()?.Primitive;
+            var type = @object.Type.FirstOrDefault();
             if (type?.StartsWith("_") != false) type = "Unknown";
-
-            var id = (string)@object["id"].FirstOrDefault()?.Primitive;
 
             return new APEntity
             {
-                Id = id,
+                Id = @object.Id,
                 Data = @object,
                 Type = type,
                 IsOwner = isOwner,
@@ -57,7 +54,7 @@ namespace Kroeg.Server.Models
         [NotMapped]
         public ASObject Data
         {
-            get => ASObject.Parse(SerializedData);
+            get => ASObject.Parse(SerializedData, true);
 
             set => SerializedData = value.Serialize(false).ToString(Newtonsoft.Json.Formatting.None);
         }

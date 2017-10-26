@@ -62,7 +62,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
                     data[item.Key].AddRange(item.Value);
                 }
 
-                data.Replace("updated", new ASTerm(DateTime.Now.ToString("o")));
+                data.Replace("updated", ASTerm.MakePrimitive(DateTime.Now.ToString("o")));
 
                 newObject.Data = data;
                 newObject.Type = oldObject.Type;
@@ -77,8 +77,9 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
                         kv.Value.Clear();
                 }
 
-                newData.Replace("type", new ASTerm("Tombstone"));
-                newData.Replace("deleted", new ASTerm(DateTime.Now.ToString("o")));
+                newData.Type.Clear();
+                newData.Type.Add("https://www.w3.org/ns/activitystreams#Tombstone");
+                newData.Replace("deleted", ASTerm.MakePrimitive(DateTime.Now.ToString("o")));
 
                 var newObject = APEntity.From(newData, true);
                 await EntityStore.StoreEntity(newObject);

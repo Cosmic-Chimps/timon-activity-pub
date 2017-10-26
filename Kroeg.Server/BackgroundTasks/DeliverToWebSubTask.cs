@@ -34,10 +34,10 @@ namespace Kroeg.Server.BackgroundTasks
             var outboxId = (string)user["outbox"].First().Primitive;
 
             var page = new ASObject();
-            page["type"].Add(new ASTerm("OrderedCollectionPage"));
-            page["id"].Add(new ASTerm(outboxId + "?from_id=" + (Data.CollectionItem + 1)));
-            page["attributedTo"].Add(new ASTerm(Data.SourceUserId));
-            page["orderedItems"].Add(new ASTerm(Data.ObjectId));
+            page.Type.Add("https://www.w3.org/ns/activitystreams#OrderedCollectionPage");
+            page.Id = outboxId + "?from_id=" + (Data.CollectionItem + 1);
+            page["attributedTo"].Add(ASTerm.MakeId(Data.SourceUserId));
+            page["orderedItems"].Add(ASTerm.MakeId(Data.ObjectId));
             return page;
         }
 

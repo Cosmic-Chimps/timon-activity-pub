@@ -29,8 +29,9 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
                     kv.Value.Clear();
             }
 
-            newData.Replace("type", new ASTerm("Tombstone"));
-            newData.Replace("deleted", new ASTerm(DateTime.Now.ToString("o")));
+            newData.Type.Clear();
+            newData.Type.Add("https://www.w3.org/ns/activitystreams#Tombstone");
+            newData.Replace("deleted", ASTerm.MakePrimitive(DateTime.Now.ToString("o")));
 
             var newObject = APEntity.From(newData);
             await EntityStore.StoreEntity(newObject);

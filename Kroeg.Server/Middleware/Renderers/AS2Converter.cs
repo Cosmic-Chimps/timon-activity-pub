@@ -54,13 +54,13 @@ namespace Kroeg.Server.Middleware.Renderers
             public async Task Render(HttpRequest request, HttpResponse response, ASObject toRender)
             {
                 response.ContentType = ConverterHelpers.GetBestMatch(_factory.MimeTypes, request.Headers["Accept"]);
-                if (toRender["type"].Any(a => (string)a.Primitive == "Tombstone"))
+                if (toRender.Type.Contains("Tombstone"))
                     response.StatusCode = 410;
 
                 if (request.Method == "POST")
                 {
                     response.StatusCode = 201;
-                    response.Headers.Add("Location", (string)toRender["id"].First().Primitive);
+                    response.Headers.Add("Location", toRender.Id);
                 }
 
                 response.Headers.Add("Access-Control-Allow-Origin", "*");

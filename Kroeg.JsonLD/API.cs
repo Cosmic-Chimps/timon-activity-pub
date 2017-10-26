@@ -8,188 +8,20 @@ using Newtonsoft.Json;
 
 namespace Kroeg.JsonLD
 {
+    public class JsonLDException : Exception
+    {
+        public JsonLDException(string msg) : base(msg) { }
+    }
+
     public class API
     {
-        public class JsonLDException : Exception
-        {
-            public JsonLDException(string msg) : base(msg) { }
-        }
 
-        private static HashSet<string> _containerValues = new HashSet<string> { "@list", "@set", "@index", "@language" };
-        private static HashSet<string> _limitedResultList = new HashSet<string> { "@value", "@language", "@type", "@index" };
+        internal static HashSet<string> _containerValues = new HashSet<string> { "@list", "@set", "@index", "@language" };
+        internal static HashSet<string> _limitedResultList = new HashSet<string> { "@value", "@language", "@type", "@index" };
 
         public delegate Task<JObject> ResolveContext(string uri);
 
         private ResolveContext _resolve;
-
-        /// <summary>
-        /// 6.2
-        /// </summary>
-        /// <param name="activeContext"></param>
-        /// <param name="localContext"></param>
-        /// <param name="term"></param>
-        /// <param name="defined"></param>
-        /// <returns></returns>
-        private async Task _createTermDefinition(Context activeContext, JObject localContext, string term,
-            Dictionary<string, bool> defined)
-        {
-            if (defined.ContainsKey(term))
-                if (defined[term])
-                    return;
-                else
-                {
-                    throw new JsonLDException("cyclic IRI mapping");
-                }
-
-            defined[term] = false;
-            if (term.StartsWith("@")) throw new JsonLDException("keyword redefinition");
-
-            activeContext.Remove(term);
-            var value = localContext[term];
-            if (value == null || value.Type == JTokenType.Null ||
-                value.Type == JTokenType.Object && ((JObject)value)["@id"]?.Type == JTokenType.Null)
-            {
-                defined[term] = true;
-                activeContext.Add(term, null);
-                return;
-            }
-
-            if (value.Type == JTokenType.String)
-            {
-                var data = value.ToObject<string>();
-                value = new JObject { ["@id"] = data };
-            }
-            else if (value.Type != JTokenType.Object)
-                throw new JsonLDException("invalid term definition");
-
-            var definition = new TermDefinition();
-            if (value["@type"] != null)
-            {
-                var type = value["@type"];
-                if (type.Type != JTokenType.String) throw new JsonLDException("invalid type mapping");
-
-                var typeString = await _expandIri(activeContext, type.ToObject<string>(), false, true,
-                    localContext, defined);
-
-                if (typeString != "@id" && typeString != "@vocab" && !Uri.IsWellFormedUriString(typeString, UriKind.Absolute))
-                    throw new JsonLDException("invalid type mapping");
-
-                definition.TypeMapping = typeString;
-            }
-
-            if (value["@reverse"] != null)
-            {
-                if (value["@id"] != null) throw new JsonLDException("invalid reverse property");
-                if (value["@reverse"].Type != JTokenType.String) throw new JsonLDException("invalid IRI mapping");
-
-                definition.IriMapping = await _expandIri(activeContext, value["@reverse"].ToObject<string>(), false,
-                    true, localContext, defined);
-                if (!definition.IriMapping.Contains(":")) throw new JsonLDException("invalid IRI mapping");
-                definition.ReverseProperty = true;
-
-                activeContext.Add(term, definition);
-                defined[term] = true;
-                return;
-            }
-
-            definition.ReverseProperty = false; // not needed, but to be sure(TM)
-
-            if (value["@id"] != null && value["@id"].ToObject<string>() != term)
-            {
-                if (value["@id"].Type != JTokenType.String) throw new JsonLDException("invalid IRI mapping");
-                definition.IriMapping = await _expandIri(activeContext, value["@id"].ToObject<string>(), false, true,
-                    localContext, defined);
-
-                // todo: 13.2
-            }
-            else if (term.Contains(":"))
-            {
-                var spl = term.Split(new[] { ':' }, 2);
-                var prefix = spl[0];
-                var suffix = spl[1];
-
-                if (!suffix.StartsWith("//") && localContext[prefix] != null)
-                    await _createTermDefinition(activeContext, localContext, prefix, defined);
-
-                if (activeContext.Has(prefix))
-                    definition.IriMapping = activeContext[prefix].IriMapping + suffix;
-                else
-                    definition.IriMapping = term;
-            }
-            else if (activeContext.VocabularyMapping != null)
-                definition.IriMapping = activeContext.VocabularyMapping + term;
-            else
-                throw new JsonLDException("invalid IRI mapping");
-
-            if (value["@container"] != null)
-            {
-                var container = value["@container"].ToObject<string>();
-                if (!_containerValues.Contains(container)) throw new JsonLDException("invalid container mapping");
-
-                definition.ContainerMapping = container;
-            }
-
-            if (value["@language"] != null && value["@type"] == null)
-            {
-                var language = value["@language"].ToObject<string>();
-                if (value["@language"].Type != JTokenType.Null && value["@language"].Type != JTokenType.String)
-                    throw new JsonLDException("invalid language mapping");
-
-                definition.LanguageMapping = language.ToLower();
-                definition.HasLanguageMapping = true;
-            }
-
-            activeContext.Add(term, definition);
-            defined[term] = true;
-        }
-
-        /// <summary>
-        /// 6.3
-        /// </summary>
-        /// <param name="activeContext"></param>
-        /// <param name="value"></param>
-        /// <param name="documentRelative"></param>
-        /// <param name="vocab"></param>
-        /// <param name="localContext"></param>
-        /// <param name="defined"></param>
-        /// <returns></returns>
-        private async Task<string> _expandIri(Context activeContext, string value, bool documentRelative = false,
-            bool vocab = false, JObject localContext = null, Dictionary<string, bool> defined = null)
-        {
-            if (value == null || value.StartsWith("@"))
-                return value;
-
-            if (localContext != null && defined != null && localContext[value] != null && (!defined.ContainsKey(value) || !defined[value]))
-            {
-                // create term definition!
-                await _createTermDefinition(activeContext, localContext, value, defined);
-            }
-
-            if (vocab && activeContext.Has(value)) return activeContext[value].IriMapping;
-
-            if (value.Contains(":"))
-            {
-                var spl = value.Split(new char[] { ':' }, 2);
-                var prefix = spl[0];
-                var suffix = spl[1];
-                if (prefix == "_" || suffix.StartsWith("//")) return value;
-
-                if (localContext != null && defined != null && localContext[prefix] != null &&
-                    (!defined.ContainsKey(prefix) || !defined[prefix]))
-                {
-                    await _createTermDefinition(activeContext, localContext, prefix, defined);
-                }
-
-                if (activeContext.Has(prefix)) return activeContext[prefix].IriMapping + suffix;
-
-                return value;
-            }
-
-            if (vocab && activeContext.VocabularyMapping != null) return activeContext.VocabularyMapping + value;
-            if (documentRelative) return new Uri(new Uri(activeContext.BaseIri), value).ToString();
-
-            return value;
-        }
 
         /// <summary>
         /// 7.2
@@ -198,12 +30,12 @@ namespace Kroeg.JsonLD
         /// <param name="activeProperty"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        private async Task<JToken> _expandValue(Context activeContext, string activeProperty, JToken value)
+        private JToken _expandValue(Context activeContext, string activeProperty, JToken value)
         {
             if (activeContext[activeProperty]?.TypeMapping == "@id")
-                return new JObject { ["@id"] = await _expandIri(activeContext, value.ToObject<string>(), true) };
+                return new JObject { ["@id"] = activeContext._expandIri(value.ToObject<string>(), true) };
             if (activeContext[activeProperty]?.TypeMapping == "@vocab")
-                return new JObject { ["@id"] = await _expandIri(activeContext, value.ToObject<string>(), true, true) };
+                return new JObject { ["@id"] = activeContext._expandIri(value.ToObject<string>(), true, true) };
 
             var result = new JObject { ["@value"] = value };
 
@@ -324,7 +156,7 @@ namespace Kroeg.JsonLD
                 foreach (var kv in contextObject)
                 {
                     if (kv.Key != "@base" && kv.Key != "@vocab" && kv.Key != "@language")
-                        await _createTermDefinition(result, contextObject, kv.Key, defined);
+                        result._createTermDefinition(contextObject, kv.Key, defined);
                 }
             }
 
@@ -379,7 +211,7 @@ namespace Kroeg.JsonLD
             {
                 if (activeProperty == null || activeProperty == "@graph") return JValue.CreateNull();
 
-                return await _expandValue(activeContext, activeProperty, element);
+                return _expandValue(activeContext, activeProperty, element);
             }
 
             var objectElement = (JObject)element;
@@ -394,7 +226,7 @@ namespace Kroeg.JsonLD
                 var value = i.Value;
 
                 if (key == "@context") continue;
-                var expandedProperty = await _expandIri(activeContext, key, false, true);
+                var expandedProperty = activeContext._expandIri(key, false, true);
 
                 if (expandedProperty == null || !expandedProperty.Contains(":") &&
                     !expandedProperty.StartsWith("@")) continue;
@@ -411,20 +243,20 @@ namespace Kroeg.JsonLD
                             throw new JsonLDException("invalid @id value");
                         else
                         {
-                            expandedValue = await _expandIri(activeContext, value.ToObject<string>(), true);
+                            expandedValue = activeContext._expandIri(value.ToObject<string>(), true);
                         }
                     else if (expandedProperty == "@type")
                     {
                         if (value.Type == JTokenType.String)
                         {
-                            expandedValue = await _expandIri(activeContext, value.ToObject<string>(), true, true);
+                            expandedValue = activeContext._expandIri(value.ToObject<string>(), true, true);
                         }
                         else if (value.Type == JTokenType.Array &&
                                  ((JArray)value).All(a => a.Type == JTokenType.String))
                         {
                             var arrs = new JArray();
                             foreach (var t in (JArray)value)
-                                arrs.Add(await _expandIri(activeContext, t.ToObject<string>(), true, true));
+                                arrs.Add(activeContext._expandIri(t.ToObject<string>(), true, true));
 
                             expandedValue = arrs;
                         }
@@ -818,7 +650,7 @@ namespace Kroeg.JsonLD
                 return resultAr;
             }
 
-            if (element["@value"] != null || element["@id"] != null)
+            if (element["@value"] != null || (element["@id"] != null && element["@type"] == null))
             {
                 var compactResult = _compactValue(activeContext, inverseContext, activeProperty, (JObject) element);
                 if (compactResult.Type != JTokenType.Object && compactResult.Type != JTokenType.Array) return compactResult;
@@ -1017,10 +849,7 @@ namespace Kroeg.JsonLD
             }
 
             if (objElement["@type"] != null)
-            {
-                if (objElement["@type"].Type == JTokenType.String)
-                    Console.WriteLine("BAD PUCK.");
-                    
+            {                    
                 var arr = (JArray) objElement["@type"];
                 for (int i = 0; i < arr.Count; i++)
                 {
@@ -1340,10 +1169,184 @@ namespace Kroeg.JsonLD
 
         internal Dictionary<string, TermDefinition> TermDefinitions { get; } = new Dictionary<string, TermDefinition>();
 
-        internal bool Has(string term) => TermDefinitions.ContainsKey(term);
+        public bool Has(string term) => TermDefinitions.ContainsKey(term);
         internal void Add(string term, TermDefinition definition) => TermDefinitions[term] = definition;
         internal void Remove(string term) => TermDefinitions.Remove(term);
-        internal TermDefinition this[string term] => Has(term) ? TermDefinitions[term] : null;
+        public TermDefinition this[string term] => Has(term) ? TermDefinitions[term] : null;
+
+
+
+        /// <summary>
+        /// 6.2
+        /// </summary>
+        /// <param name="localContext"></param>
+        /// <param name="term"></param>
+        /// <param name="defined"></param>
+        /// <returns></returns>
+        internal void  _createTermDefinition(JObject localContext, string term,
+            Dictionary<string, bool> defined)
+        {
+            if (defined.ContainsKey(term))
+                if (defined[term])
+                    return;
+                else
+                {
+                    throw new JsonLDException("cyclic IRI mapping");
+                }
+
+            defined[term] = false;
+            if (term.StartsWith("@")) throw new JsonLDException("keyword redefinition");
+
+            Remove(term);
+            var value = localContext[term];
+            if (value == null || value.Type == JTokenType.Null ||
+                value.Type == JTokenType.Object && ((JObject)value)["@id"]?.Type == JTokenType.Null)
+            {
+                defined[term] = true;
+                Add(term, null);
+                return;
+            }
+
+            if (value.Type == JTokenType.String)
+            {
+                var data = value.ToObject<string>();
+                value = new JObject { ["@id"] = data };
+            }
+            else if (value.Type != JTokenType.Object)
+                throw new JsonLDException("invalid term definition");
+
+            var definition = new TermDefinition();
+            if (value["@type"] != null)
+            {
+                var type = value["@type"];
+                if (type.Type != JTokenType.String) throw new JsonLDException("invalid type mapping");
+
+                var typeString = _expandIri(type.ToObject<string>(), false, true,
+                    localContext, defined);
+
+                if (typeString != "@id" && typeString != "@vocab" && !Uri.IsWellFormedUriString(typeString, UriKind.Absolute))
+                    throw new JsonLDException("invalid type mapping");
+
+                definition.TypeMapping = typeString;
+            }
+
+            if (value["@reverse"] != null)
+            {
+                if (value["@id"] != null) throw new JsonLDException("invalid reverse property");
+                if (value["@reverse"].Type != JTokenType.String) throw new JsonLDException("invalid IRI mapping");
+
+                definition.IriMapping = _expandIri(value["@reverse"].ToObject<string>(), false,
+                    true, localContext, defined);
+                if (!definition.IriMapping.Contains(":")) throw new JsonLDException("invalid IRI mapping");
+                definition.ReverseProperty = true;
+
+                Add(term, definition);
+                defined[term] = true;
+                return;
+            }
+
+            definition.ReverseProperty = false; // not needed, but to be sure(TM)
+
+            if (value["@id"] != null && value["@id"].ToObject<string>() != term)
+            {
+                if (value["@id"].Type != JTokenType.String) throw new JsonLDException("invalid IRI mapping");
+                definition.IriMapping = _expandIri(value["@id"].ToObject<string>(), false, true,
+                    localContext, defined);
+
+                // todo: 13.2
+            }
+            else if (term.Contains(":"))
+            {
+                var spl = term.Split(new[] { ':' }, 2);
+                var prefix = spl[0];
+                var suffix = spl[1];
+
+                if (!suffix.StartsWith("//") && localContext[prefix] != null)
+                    _createTermDefinition(localContext, prefix, defined);
+
+                if (Has(prefix))
+                    definition.IriMapping = this[prefix].IriMapping + suffix;
+                else
+                    definition.IriMapping = term;
+            }
+            else if (VocabularyMapping != null)
+                definition.IriMapping = VocabularyMapping + term;
+            else
+                throw new JsonLDException("invalid IRI mapping");
+
+            if (value["@container"] != null)
+            {
+                var container = value["@container"].ToObject<string>();
+                if (!API._containerValues.Contains(container)) throw new JsonLDException("invalid container mapping");
+
+                definition.ContainerMapping = container;
+            }
+
+            if (value["@language"] != null && value["@type"] == null)
+            {
+                var language = value["@language"].ToObject<string>();
+                if (value["@language"].Type != JTokenType.Null && value["@language"].Type != JTokenType.String)
+                    throw new JsonLDException("invalid language mapping");
+
+                definition.LanguageMapping = language.ToLower();
+                definition.HasLanguageMapping = true;
+            }
+
+            Add(term, definition);
+            defined[term] = true;
+        }
+
+        /// <summary>
+        /// 6.3
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="documentRelative"></param>
+        /// <param name="vocab"></param>
+        /// <param name="localContext"></param>
+        /// <param name="defined"></param>
+        /// <returns></returns>
+        internal string _expandIri(string value, bool documentRelative = false,
+            bool vocab = false, JObject localContext = null, Dictionary<string, bool> defined = null)
+        {
+            if (value == null || value.StartsWith("@"))
+                return value;
+
+            if (localContext != null && defined != null && localContext[value] != null && (!defined.ContainsKey(value) || !defined[value]))
+            {
+                // create term definition!
+                _createTermDefinition(localContext, value, defined);
+            }
+
+            if (vocab && Has(value)) return this[value].IriMapping;
+
+            if (value.Contains(":"))
+            {
+                var spl = value.Split(new char[] { ':' }, 2);
+                var prefix = spl[0];
+                var suffix = spl[1];
+                if (prefix == "_" || suffix.StartsWith("//")) return value;
+
+                if (localContext != null && defined != null && localContext[prefix] != null &&
+                    (!defined.ContainsKey(prefix) || !defined[prefix]))
+                {
+                    _createTermDefinition(localContext, prefix, defined);
+                }
+
+                if (Has(prefix)) return this[prefix].IriMapping + suffix;
+
+                return value;
+            }
+
+            if (vocab && VocabularyMapping != null) return VocabularyMapping + value;
+            if (documentRelative) return new Uri(new Uri(BaseIri), value).ToString();
+
+            return value;
+        }
+
+        public string ExpandIRI(string value, bool documentRelative = false, bool vocab = true)
+        {
+            return _expandIri(value, documentRelative, vocab);
+        }
 
         public Context Clone()
         {
@@ -1355,7 +1358,7 @@ namespace Kroeg.JsonLD
         }
     }
 
-    internal class TermDefinition
+    public class TermDefinition
     {
         public string IriMapping { get; set; }
         public bool ReverseProperty { get; set; }

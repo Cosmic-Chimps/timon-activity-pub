@@ -35,9 +35,9 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
                 if (Actor.Data["manuallyApprovesFollowers"].Any(a => !(bool) a.Primitive))
                 {
                     var accept = new ASObject();
-                    accept.Replace("type", new ASTerm("Accept"));
-                    accept.Replace("actor", new ASTerm(Actor.Id));
-                    accept.Replace("object", new ASTerm(MainObject.Id));
+                    accept.Type.Add("https://www.w3.org/ns/activitystreams#Accept");
+                    accept.Replace("actor", ASTerm.MakeId(Actor.Id));
+                    accept.Replace("object", ASTerm.MakeId(MainObject.Id));
 
                     var claims = new ClaimsPrincipal();
                     var id = new ClaimsIdentity();

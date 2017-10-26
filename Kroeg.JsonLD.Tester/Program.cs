@@ -12,6 +12,9 @@ namespace Kroeg.JsonLD.Tester
     class Program
     {
     private static Dictionary<string, JObject> _objectStore = new Dictionary<string, JObject>();
+    private static JArray _kroegContext = new JArray("https://www.w3.org/ns/activitystreams", new JObject {
+        ["manuallyApprovesFollowers"] = "as:manuallyApprovesFollowers"
+    });
 
         private static async Task<JObject> _resolve(string uri)
         {
@@ -26,13 +29,13 @@ namespace Kroeg.JsonLD.Tester
         static async Task<int> _do()
         {
             var api = new API(_resolve);
+            var targetContext = await api.BuildContext(_kroegContext);
 //            var data = JObject.Parse(File.ReadAllText("test.json"));
             var data = await _resolve("https://mastodon.social/@Gargron.json");
 
             var expanded = await api.Expand(data);
-            var context = await api.BuildContext(data["@context"]);
-            var compacted= api.CompactExpanded(context, expanded);
-            var flattened = api.Flatten(expanded, context);
+            var compacted= api.CompactExpanded(targetContext, expanded);
+            var flattened = api.Flatten(expanded, targetContext);
             var rdf = api.MakeRDF(expanded);
 
             Console.WriteLine(expanded.ToString());

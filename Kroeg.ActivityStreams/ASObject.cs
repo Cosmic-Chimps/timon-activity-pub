@@ -1,7 +1,10 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -10,52 +13,87 @@ namespace Kroeg.ActivityStreams
     public class ASObject : IEnumerable<KeyValuePair<string, List<ASTerm>>>
     {
         private Dictionary<string, List<ASTerm>> _terms = new Dictionary<string, List<ASTerm>>();
-        private static Dictionary<string, string> _languageMapMap = new Dictionary<string, string> { ["content"] = "contentMap", ["name"] = "nameMap", ["summary"] = "summaryMap" };
-        private static HashSet<string> _alwaysArray = new HashSet<string> { "items", "orderedItems" };
+        public List<string> Type { get; } = new List<string>();
+        public string Id { get; set; }
+
         private static JToken _context = new JArray("https://www.w3.org/ns/activitystreams", new JObject() {
             ["manuallyApprovesFollowers"] = "as:manuallyApprovesFollowers"
         });
 
-        public List<ASTerm> this[string value] => _terms.ContainsKey(value) ? _terms[value] : (_terms[value] = new List<ASTerm>());
+        private static Dictionary<string, JObject> _objectStore = new Dictionary<string, JObject>();
+        private static JsonLD.API _api = new JsonLD.API(_resolve);
+        private static string _contextUrl;
+
+        public static async Task SetContext(JToken context, string contextUrl)
+        {
+            _context = context;
+            _api = new JsonLD.API(_resolve);
+            _ldContext = await _api.BuildContext(context);
+            _contextUrl = contextUrl;
+        }
+
+        private static async Task<JObject> _resolve(string uri)
+        {
+            if (_objectStore.ContainsKey(uri)) return _objectStore[uri];
+
+            var hc = new HttpClient();
+            hc.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/ld+json"));
+
+            return _objectStore[uri] = JObject.Parse(await hc.GetStringAsync(uri));
+        }
+
+        private static JsonLD.Context _ldContext = null;
+
+        public List<ASTerm> this[string value] {
+            get {
+                var url = _ldContext.ExpandIRI(value);
+                if (url == "@id") throw new NotSupportedException("Can't get ID this way anymore!");
+                if (url == "@type") throw new NotSupportedException("Can't get Type this way anymore!");
+
+                return _terms.ContainsKey(url) ? _terms[url] : (_terms[url] = new List<ASTerm>());
+            }
+        }
 
         public void Replace(string key, ASTerm value)
         {
-            this[key].Clear();
-            this[key].Add(value);
+            var url = _ldContext.ExpandIRI(key);
+            if (url == "@id" || url == "@type") throw new NotSupportedException("no. don't.");
+
+            _terms[url] = new List<ASTerm> { value };
         }
 
-        private void _deserialize(string arg, JToken val)
-        {
-            if (val.Type == JTokenType.Array)
-            {
-                foreach (var v in val.Value<JArray>())
-                {
-                    _deserialize(arg, v);
-                }
-            }
-            else
-            {
-                var arr = this[arg];
-                if (val.Type == JTokenType.Object)
-                {
-                    arr.Add(new ASTerm { SubObject = ASObject.Parse(val.Value<JObject>()) });
-                }
-                else if (val.Type == JTokenType.Float)
-                    arr.Add(new ASTerm { Primitive = val.Value<decimal>() });
-                else if (val.Type == JTokenType.Integer)
-                    arr.Add(new ASTerm { Primitive = val.Value<int>() });
-                else if (val.Type == JTokenType.Boolean)
-                    arr.Add(new ASTerm { Primitive = val.Value<bool>() });
-                else
-                    arr.Add(new ASTerm { Primitive = val.Value<string>() });
-            }
-        }
-
-        public static ASObject Parse(string obj)
+        public static ASObject Parse(string obj, bool impliedContext = false)
         {
             var ser = new JsonTextReader(new StringReader(obj));
             ser.DateParseHandling = DateParseHandling.None;
-            return Parse(JObject.Load(ser));
+            var jobj = JObject.Load(ser);
+            if (impliedContext) jobj["@context"] = _context;
+            return Parse(_api.Expand(jobj).Result);
+        }
+
+        public static ASObject Parse(JToken obj) {
+            if (obj.Type != JTokenType.Object) return null;
+            
+            var a = new ASObject();
+            foreach (var kv in (JObject) obj) {
+                if (kv.Key == "@type")
+                    a.Type.AddRange(kv.Value.Select(b => b.ToObject<string>()));
+                else if (kv.Key == "@id")
+                    a.Id = kv.Value.ToObject<string>();
+                else
+                {
+                    if (((JArray)kv.Value).Count == 1) {
+                        var ar = (JObject) ((JArray) kv.Value)[0];
+                        if (ar["@list"] != null) {
+                            a._terms.Add(kv.Key, (ar["@list"]).Select(b => ASTerm.Parse((JObject) b)).ToList());
+                            continue;
+                        }
+                    }
+                    a._terms.Add(kv.Key, kv.Value.Select(b => ASTerm.Parse((JObject) b)).ToList());
+                }
+            }
+
+            return a;
         }
 
         public ASObject Clone()
@@ -69,74 +107,26 @@ namespace Kroeg.ActivityStreams
             return o;
         }
 
-        public static ASObject Parse(JObject obj)
+        public JObject Serialize(bool addContext = false, bool compact = true)
         {
-            var ao = new ASObject();
-
-            foreach (var kv in obj)
-            {
-                if (kv.Key == "@context") continue;
-
-                if (_languageMapMap.ContainsValue(kv.Key))
-                {
-                    var termval = ao[kv.Key.Substring(0, kv.Key.Length - 3)];
-                    var val = kv.Value.Value<JObject>();
-                    foreach (var v in val)
-                    {
-                        termval.Add(new ASTerm { Language = v.Key, Primitive = v.Value.Value<string>() });
-                    }
-                }
-                else
-                {
-                    ao._deserialize(kv.Key, kv.Value);
-                }
-            }
-
-            return ao;
-        }
-
-        public JObject Serialize(bool includeContext = true)
-        {
-            var result = new JObject();
-            if (includeContext)
-                result["@context"] = _context;
-
+            var newObject = new JObject();
+            if (Id != null) newObject["@id"] = Id;
+            newObject["@type"] = new JArray(Type);
             foreach (var kv in _terms)
-            {
-                if (kv.Value.Count == 0) continue;
-                if (kv.Value.Count > 1 || kv.Value[0].Language != null && _languageMapMap.ContainsKey(kv.Key) || _alwaysArray.Contains(kv.Key))
-                {
-                    var unlanguage = kv.Value.Where(a => a.Language == null).Select(a => a.Primitive ?? a.SubObject.Serialize(false)).ToArray();
-                    var language = kv.Value.Where(a => a.Language != null).ToDictionary(a => a.Language);
-
-                    if (unlanguage.Length > 0)
-                    {
-                        result[kv.Key] = new JArray(unlanguage);
-                    }
-
-                    if (language.Count > 0)
-                    {
-                        var map = new JObject();
-                        foreach (var val in language)
-                        {
-                            map[val.Key] = JToken.FromObject(val.Value.Primitive);
-                        }
-
-                        result[_languageMapMap[kv.Key]] = map;
-                    }
-                }
+                if (kv.Value.Count == 0)
+                    continue;
+                else if (_ldContext.Has(kv.Key) && _ldContext[kv.Key].ContainerMapping == "@list")
+                    newObject[kv.Key] = new JArray(new JObject { ["@list"] = new JArray(kv.Value.Select(a => a.Serialize(false)).ToArray()) });
                 else
-                {
-                    if (kv.Value[0].Primitive != null)
-                        result[kv.Key] = JToken.FromObject(kv.Value[0].Primitive);
-                    else if (kv.Value[0].SubObject != null)
-                        result[kv.Key] = kv.Value[0].SubObject.Serialize(false);
-                    else
-                        result[kv.Key] = JValue.CreateNull();
-                }
+                    newObject[kv.Key] = new JArray(kv.Value.Select(a => a.Serialize(false)).ToArray());
+
+            if (compact)
+            {
+                newObject = (JObject) _api.CompactExpanded(_ldContext, newObject);
+                if (addContext) newObject["@context"] = _contextUrl;
             }
 
-            return result;
+            return newObject;
         }
 
         public IEnumerator<KeyValuePair<string, List<ASTerm>>> GetEnumerator()

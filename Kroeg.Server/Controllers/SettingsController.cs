@@ -171,9 +171,9 @@ namespace Kroeg.Server.Controllers
         private async Task<APEntity> _newCollection(string type, string attributedTo)
         {
             var obj = new ASObject();
-            obj["type"].Add(new ASTerm("OrderedCollection"));
-            obj["attributedTo"].Add(new ASTerm(attributedTo));
-            obj.Replace("id", new ASTerm(await _entityData.FindUnusedID(_entityStore, obj, type, attributedTo)));
+            obj.Type.Add("https://www.w3.org/ns/activitystreams#OrderedCollection");
+            obj["attributedTo"].Add(ASTerm.MakeId(attributedTo));
+            obj.Id = await _entityData.FindUnusedID(_entityStore, obj, type, attributedTo);
             var entity = APEntity.From(obj, true);
             entity.Type = "_" + type;
             entity = await _entityStore.StoreEntity(entity);
@@ -207,7 +207,7 @@ namespace Kroeg.Server.Controllers
             await file.CopyToAsync(str);
             str.Dispose();
 
-            mainObj.Replace("url", new ASTerm(uploadUri + fileName));
+            mainObj.Replace("url", ASTerm.MakePrimitive(uploadUri + fileName));
 
             if (obj["type"].Any(a => (string)a.Primitive == "Create"))
             {
@@ -230,7 +230,7 @@ namespace Kroeg.Server.Controllers
             else
             {
                 obj["id"].Clear();
-                obj.Replace("attributedTo", new ASTerm(User.FindFirstValue(JwtTokenSettings.ActorClaim)));
+                obj.Replace("attributedTo", ASTerm.MakeId(User.FindFirstValue(JwtTokenSettings.ActorClaim)));
                 obj = (await _flattener.FlattenAndStore(_entityStore, obj)).Data;
                 await _entityStore.CommitChanges();
             }
@@ -253,11 +253,10 @@ namespace Kroeg.Server.Controllers
             var relevant = await _relevantEntities.FindRelevantObject(user, null, model.id);
 
             ASObject relevantObject = new ASObject();
-            relevantObject["id"].Add(new ASTerm((string) null));
 
             foreach (var item in relevant)
             {
-                relevantObject["relevant"].Add(new ASTerm(item.Data));
+                relevantObject["relevant"].Add(ASTerm.MakeSubObject(item.Data));
             }
 
             return Content((await _flattener.Unflatten(_entityStore, APEntity.From(relevantObject), 5)).Serialize().ToString(), "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"");
@@ -272,16 +271,16 @@ namespace Kroeg.Server.Controllers
             var user = model.Username;
 
             var obj = new ASObject();
-            obj["type"].Add(new ASTerm("Person"));
-            obj["preferredUsername"].Add(new ASTerm(user));
-            obj["name"].Add(new ASTerm(string.IsNullOrWhiteSpace(model.Name) ? "Unnamed" : model.Name));
+            obj.Type.Add("https://www.w3.org/ns/activitystreams#Person");
+            obj["preferredUsername"].Add(ASTerm.MakePrimitive(user));
+            obj["name"].Add(ASTerm.MakePrimitive(string.IsNullOrWhiteSpace(model.Name) ? "Unnamed" : model.Name));
             if (!string.IsNullOrWhiteSpace(model.Summary))
-                obj["summary"].Add(new ASTerm(model.Summary));
+                obj["summary"].Add(ASTerm.MakePrimitive(model.Summary));
 
             var create = new ASObject();
-            create["type"].Add(new ASTerm("Create"));
-            create["object"].Add(new ASTerm(obj));
-            create["to"].Add(new ASTerm("https://www.w3.org/ns/activitystreams#Public"));
+            create.Type.Add("https://www.w3.org/ns/activitystreams#Create");
+            create["object"].Add(ASTerm.MakeSubObject(obj));
+            create["to"].Add(ASTerm.MakeId("https://www.w3.org/ns/activitystreams#Public"));
 
             var stagingStore = new StagingEntityStore(_entityStore);
             var apo = await _flattener.FlattenAndStore(stagingStore, create);
@@ -307,75 +306,5 @@ namespace Kroeg.Server.Controllers
             public string Actor { get; set; }
             public string Token { get; set; }
         }
-
-#if SHABADGE
-        [HttpPost("badgetoken")]
-        public async Task<IActionResult> DoBadgeToken([FromBody] BadgeTokenModel model)
-        {
-            var user = await _userManager.FindByNameAsync(model.Username);
-            if (user == null)
-            {
-                user = new APUser { UserName = model.Username, Email = model.Username + "@badge.local" };
-                await _userManager.CreateAsync(user, model.Password);
-                var uobj = model.Username;
-                var name = model.Username;
-
-                var obj = new ASObject();
-                obj["type"].Add(new ASTerm("Person"));
-                obj["preferredUsername"].Add(new ASTerm(name));
-                obj["name"].Add(new ASTerm(name));
-
-                var id = await _entityData.UriFor(_entityStore, obj);
-                obj["id"].Add(new ASTerm(id));
-
-                var inbox = await _newCollection("inbox", id);
-                var outbox = await _newCollection("outbox", id);
-                var following = await _newCollection("following", id);
-                var followers = await _newCollection("followers", id);
-                var likes = await _newCollection("likes", id);
-                var blocks = await _newCollection("blocks", id);
-                var blocked = await _newCollection("blocked", id);
-
-                var blocksData = blocks.Data;
-                blocksData["_blocked"].Add(new ASTerm(blocked.Id));
-                blocks.Data = blocksData;
-
-                obj["following"].Add(new ASTerm(following.Id));
-                obj["followers"].Add(new ASTerm(followers.Id));
-                obj["blocks"].Add(new ASTerm(blocks.Id));
-                obj["likes"].Add(new ASTerm(likes.Id));
-                obj["inbox"].Add(new ASTerm(inbox.Id));
-                obj["outbox"].Add(new ASTerm(outbox.Id));
-
-                var userEntity = await _entityStore.StoreEntity(APEntity.From(obj, true));
-                await _entityStore.CommitChanges();
-
-                _context.UserActorPermissions.Add(new UserActorPermission { UserId = user.Id, ActorId = userEntity.Id, IsAdmin = true });
-                await _context.SaveChangesAsync();
-            }
-            var u = await _signInManager.PasswordSignInAsync(model.Username, model.Password, false, false);
-            if (!u.Succeeded) return Unauthorized();
-
-            var firstActor = await _context.UserActorPermissions.FirstOrDefaultAsync(a => a.User == user);
-            var claims = new Claim[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-                new Claim(JwtTokenSettings.ActorClaim, firstActor.ActorId)
-            };
-
-            var jwt = new JwtSecurityToken(
-                issuer: _tokenSettings.Issuer,
-                audience: _tokenSettings.Audience,
-                claims: claims,
-                notBefore: DateTime.UtcNow,
-                expires: DateTime.UtcNow.Add(TimeSpan.FromDays(7)),
-                signingCredentials: _tokenSettings.Credentials
-                );
-
-            var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
-
-            return Json(new BadgeTokenResponse { Actor = firstActor.ActorId, Token = encodedJwt });
-        }
-#endif
     }
 }

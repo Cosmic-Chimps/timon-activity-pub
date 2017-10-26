@@ -28,7 +28,7 @@ namespace Kroeg.Server.OStatusCompat
 
             if (objectType == "Comment") objectType = "Note";
 
-            return objectType;
+            return "https://www.w3.org/ns/activitystreams#" + objectType;
         }
 
         private static readonly XNamespace Atom = "http://www.w3.org/2005/Atom";
@@ -46,8 +46,7 @@ namespace Kroeg.Server.OStatusCompat
         private ASObject _parseAuthor(XElement element)
         {
             var ao = new ASObject();
-
-            ao.Replace("type", new ASTerm("Person"));
+            ao.Type.Add("https://www.w3.org/ns/activitystreams#Person");
 
             // set preferredUsername and name
             {
@@ -55,8 +54,8 @@ namespace Kroeg.Server.OStatusCompat
                 var pocoDisplayName = element.Element(PortableContacts + "displayName")?.Value;
                 var pocoPreferredUsername = element.Element(PortableContacts + "preferredUsername")?.Value;
 
-                ao.Replace("preferredUsername", new ASTerm(pocoPreferredUsername ?? atomName));
-                ao.Replace("name", new ASTerm(pocoDisplayName ?? pocoPreferredUsername ?? atomName));
+                ao.Replace("preferredUsername", ASTerm.MakePrimitive(pocoPreferredUsername ?? atomName));
+                ao.Replace("name", ASTerm.MakePrimitive(pocoDisplayName ?? pocoPreferredUsername ?? atomName));
             }
 
             // set summary
@@ -64,7 +63,7 @@ namespace Kroeg.Server.OStatusCompat
                 var atomSummary = element.Element(Atom + "summary")?.Value;
                 var pocoNote = element.Element(PortableContacts + "note")?.Value;
 
-                ao.Replace("summary", new ASTerm(pocoNote ?? atomSummary));
+                ao.Replace("summary", ASTerm.MakePrimitive(pocoNote ?? atomSummary));
             }
 
             string retrievalUrl = null;
@@ -80,23 +79,20 @@ namespace Kroeg.Server.OStatusCompat
                     {
                         case "avatar":
                             var avatarObject = new ASObject();
-                            avatarObject.Replace("id", new ASTerm((string) null)); // transient object!
-                            avatarObject.Replace("type", new ASTerm("Image"));
-                            avatarObject.Replace("mediaType", new ASTerm(type));
+                            avatarObject.Type.Add("https://www.w3.org/ns/activitystreams#Image");
+                            avatarObject.Replace("mediaType", ASTerm.MakePrimitive(type));
                             var width = link.Attribute(AtomMedia + "width")?.Value;
                             var height = link.Attribute(AtomMedia + "height")?.Value;
 
                             if (width != null && height != null)
                             {
-                                avatarObject.Replace("width",
-                                    new ASTerm(int.Parse(width)));
-                                avatarObject.Replace("height",
-                                    new ASTerm(int.Parse(height)));
+                                avatarObject.Replace("width", ASTerm.MakePrimitive(int.Parse(width)));
+                                avatarObject.Replace("height", ASTerm.MakePrimitive(int.Parse(height)));
                             }
 
-                            avatarObject.Replace("url", new ASTerm(href));
+                            avatarObject.Replace("url", ASTerm.MakePrimitive(href));
 
-                            ao["icon"].Add(new ASTerm(avatarObject));
+                            ao["icon"].Add(ASTerm.MakeSubObject(avatarObject));
                             break;
                         case "alternate":
                             if (type == "text/html")
@@ -104,7 +100,7 @@ namespace Kroeg.Server.OStatusCompat
                                 if (retrievalUrl == null)
                                     retrievalUrl = href;
 
-                                ao["_:atomAlternate"].Add(new ASTerm(href));
+                                ao["atomUri"].Add(ASTerm.MakePrimitive(href));
                             }
                             break;
                         case "self":
@@ -118,21 +114,21 @@ namespace Kroeg.Server.OStatusCompat
             // should be Mastodon *and* GNU social compatible: Mastodon uses uri as id
 
             if (element.Element(Atom + "id") != null)
-                ao.Replace("id", new ASTerm(element.Element(Atom + "id")?.Value));
+                ao.Id = element.Element(Atom + "id")?.Value;
             else
-                ao.Replace("id", new ASTerm(element.Element(Atom + "uri")?.Value));
+                ao.Id = element.Element(Atom + "uri")?.Value;
 
             if (element.Element(Atom + "uri") != null)
-                ao["url"].Add(new ASTerm(element.Element(Atom + "uri")?.Value));
+                ao["url"].Add(ASTerm.MakePrimitive(element.Element(Atom + "uri")?.Value));
 
             if (element.Element(Atom + "email") != null)
-                ao["email"].Add(new ASTerm(element.Element(Atom + "email")?.Value));
+                ao["email"].Add(ASTerm.MakePrimitive(element.Element(Atom + "email")?.Value));
 
             foreach (var url in element.Elements(PortableContacts + "urls"))
-                ao["url"].Add(new ASTerm(url.Element(PortableContacts + "value")?.Value));
+                ao["url"].Add(ASTerm.MakePrimitive(url.Element(PortableContacts + "value")?.Value));
 
             if (retrievalUrl != null)
-                ao.Replace("_:atomRetrieveUrl", new ASTerm(retrievalUrl));
+                ao.Replace("atomUri", ASTerm.MakePrimitive(retrievalUrl));
             
             return ao;
         }
@@ -155,42 +151,42 @@ namespace Kroeg.Server.OStatusCompat
             var entity = await _entityStore.GetEntity(element.Element(Atom + "id")?.Value, true);
             if (entity != null)
             {
-                if (entity.Data["type"].Any(a => (string)a.Primitive == "Create"))
-                    return new ASTerm((string)entity.Data["object"].First().Primitive);
+                if (entity.Type.Contains("https://www.w3.org/ns/activitystreams#Create"))
+                    return ASTerm.MakeId((string)entity.Data["object"].First().Primitive);
 
-                return new ASTerm(element.Element(Atom + "id")?.Value);
+                return ASTerm.MakeId(element.Element(Atom + "id")?.Value);
             }
 
             var ao = new ASObject();
-            ao.Replace("id", new ASTerm(element.Element(Atom + "id")?.Value + (isActivity ? "#object" : "")));
-            ao.Replace("_:origin", new ASTerm("atom"));
+            ao.Id = element.Element(Atom + "id")?.Value + (isActivity ? "#object" : "");
+            ao.Replace("kroeg:origin", ASTerm.MakePrimitive("atom"));
 
             var objectType = _objectTypeToType(element.Element(ActivityStreams + "object-type")?.Value);
-            if (objectType == "Person")
-                return new ASTerm(_parseAuthor(element));
+            if (objectType == "https://www.w3.org/ns/activitystreams#Person")
+                return ASTerm.MakeSubObject(_parseAuthor(element));
 
-            ao.Replace("type", new ASTerm(objectType));
-            ao.Replace("attributedTo", new ASTerm(authorId));
+            ao.Type.Add(objectType);
+            ao.Replace("attributedTo", ASTerm.MakeId(authorId));
 
 
             if (element.Element(Atom + "summary") != null)
-                ao.Replace("summary", new ASTerm(element.Element(Atom + "summary")?.Value));
+                ao.Replace("summary", ASTerm.MakePrimitive(element.Element(Atom + "summary")?.Value));
             if (element.Element(Atom + "published") != null)
-                ao.Replace("published", new ASTerm(element.Element(Atom + "published")?.Value));
+                ao.Replace("published", ASTerm.MakePrimitive(element.Element(Atom + "published")?.Value));
             if (element.Element(Atom + "updated") != null)
-                ao.Replace("updated", new ASTerm(element.Element(Atom + "updated")?.Value));
+                ao.Replace("updated", ASTerm.MakePrimitive(element.Element(Atom + "updated")?.Value));
 
-            ao.Replace("content", new ASTerm(element.Element(Atom + "content")?.Value));
+            ao.Replace("content", ASTerm.MakePrimitive(element.Element(Atom + "content")?.Value));
             var mediaType = element.Element(Atom + "content")?.Attribute(NoNamespace + "type")?.Value;
 
             if (mediaType != null)
             {
                 if (mediaType == "text") mediaType = "text/plain";
-                if (mediaType.Contains("/")) ao.Replace("mediaType", new ASTerm(mediaType));
+                if (mediaType.Contains("/")) ao.Replace("mediaType", ASTerm.MakePrimitive(mediaType));
             }
 
             if (element.Element(OStatus + "conversation") != null)
-                ao.Replace("_:conversation", new ASTerm(element.Element(OStatus + "conversation").Attribute(NoNamespace + "ref")?.Value ?? element.Element(OStatus + "conversation").Value));
+                ao.Replace("conversation", ASTerm.MakePrimitive(element.Element(OStatus + "conversation").Attribute(NoNamespace + "ref")?.Value ?? element.Element(OStatus + "conversation").Value));
 
             if (element.Element(AtomThreading + "in-reply-to") != null)
             {
@@ -199,18 +195,18 @@ namespace Kroeg.Server.OStatusCompat
                 var hrel = elm.Attribute(NoNamespace + "href")?.Value;
 
                 if (hrel == null)
-                    ao.Replace("inReplyTo", new ASTerm(@ref));
+                    ao.Replace("inReplyTo", ASTerm.MakeId(@ref));
                 else if (await _entityStore.GetEntity(@ref, false) != null)
                 {
-                    ao.Replace("inReplyTo", new ASTerm(@ref));
+                    ao.Replace("inReplyTo", ASTerm.MakeId(@ref));
                 }
                 else
                 {
                     var lazyLoad = new ASObject();
-                    lazyLoad.Replace("id", new ASTerm(@ref));
-                    lazyLoad.Replace("type", new ASTerm("_:LazyLoad"));
-                    lazyLoad.Replace("href", new ASTerm(hrel));
-                    ao.Replace("inReplyTo", new ASTerm(lazyLoad));
+                    lazyLoad.Id = @ref;
+                    lazyLoad.Type.Add("_:LazyLoad");
+                    lazyLoad.Replace("href", ASTerm.MakePrimitive(hrel));
+                    ao.Replace("inReplyTo", ASTerm.MakeSubObject(lazyLoad));
                 }
             }
 
@@ -219,11 +215,11 @@ namespace Kroeg.Server.OStatusCompat
                 var val = tag.Attribute(NoNamespace + "term").Value;
 
                 var tagao = new ASObject();
-                tagao["id"].Add(new ASTerm($"{_entityConfiguration.BaseUri}/tag/{val}"));
-                tagao["name"].Add(new ASTerm("#" + val));
-                tagao["type"].Add(new ASTerm("Tag"));
+                tagao.Id = $"{_entityConfiguration.BaseUri}/tag/{val}";
+                tagao["name"].Add(ASTerm.MakePrimitive("#" + val));
+                tagao.Type.Add("Hashtag");
 
-                ao["tag"].Add(new ASTerm(tagao));
+                ao["tag"].Add(ASTerm.MakeSubObject(tagao));
             }
 
             string retrievalUrl = null;
@@ -238,7 +234,7 @@ namespace Kroeg.Server.OStatusCompat
                     retrievalUrl = href;
                 else if (rel == "alternate" && type == "text/html")
                 {
-                    ao["url"].Add(new ASTerm(href));
+                    ao["url"].Add(ASTerm.MakePrimitive(href));
 
                     if (retrievalUrl == null) retrievalUrl = href;
                 }
@@ -247,36 +243,35 @@ namespace Kroeg.Server.OStatusCompat
                     if (href == "http://activityschema.org/collection/public")
                         href = "https://www.w3.org/ns/activitystreams#Public";
 
-                    ao["to"].Add(new ASTerm(href));
+                    ao["to"].Add(ASTerm.MakeId(href));
                 }
                 else if (rel == "enclosure")
                 {
                     // image
                     var subAo = new ASObject();
-                    subAo["id"].Add(new ASTerm((string)null));
-                    subAo["url"].Add(new ASTerm(href));
-                    subAo["mediaType"].Add(new ASTerm(type));
+                    subAo["url"].Add(ASTerm.MakePrimitive(href));
+                    subAo["mediaType"].Add(ASTerm.MakePrimitive(type));
 
                     switch (type.Split('/')[0])
                     {
                         case "image":
-                            subAo.Replace("type", new ASTerm("Image"));
+                            subAo.Type.Add("https://www.w3.org/ns/activitystreams#Image");
                             break;
                         case "video":
-                            subAo.Replace("type", new ASTerm("Video"));
+                            subAo.Type.Add("https://www.w3.org/ns/activitystreams#Video");
                             break;
                         default:
                             continue;
                     }
 
                     if (link.Attribute(NoNamespace + "length") != null)
-                        subAo["fileSize"].Add(new ASTerm(int.Parse(link.Attribute(NoNamespace + "length").Value)));
+                        subAo["fileSize"].Add(ASTerm.MakePrimitive(int.Parse(link.Attribute(NoNamespace + "length").Value)));
 
-                    ao["attachment"].Add(new ASTerm(subAo));
+                    ao["attachment"].Add(ASTerm.MakeSubObject(subAo));
                 }
             }
             
-            return new ASTerm(ao);
+            return ASTerm.MakeSubObject(ao);
         }
 
         private class RelevantObjectJson
@@ -291,7 +286,7 @@ namespace Kroeg.Server.OStatusCompat
 
         private async Task<ASTerm> _findRelevantObject(string authorId, string objectType, string objectId)
         {
-            return new ASTerm((await _context.Entities.FromSql("SELECT * FROM \"Entities\" WHERE \"SerializedData\" @> {0}::jsonb ORDER BY \"SerializedData\"->'published'", JsonConvert.SerializeObject(
+            return ASTerm.MakeId((await _context.Entities.FromSql("SELECT * FROM \"Entities\" WHERE \"SerializedData\" @> {0}::jsonb ORDER BY \"SerializedData\"->'published'", JsonConvert.SerializeObject(
                 new RelevantObjectJson { Type = objectType, Object = objectId, Actor = authorId })).LastOrDefaultAsync())?.Id);
             // how?
         }
@@ -299,17 +294,17 @@ namespace Kroeg.Server.OStatusCompat
         [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         private async Task<ASTerm> _parseActivity(XElement element, string authorId, string targetUser)
         {
-            if (await _isSelf(element.Element(Atom + "id").Value)) return new ASTerm(await _fixActivityToObjectId(element.Element(Atom + "id").Value));
+            if (await _isSelf(element.Element(Atom + "id").Value)) return ASTerm.MakeId(await _fixActivityToObjectId(element.Element(Atom + "id").Value));
 
             var ao = new ASObject();
-            ao.Replace("id", new ASTerm(element.Element(Atom + "id").Value));
-            ao.Replace("_:origin", new ASTerm("atom"));
+            ao.Id = element.Element(Atom + "id").Value;
+            ao.Replace("_:origin", ASTerm.MakePrimitive("atom"));
 
             var verb = _objectTypeToType(element.Element(ActivityStreams + "verb")?.Value) ?? "Post";
             var originalVerb = verb;
 
             if (verb == "Unfollow" && (await _entityStore.GetEntity(element.Element(Atom + "id").Value, false))?.Type == "Follow") // egh egh egh, why, mastodon
-                ao.Replace("id", new ASTerm((string)ao["id"].First().Primitive + "#unfollow"));
+                ao.Id += "#unfollow";
 
             if (verb == "Unfavorite") verb = "Undo";
             if (verb == "Unfollow") verb = "Undo";
@@ -324,23 +319,23 @@ namespace Kroeg.Server.OStatusCompat
             if (!_entityConfiguration.IsActivity(verb)) return null;
 #pragma warning restore 618
 
-            ao.Replace("type", new ASTerm(verb));
+            ao.Type.Add("https://www.w3.org/ns/activitystreams#" + verb);
 
             if (element.Element(Atom + "title") != null)
-                ao.Replace("summary", new ASTerm(element.Element(Atom + "title").Value));
+                ao.Replace("summary", ASTerm.MakePrimitive(element.Element(Atom + "title").Value));
             if (element.Element(Atom + "published") != null)
-                ao.Replace("published", new ASTerm(element.Element(Atom + "published").Value));
+                ao.Replace("published", ASTerm.MakePrimitive(element.Element(Atom + "published").Value));
             if (element.Element(Atom + "updated") != null)
-                ao.Replace("updated", new ASTerm(element.Element(Atom + "updated").Value));
+                ao.Replace("updated", ASTerm.MakePrimitive(element.Element(Atom + "updated").Value));
 
             if (element.Element(Atom + "author") != null)
             {
                 var newAuthor = _parseAuthor(element.Element(Atom + "author"));
-                authorId = (string)newAuthor["id"].First().Primitive;
+                authorId = newAuthor.Id;
             }
 
             if (authorId != null)
-                ao.Replace("actor", new ASTerm(authorId));
+                ao.Replace("actor", ASTerm.MakeId(authorId));
 
 
             string retrievalUrl = null;
@@ -355,7 +350,7 @@ namespace Kroeg.Server.OStatusCompat
                     retrievalUrl = href;
                 else if (rel == "alternate" && type == "text/html")
                 {
-                    ao["url"].Add(new ASTerm(href));
+                    ao["url"].Add(ASTerm.MakePrimitive(href));
 
                     if (retrievalUrl == null) retrievalUrl = href;
                 }
@@ -364,15 +359,15 @@ namespace Kroeg.Server.OStatusCompat
                     if (href == "http://activityschema.org/collection/public")
                         href = "https://www.w3.org/ns/activitystreams#Public";
 
-                    ao["to"].Add(new ASTerm(href));
+                    ao["to"].Add(ASTerm.MakeId(href));
                 }
             }
 
             if (targetUser != null)
-                ao["cc"].Add(new ASTerm(targetUser));
+                ao["cc"].Add(ASTerm.MakeId(targetUser));
 
             if (retrievalUrl != null)
-                ao.Replace("_:atomRetrieveUrl", new ASTerm(retrievalUrl));
+                ao.Replace("atomUri", ASTerm.MakePrimitive(retrievalUrl));
 
             if (element.Element(ActivityStreams + "object") != null)
             {
@@ -401,7 +396,7 @@ namespace Kroeg.Server.OStatusCompat
                 ao.Replace("object", await _parseActivityObject(element, authorId, targetUser, true));
             }
 
-            return new ASTerm(ao);
+            return ASTerm.MakeSubObject(ao);
         }
 
         private string _getId(ASTerm term)
@@ -426,19 +421,19 @@ namespace Kroeg.Server.OStatusCompat
         private async Task<ASObject> _parseFeed(XElement element, string targetUser)
         {
             var ao = new ASObject();
-            ao.Replace("type", new ASTerm("OrderedCollectionPage"));
-            ao.Replace("_:origin", new ASTerm("atom"));
-            ao.Replace("id", new ASTerm(element.Element(Atom + "id").Value));
+            ao.Type.Add("https://www.w3.org/ns/activitystreams#OrderedCollectionPage");
+            ao.Replace("_:origin", ASTerm.MakePrimitive("atom"));
+            ao.Id = element.Element(Atom + "id").Value;
 
             if (element.Element(Atom + "title") != null)
-                ao.Replace("summary", new ASTerm(element.Element(Atom + "title").Value));
+                ao.Replace("summary", ASTerm.MakePrimitive(element.Element(Atom + "title").Value));
             if (element.Element(Atom + "updated") != null)
-                ao.Replace("updated", new ASTerm(element.Element(Atom + "updated").Value));
+                ao.Replace("updated", ASTerm.MakePrimitive(element.Element(Atom + "updated").Value));
 
             var author = _parseAuthor(element.Element(Atom + "author"));
-            ao.Replace("attributedTo", new ASTerm(author));
+            ao.Replace("attributedTo", ASTerm.MakeSubObject(author));
 
-            var authorId = (string) author["id"].First().Primitive;
+            var authorId = author.Id;
 
             foreach (var entry in element.Elements(Atom + "entry"))
                 ao["orderedItems"].Add(await _parseActivity(entry, authorId, targetUser));
@@ -452,25 +447,25 @@ namespace Kroeg.Server.OStatusCompat
 
                 if (rel == "alternate" && type == "text/html")
                 {
-                    ao["url"].Add(new ASTerm(href));
+                    ao["url"].Add(ASTerm.MakePrimitive(href));
                 }
                 else if (rel == "self" && type == "application/atom+xml")
                 {
-                    author.Replace("_:atomRetrieveUrl", new ASTerm(href));
+                    author.Replace("atomUri", ASTerm.MakePrimitive(href));
                 }
                 else switch (rel)
                 {
                     case "salmon":
-                        ao["_:salmonUrl"].Add(new ASTerm(href));
+                        ao["_:salmonUrl"].Add(ASTerm.MakePrimitive(href));
                         break;
                     case "hub":
-                        ao["_:hubUrl"].Add(new ASTerm(href));
+                        ao["_:hubUrl"].Add(ASTerm.MakePrimitive(href));
                         break;
                     case "prev":
-                        ao["prev"].Add(new ASTerm(href));
+                        ao["prev"].Add(ASTerm.MakeId(href));
                         break;
                     case "next":
-                        ao["next"].Add(new ASTerm(href));
+                        ao["next"].Add(ASTerm.MakeId(href));
                         break;
                 }
             }

@@ -119,14 +119,14 @@ namespace Kroeg.Server.Services
         public async Task<APEntity> NewCollection(IEntityStore store, ASObject mold = null, string type = null, string superItem = null)
         {
             if (mold == null) mold = new ASObject();
-            mold["type"].Add(new ASTerm("OrderedCollection"));
-            var owner = mold["id"].Count < 1;
-            if (owner)
-                mold["id"].Add(new ASTerm(await _configuration.FindUnusedID(store, mold, type?.Replace("_", "").ToLower(), superItem)));
+            mold.Type.Add("https://www.w3.org/ns/activitystreams#OrderedCollection");
+            var owner = mold.Id == null;
+            if (mold.Id == null)
+                mold.Id = await _configuration.FindUnusedID(store, mold, type?.Replace("_", "").ToLower(), superItem);
 
             var entity = new APEntity
             {
-                Id = (string)mold["id"].First().Primitive,
+                Id = mold.Id,
                 Data = mold,
                 Type = type ?? "OrderedCollection",
                 IsOwner = owner

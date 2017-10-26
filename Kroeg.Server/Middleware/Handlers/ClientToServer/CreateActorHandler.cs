@@ -30,21 +30,21 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
         {
             var collection = await _collection.NewCollection(EntityStore, null, "_" + obj, parent);
             var data = collection.Data;
-            data.Replace("attributedTo", new ASTerm(parent));
+            data.Replace("attributedTo", ASTerm.MakeId(parent));
             collection.Data = data;
 
             await EntityStore.StoreEntity(collection);
 
-            entity.Replace(obj, new ASTerm(collection.Id));
+            entity.Replace(obj, ASTerm.MakeId(collection.Id));
             return collection;
         }
 
         private void _merge(List<ASTerm> to, List<ASTerm> from)
         {
-            var str = new HashSet<string>(to.Select(a => (string)a.Primitive).Concat(from.Select(a => (string) a.Primitive)));
+            var str = new HashSet<string>(to.Select(a => a.Id).Concat(from.Select(a => a.Id)));
 
             to.Clear();
-            to.AddRange(str.Select(a => new ASTerm(a)));
+            to.AddRange(str.Select(a => ASTerm.MakeId(a)));
         }
 
         public override async Task<bool> Handle()
@@ -67,8 +67,11 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             var blocked = await _collection.NewCollection(EntityStore, null, "_blocked", blocks.Id);
 
             var blocksData = blocks.Data;
-            blocksData["_blocked"].Add(new ASTerm(blocked.Id));
+            blocksData["kroeg:_blocked"].Add(ASTerm.MakeId(blocked.Id));
             blocks.Data = blocksData;
+
+            if (!objectData["manuallyApprovesFollowers"].Any())
+                activityData.Replace("manuallyApprovesFollowers", ASTerm.MakePrimitive(false));
 
             objectEntity.Data = objectData;
 
@@ -86,11 +89,8 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
 
             _context.SalmonKeys.Add(key);
 
-            if (!activityData["locked"].Any() && !activityData["_:locked"].Any())
-                activityData.Replace("_:locked", new ASTerm(false));
-
             if (!activityData["actor"].Any())
-                activityData["actor"].Add(new ASTerm(objectEntity.Id));
+                activityData["actor"].Add(ASTerm.MakeId(objectEntity.Id));
 
             MainObject.Data = activityData;
             await EntityStore.StoreEntity(MainObject);

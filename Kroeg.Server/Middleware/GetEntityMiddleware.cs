@@ -499,15 +499,15 @@ namespace Kroeg.Server.Middleware
                     var items = await _collectionTools.GetItems(entity.Id, fromId, 11);
                     var hasItems = items.Any();
                     var page = new ASObject();
-                    page["type"].Add(new ASTerm("OrderedCollectionPage"));
-                    page["summary"].Add(new ASTerm("A collection"));
-                    page["id"].Add(new ASTerm(entity.Id + "?from_id=" + (hasItems ? fromId : 0)));
-                    page["partOf"].Add(new ASTerm(entity.Id));
+                    page.Type.Add("https://www.w3.org/ns/activitystreams#OrderedCollectionPage");
+                    page["summary"].Add(ASTerm.MakePrimitive("A collection"));
+                    page.Id = entity.Id + "?from_id=" + (hasItems ? fromId : 0);
+                    page["partOf"].Add(ASTerm.MakeId(entity.Id));
                     if (collection["attributedTo"].Any())
                         page["attributedTo"].Add(collection["attributedTo"].First());
                     if (items.Count > 10)
-                        page["next"].Add(new ASTerm(entity.Id + "?from_id=" + (items[9].CollectionItemId - 1).ToString()));
-                    page["orderedItems"].AddRange(items.Take(10).Select(a => new ASTerm(a.ElementId)));
+                        page["next"].Add(ASTerm.MakeId(entity.Id + "?from_id=" + (items[9].CollectionItemId - 1).ToString()));
+                    page["orderedItems"].AddRange(items.Take(10).Select(a => ASTerm.MakeId(a.ElementId)));
 
                     return page;
                 }
@@ -516,9 +516,9 @@ namespace Kroeg.Server.Middleware
                     var items = await _collectionTools.GetItems(entity.Id, count: 1);
                     var hasItems = items.Any();
                     var page = entity.Id + "?from_id=" + (hasItems ? items.First().CollectionItemId + 1 : 0);
-                    collection["current"].Add(new ASTerm(entity.Id));
-                    collection["totalItems"].Add(new ASTerm(await _collectionTools.Count(entity.Id)));
-                    collection["first"].Add(new ASTerm(page));
+                    collection["current"].Add(ASTerm.MakeId(entity.Id));
+                    collection["totalItems"].Add(ASTerm.MakePrimitive(await _collectionTools.Count(entity.Id)));
+                    collection["first"].Add(ASTerm.MakeId(page));
                     return collection;
                 }
             }
@@ -657,14 +657,14 @@ namespace Kroeg.Server.Middleware
                     }
 
                     var createActivity = new ASObject();
-                    createActivity["type"].Add(new ASTerm("Create"));
+                    createActivity.Type.Add("https://www.w3.org/ns/activitystreams#Create");
                     createActivity["to"].AddRange(activity["to"]);
                     createActivity["bto"].AddRange(activity["bto"]);
                     createActivity["cc"].AddRange(activity["cc"]);
                     createActivity["bcc"].AddRange(activity["bcc"]);
                     createActivity["audience"].AddRange(activity["audience"]);
-                    createActivity["actor"].Add(new ASTerm(userId));
-                    createActivity["object"].Add(new ASTerm(activity));
+                    createActivity["actor"].Add(ASTerm.MakeId(userId));
+                    createActivity["object"].Add(ASTerm.MakeSubObject(activity));
                     activity = createActivity;
                 }
 

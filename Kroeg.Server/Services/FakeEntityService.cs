@@ -30,9 +30,9 @@ namespace Kroeg.Server.Services
                 var pemData = salm.AsPEM;
 
                 var keyObj = new ASObject();
-                keyObj.Replace("owner", new ASTerm(entity.Id));
-                keyObj.Replace("publicKeyPem", new ASTerm(pemData));
-                keyObj.Replace("id", new ASTerm($"{entity.Id}#key"));
+                keyObj.Replace("owner", ASTerm.MakeId(entity.Id));
+                keyObj.Replace("publicKeyPem", ASTerm.MakePrimitive(pemData));
+                keyObj.Id = $"{entity.Id}#key";
                 return keyObj;
             }
             else if (fragment == "endpoints")
@@ -43,14 +43,15 @@ namespace Kroeg.Server.Services
                 var basePath = $"{idu.Scheme}://{idu.Host}{(idu.IsDefaultPort?"":$":{idu.Port}")}{_configuration.BasePath}";
 
                 var endpoints = new ASObject();
-                endpoints.Replace("oauthAuthorizationEndpoint", new ASTerm(basePath + "auth/oauth?id=" + Uri.EscapeDataString(entity.Id)));
-                endpoints.Replace("oauthTokenEndpoint", new ASTerm(basePath + "auth/token?"));
-                endpoints.Replace("settingsEndpoint", new ASTerm(basePath + "settings/auth"));
-                endpoints.Replace("uploadMedia", new ASTerm((string)data["outbox"].Single().Primitive));
-                endpoints.Replace("relevantObjects", new ASTerm(basePath + "settings/relevant"));
-                endpoints.Replace("proxyUrl", new ASTerm(basePath + "auth/proxy"));
-                endpoints.Replace("jwks", new ASTerm(basePath + "auth/jwks?id=" + Uri.EscapeDataString(entity.Id)));
-                endpoints.Replace("id", new ASTerm(entity.Id + "#endpoints"));
+                endpoints.Replace("oauthAuthorizationEndpoint", ASTerm.MakeId(basePath + "auth/oauth?id=" + Uri.EscapeDataString(entity.Id)));
+                endpoints.Replace("oauthTokenEndpoint", ASTerm.MakeId(basePath + "auth/token?"));
+                endpoints.Replace("settingsEndpoint", ASTerm.MakeId(basePath + "settings/auth"));
+                endpoints.Replace("uploadMedia", ASTerm.MakeId((string)data["outbox"].Single().Primitive));
+                endpoints.Replace("relevantObjects", ASTerm.MakeId(basePath + "settings/relevant"));
+                endpoints.Replace("proxyUrl", ASTerm.MakeId(basePath + "auth/proxy"));
+                endpoints.Replace("jwks", ASTerm.MakeId(basePath + "auth/jwks?id=" + Uri.EscapeDataString(entity.Id)));
+                endpoints.Replace("sharedInbox", ASTerm.MakeId(basePath + "/auth/sharedInbox"));
+                endpoints.Id = entity.Id + "#endpoints";
                 return endpoints;
             }
 

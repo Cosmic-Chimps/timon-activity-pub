@@ -23,6 +23,12 @@ namespace Kroeg.Server.Controllers
             _templateService = templateService;
         }
 
+        [HttpGet("context")]
+        public IActionResult GetContext()
+        {
+            return Content(new JObject { ["@context"] = JsonLDConfig.Context }.ToString(), "application/ld+json");
+        }
+
         [HttpGet("remote")]
         public async Task<IActionResult> RenderRemote(string url)
         {

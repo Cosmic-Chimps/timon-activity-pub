@@ -211,14 +211,14 @@ namespace Kroeg.Server.Controllers
             var user = model.Username;
 
             var obj = new ASObject();
-            obj["type"].Add(new ASTerm("Person"));
-            obj["preferredUsername"].Add(new ASTerm(user));
-            obj["name"].Add(new ASTerm());
+            obj.Type.Add("https://www.w3.org/ns/activitystreams#Person");
+            obj["preferredUsername"].Add(ASTerm.MakePrimitive(user));
+            obj["name"].Add(ASTerm.MakePrimitive(user));
 
             var create = new ASObject();
-            create["type"].Add(new ASTerm("Create"));
-            create["object"].Add(new ASTerm(obj));
-            create["to"].Add(new ASTerm("https://www.w3.org/ns/activitystreams#Public"));
+            create.Type.Add("https://www.w3.org/ns/activitystreams#Create");
+            create["object"].Add(ASTerm.MakeSubObject(obj));
+            create["to"].Add(ASTerm.MakeId("https://www.w3.org/ns/activitystreams#Public"));
 
             var stagingStore = new StagingEntityStore(_entityStore);
             var apo = await _entityFlattener.FlattenAndStore(stagingStore, create);

@@ -27,7 +27,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
                 throw new InvalidOperationException("Cannot create an activity with an actor that isn't the one you log in to");
 
             // add published and updated.
-            data.Replace("published", new ASTerm(DateTime.Now.ToString("o")));
+            data.Replace("published", ASTerm.MakePrimitive(DateTime.Now.ToString("o")));
 
             MainObject.Data = data;
 

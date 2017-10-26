@@ -27,15 +27,15 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             var collection = await _collection.NewCollection(EntityStore, null, type, parent);
             await EntityStore.StoreEntity(collection);
 
-            entity.Replace(obj, new ASTerm(collection.Id));
+            entity.Replace(obj, ASTerm.MakeId(collection.Id));
         }
 
         private void _merge(List<ASTerm> to, List<ASTerm> from)
         {
-            var str = new HashSet<string>(to.Select(a => (string)a.Primitive).Concat(from.Select(a => (string) a.Primitive)));
+            var str = new HashSet<string>(to.Select(a => a.Id).Concat(from.Select(a => a.Id)));
 
             to.Clear();
-            to.AddRange(str.Select(a => new ASTerm(a)));
+            to.AddRange(str.Select(a => ASTerm.MakeId(a)));
         }
 
         public override async Task<bool> Handle()
@@ -60,7 +60,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             _merge(activityData["bcc"], objectData["bcc"]);
             _merge(activityData["audience"], objectData["audience"]);
 
-            objectData.Replace("published", new ASTerm(DateTime.Now.ToString("o")));
+            objectData.Replace("published", ASTerm.MakePrimitive(DateTime.Now.ToString("o")));
 
             objectEntity.Data = objectData;
             MainObject.Data = activityData;

@@ -63,9 +63,16 @@ namespace Kroeg.Server.Tools
             "subject", "relationship", "actor", "attributedTo", "attachment", "bcc", "bto", "cc", "context", "current", "first", "generator", "icon", "image", "inReplyTo", "items", "instrument", "orderedItems", "last", "location", "next", "object", "oneOf", "anyOf", "origin", "prev", "preview", "replies", "result", "audience", "partOf", "tag", "target", "to", "describes", "formerType", "streams", "publicKey"
         };
 
-        private static readonly HashSet<string> MayNotFlatten = new HashSet<string>
+        private static readonly HashSet<string> _mayNotUnflatten = new HashSet<string>
         {
-            "next", "prev", "first", "last", "bcc", "bto", "cc", "to", "audience", "endpoints", "partOf"
+            "https://www.w3.org/ns/activitystreams#next", "https://www.w3.org/ns/activitystreams#prev",
+            "https://www.w3.org/ns/activitystreams#first", "https://www.w3.org/ns/activitystreams#last",
+            "https://www.w3.org/ns/activitystreams#bcc", "https://www.w3.org/ns/activitystreams#bto",
+            "https://www.w3.org/ns/activitystreams#cc", "https://www.w3.org/ns/activitystreams#to",
+            "https://www.w3.org/ns/activitystreams#audience", "http://www.w3.org/ns/ldp#inbox",
+            "https://www.w3.org/ns/activitystreams#outbox", "https://www.w3.org/ns/activitystreams#followers",
+            "https://www.w3.org/ns/activitystreams#following", "https://www.w3.org/ns/activitystreams#followers",
+            "https://www.w3.org/ns/activitystreams#partOf"
         };
 
         private static readonly HashSet<string> UnflattenIfOwner = new HashSet<string>
@@ -77,9 +84,8 @@ namespace Kroeg.Server.Tools
         private ASObject _getEndpoints(APEntity entity)
         {
             var data = entity.Data;
-            data.Replace("endpoints", new ASTerm(entity.Id + "#endpoints"));
-            data.Replace("publicKey", new ASTerm(entity.Id + "#key"));
-            data.Replace("sharedInbox", new ASTerm(_configuration.BaseUri + "/auth/sharedInbox"));
+            data.Replace("endpoints", ASTerm.MakeId(entity.Id + "#endpoints"));
+            data.Replace("publicKey", ASTerm.MakeId(entity.Id + "#key"));
             return data;
         }
 
@@ -92,15 +98,15 @@ namespace Kroeg.Server.Tools
                 return null;
             }
 
-            if (@object["id"].Count == 0)
+            if (@object.Id == null)
             {
                 if (!generateId) return null;
-                @object["id"].Add(new ASTerm(await _configuration.FindUnusedID(store, @object, null, parentId)));
+                @object.Id = await _configuration.FindUnusedID(store, @object, null, parentId);
                 entity.IsOwner = true;
             }
 
-            entity.Id = (string) @object["id"].First().Primitive;
-            var t = (string)@object["type"].FirstOrDefault()?.Primitive;
+            entity.Id = @object.Id;
+            var t = @object.Type.FirstOrDefault();
             if (t?.StartsWith("_") != false && t?.StartsWith("_:") != true) t = "Unknown";
             entity.Type = t;
 
@@ -110,7 +116,6 @@ namespace Kroeg.Server.Tools
                 foreach (var value in kv.Value)
                 {
                     if (value.SubObject == null) continue;
-                    if (value.SubObject["id"].Any(a => a.Primitive == null)) continue; // transient object
 
                     var subObject = await _flatten(store, value.SubObject, generateId, entities, entity.Id);
                     if (subObject == null) continue;
@@ -127,7 +132,11 @@ namespace Kroeg.Server.Tools
         }
 
 
-        private static HashSet<string> _avoidFlatteningTypes = new HashSet<string> { "OrderedCollection", "Collection", "_replies", "_likes", "_shares", "_:LazyLoad" };
+        private static HashSet<string> _avoidFlatteningTypes = new HashSet<string> {
+            "https://www.w3.org/ns/activitystreams#OrderedCollection", "https://www.w3.org/ns/activitystreams#Collection",
+            "OrderedCollection", "Collection",
+            "_replies", "_likes", "_shares", "_:LazyLoad"
+        };
 
         private async Task<ASObject> _unflatten(IEntityStore store, APEntity entity, int depth, IDictionary<string, APEntity> alreadyMapped, bool remote)
         {
@@ -138,7 +147,7 @@ namespace Kroeg.Server.Tools
             if (_configuration.IsActor(@object) && entity.IsOwner)
                 @object = _getEndpoints(entity);
 
-            var myid = (string)@object["id"].FirstOrDefault()?.Primitive;
+            var myid = @object.Id;
             if (myid != null)
                 alreadyMapped[myid] = entity;
 
@@ -150,15 +159,16 @@ namespace Kroeg.Server.Tools
                 foreach (var value in kv.Value)
                 {
                     if (value.SubObject != null) value.SubObject = await _unflatten(store, APEntity.From(value.SubObject), depth - 1, alreadyMapped, remote);
-                    if (value.Primitive == null) continue;
-                    if ((!IdHolding.Contains(kv.Key) || MayNotFlatten.Contains(kv.Key)) && (!entity.IsOwner || !UnflattenIfOwner.Contains(kv.Key))) continue;
-                    var id = (string)value.Primitive;
+                    if (value.Id == null) continue;
+                    if (_mayNotUnflatten.Contains(kv.Key) && (!entity.IsOwner || !UnflattenIfOwner.Contains(kv.Key))) continue;
+                    var id = value.Id;
 
                     if (alreadyMapped.ContainsKey(id)) continue;
 
                     var obj = await store.GetEntity(id, false);
                     if (obj == null || _avoidFlatteningTypes.Contains(obj.Type) || (!remote && !obj.IsOwner)) continue;
                     value.Primitive = null;
+                    value.Id = null;
                     value.SubObject = await _unflatten(store, obj, depth - 1, alreadyMapped, remote);
                 }
             }
