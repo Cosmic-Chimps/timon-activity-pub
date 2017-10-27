@@ -25,10 +25,13 @@ namespace Kroeg.Server {
             new JObject { // Kroeg-y specific-ish
                 ["jwks"] = new JObject { ["@id"] = "as:jwks", ["@type"] = "@id" },
                 ["uploadMedia"] = new JObject { ["@id"] = "as:uploadMedia", ["@type"] = "@id" },
+                ["likes"] = new JObject { ["@id"] = "as:likes", ["@type"] = "@id" },
+                ["liked"] = new JObject { ["@id"] = "as:liked", ["@type"] = "@id" },
 
                 ["kroeg"] = "https://puckipedia.com/kroeg/ns#",
                 ["settingsEndpoint"] = new JObject { ["@id"] = "kroeg:settingsEndpoint", ["@type"] = "@id" },
                 ["relevantObjects"] = new JObject { ["@id"] = "kroeg:relevantObjects", ["@type"] = "@id" }
+                ["blocks"] = new JObject { ["@id"] = "kroeg:blocks", ["@type"] = "@id" }
             }
         );
     }

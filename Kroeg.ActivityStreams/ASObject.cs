@@ -68,7 +68,7 @@ namespace Kroeg.ActivityStreams
             var ser = new JsonTextReader(new StringReader(obj));
             ser.DateParseHandling = DateParseHandling.None;
             var jobj = JObject.Load(ser);
-            if (impliedContext) jobj["@context"] = _context;
+            if (impliedContext && jobj["@context"] == null) jobj["@context"] = _context;
             return Parse(_api.Expand(jobj).Result);
         }
 

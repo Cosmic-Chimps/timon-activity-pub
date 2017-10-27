@@ -38,7 +38,7 @@ namespace Kroeg.Server.Services.EntityStore
         {
             var collection = entity.Data;
             collection["current"].Add(ASTerm.MakeId(entity.Id));
-            collection["totalItems"].Add(ASTerm.MakePrimitive(await _collectionTools.Count(entity.Id)));
+            collection["totalItems"].Add(ASTerm.MakePrimitive(await _collectionTools.Count(entity.Id), ASTerm.NON_NEGATIVE_INTEGER));
             var item = await _collectionTools.GetItems(entity.Id, count: 1);
             if (item.Any())
                 collection["first"].Add(ASTerm.MakeId(entity.Id + $"?from_id={item.First().CollectionItemId + 1}"));

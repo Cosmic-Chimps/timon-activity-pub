@@ -48,7 +48,7 @@ namespace Kroeg.Server.Middleware.Renderers
                 using (var r = new StreamReader(request))
                     data = await r.ReadToEndAsync();
 
-                return ASObject.Parse(data);
+                return ASObject.Parse(data, true);
             }
 
             public async Task Render(HttpRequest request, HttpResponse response, ASObject toRender)

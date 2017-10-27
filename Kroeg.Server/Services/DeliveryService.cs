@@ -39,11 +39,11 @@ namespace Kroeg.Server.Services
         {
             var targetIds = new List<string>();
 
-            targetIds.AddRange(@object["to"].Select(a => (string)a.Primitive));
-            targetIds.AddRange(@object["bto"].Select(a => (string)a.Primitive));
-            targetIds.AddRange(@object["cc"].Select(a => (string)a.Primitive));
-            targetIds.AddRange(@object["bcc"].Select(a => (string)a.Primitive));
-            targetIds.AddRange(@object["audience"].Select(a => (string)a.Primitive));
+            targetIds.AddRange(@object["to"].Select(a => a.Id));
+            targetIds.AddRange(@object["bto"].Select(a => a.Id));
+            targetIds.AddRange(@object["cc"].Select(a => a.Id));
+            targetIds.AddRange(@object["bcc"].Select(a => a.Id));
+            targetIds.AddRange(@object["audience"].Select(a => a.Id));
 
             return targetIds.Contains("https://www.w3.org/ns/activitystreams#Public");
         }
@@ -54,7 +54,7 @@ namespace Kroeg.Server.Services
             // Is public post?
             if (audienceInbox.Item2 && ownedBy == null)
             {
-                await _queueWebsubDelivery((string)entity.Data["actor"].First().Primitive, collectionId, entity.Id);
+                await _queueWebsubDelivery(entity.Data["actor"].First().Id, collectionId, entity.Id);
             }
 
             foreach (var target in audienceInbox.Item1)
@@ -106,13 +106,13 @@ namespace Kroeg.Server.Services
         {
             var targetIds = new List<string>();
 
-            targetIds.AddRange(@object["to"].Select(a => (string)a.Primitive));
-            targetIds.AddRange(@object["bto"].Select(a => (string)a.Primitive));
-            targetIds.AddRange(@object["cc"].Select(a => (string)a.Primitive));
-            targetIds.AddRange(@object["bcc"].Select(a => (string)a.Primitive));
-            targetIds.AddRange(@object["audience"].Select(a => (string)a.Primitive));
-            targetIds.AddRange(@object["attributedTo"].Select(a => (string)a.Primitive));
-            targetIds.AddRange(@object["actor"].Select(a => (string)a.Primitive));
+            targetIds.AddRange(@object["to"].Select(a => a.Id));
+            targetIds.AddRange(@object["bto"].Select(a => a.Id));
+            targetIds.AddRange(@object["cc"].Select(a => a.Id));
+            targetIds.AddRange(@object["bcc"].Select(a => a.Id));
+            targetIds.AddRange(@object["audience"].Select(a => a.Id));
+            targetIds.AddRange(@object["attributedTo"].Select(a => a.Id));
+            targetIds.AddRange(@object["actor"].Select(a => a.Id));
 
             return new HashSet<string>(targetIds);
         }
@@ -121,13 +121,13 @@ namespace Kroeg.Server.Services
         {
             var targetIds = new List<string>();
 
-            targetIds.AddRange(@object["to"].Select(a => (string)a.Primitive));
-            targetIds.AddRange(@object["bto"].Select(a => (string)a.Primitive));
-            targetIds.AddRange(@object["cc"].Select(a => (string)a.Primitive));
-            targetIds.AddRange(@object["bcc"].Select(a => (string)a.Primitive));
-            targetIds.AddRange(@object["audience"].Select(a => (string)a.Primitive));
+            targetIds.AddRange(@object["to"].Select(a => a.Id));
+            targetIds.AddRange(@object["bto"].Select(a => a.Id));
+            targetIds.AddRange(@object["cc"].Select(a => a.Id));
+            targetIds.AddRange(@object["bcc"].Select(a => a.Id));
+            targetIds.AddRange(@object["audience"].Select(a => a.Id));
 
-            if (!actor) targetIds.Remove((string)@object["actor"].First().Primitive);
+            if (!actor) targetIds.Remove(@object["actor"].First().Id);
 
             bool isPublic = targetIds.Contains("https://www.w3.org/ns/activitystreams#Public");
             targetIds.Remove("https://www.w3.org/ns/activitystreams#Public");
@@ -141,7 +141,7 @@ namespace Kroeg.Server.Services
                 var data = entity.Data;
                 // if it's local collection, or we don't need the forwarding thing
                 var iscollection = data.Type.Contains("https://www.w3.org/ns/activitystreams#Collection") || data.Type.Contains("https://www.w3.org/ns/activitystreams#OrderedCollection");
-                var shouldForward = entity.IsOwner && (forward == null || data["attributedTo"].Any(a => (string)a.Primitive == forward));
+                var shouldForward = entity.IsOwner && (forward == null || data["attributedTo"].Any(a => a.Id == forward));
                 if (!iscollection || shouldForward)
                     stack.Push(new Tuple<int, APEntity, bool>(0, entity, false));
             }
@@ -152,7 +152,7 @@ namespace Kroeg.Server.Services
 
                 var data = entity.Item2.Data;
                 var iscollection = data.Type.Contains("https://www.w3.org/ns/activitystreams#Collection") || data.Type.Contains("https://www.w3.org/ns/activitystreams#OrderedCollection");
-                var shouldForward = entity.Item2.IsOwner && (forward == null || data["attributedTo"].Any(a => (string)a.Primitive == forward));
+                var shouldForward = entity.Item2.IsOwner && (forward == null || data["attributedTo"].Any(a => a.Id == forward));
                 var useSharedInbox = (entity.Item2.IsOwner && entity.Item2.Type == "_following");
                 if ((iscollection && shouldForward) && entity.Item1 < depth)
                 {
@@ -164,12 +164,12 @@ namespace Kroeg.Server.Services
                     if (entity.Item3)
                     {
                         if (data["sharedInbox"].Any())
-                            targets.Add((string)data["inbox"].First().Primitive);
+                            targets.Add(data["inbox"].First().Id);
                         continue;
                     }
 
                     if (data["inbox"].Any())
-                        targets.Add((string)data["inbox"].First().Primitive);
+                        targets.Add(data["inbox"].First().Id);
                     else if (data["_:salmonUrl"].Any())
                         salmons.Add((string)data["_:salmonUrl"].First().Primitive);
                 }

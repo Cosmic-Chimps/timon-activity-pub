@@ -19,9 +19,12 @@ namespace Kroeg.ActivityStreams
         [Obsolete("Use ASTerm.MakeSubObject() instead")]
         public ASTerm(ASObject value) { SubObject = value; }
 
-        public static ASTerm MakePrimitive(object obj)
+        public const string NON_NEGATIVE_INTEGER = "http://www.w3.org/2001/XMLSchema#nonNegativeInteger";
+
+
+        public static ASTerm MakePrimitive(object obj, string type = null)
         {
-            return new ASTerm { Primitive = obj };
+            return new ASTerm { Primitive = obj, Type = type };
         }
 
         public static ASTerm MakeId(string id)

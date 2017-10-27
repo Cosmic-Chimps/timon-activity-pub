@@ -274,7 +274,7 @@ namespace Kroeg.Server.Middleware
                 if (entity == null) return null;
                 if (entity.Type == "_blocks" && !entity.Data["attributedTo"].Any(a => a.Id == userId)) throw new UnauthorizedAccessException("Blocks are private!");
                 if (entity.Type == "_blocked") throw new UnauthorizedAccessException("This collection is only used internally for optimization reasons");
-                if (entity.Type == "OrderedCollection" || entity.Type.StartsWith("_")) return await _getCollection(entity, arguments);
+                if (entity.Type == "OrderedCollection" || entity.Type == "Collection" || entity.Type.StartsWith("_")) return await _getCollection(entity, arguments);
                 if (entity.IsOwner && _entityData.IsActor(entity.Data)) return entity.Data;
                 var audience = DeliveryService.GetAudienceIds(entity.Data);
 
@@ -517,7 +517,7 @@ namespace Kroeg.Server.Middleware
                     var hasItems = items.Any();
                     var page = entity.Id + "?from_id=" + (hasItems ? items.First().CollectionItemId + 1 : 0);
                     collection["current"].Add(ASTerm.MakeId(entity.Id));
-                    collection["totalItems"].Add(ASTerm.MakePrimitive(await _collectionTools.Count(entity.Id)));
+                    collection["totalItems"].Add(ASTerm.MakePrimitive(await _collectionTools.Count(entity.Id), ASTerm.NON_NEGATIVE_INTEGER));
                     collection["first"].Add(ASTerm.MakeId(page));
                     return collection;
                 }
@@ -650,7 +650,7 @@ namespace Kroeg.Server.Middleware
                 if (!_entityData.IsActivity(activity))
                 {
 #pragma warning disable CS0618 // Type or member is obsolete
-                    if (_entityData.IsActivity(activity.Type.First()))
+                    if (_entityData.IsActivity(activity.Type.FirstOrDefault()))
 #pragma warning restore CS0618 // Type or member is obsolete
                     {
                         throw new UnauthorizedAccessException("Sending an Activity without an actor isn't allowed. Are you sure you wanted to do that?");
