@@ -32,7 +32,7 @@ namespace Kroeg.Server.Services
         {
             var entity = await _entityStore.GetEntity(id, true);
             if (entity.IsOwner)
-                return await _context.CollectionItems.CountAsync(a => a.CollectionId == id);
+                return await _context.CollectionItems.CountAsync(a => a.CollectionId == entity.DbId);
 
             var data = entity.Data;
             if (data["totalItems"].Any())
@@ -46,22 +46,29 @@ namespace Kroeg.Server.Services
         private bool _verifyAudience(string user, CollectionItem entity)
         {
             if (entity.IsPublic) return true;
-            var entityData = entity.Element.Entity;
+            var entityData = await _entityStore.GetEntity(entity.Element.Id.Uri, false);
             if (_configuration.IsActor(entityData.Data)) return true;
             var audience = DeliveryService.GetAudienceIds(entityData.Data);
             return audience.Contains(user);
         }
 
+        public class EntityCollectionItem {
+            public int CollectionItemId { get; set; }
+            public APEntity Entity { get; set; }
+        }
+
         public async Task<List<CollectionItem>> GetItems(string id, int fromId = int.MaxValue, int count = 10)
         {
             var isOwner = false;
-            var entity = (await _context.Entities.FirstOrDefaultAsync(a => a.Id == id && a.IsOwner))?.Entity;
+            var entity = await _entityStore.GetEntity(id, false);
             var user = _getUser();
             if (entity != null && entity.Data["attributedTo"].Any(a => a.Id == user)) isOwner = true;
 
-            IQueryable<CollectionItem> data = _context.CollectionItems.Where(a => a.CollectionId == id && a.CollectionItemId < fromId).Include(a => a.Element).OrderByDescending(a => a.CollectionItemId);
+            IQueryable<CollectionItem> data = _context.CollectionItems.Where(a => a.CollectionId == entity.DbId && a.CollectionItemId < fromId).Include(a => a.Element).ThenInclude(a => a.Id).OrderByDescending(a => a.CollectionItemId);
             if (user == null)
+            {
                 return await data.Where(a => a.IsPublic).Take(count).ToListAsync();
+            }
             else if (isOwner)
                 return await data.Take(count).ToListAsync();
             else

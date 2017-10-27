@@ -7,11 +7,11 @@ namespace Kroeg.Server.Models
         [Key]
         public int CollectionItemId { get; set; }
 
-        public string CollectionId { get; set; }
-        public APDBEntity Collection { get; set; }
+        public int CollectionId { get; set; }
+        public APTripleEntity Collection { get; set; }
 
-        public string ElementId { get; set; }
-        public APDBEntity Element { get; set; }
+        public int ElementId { get; set; }
+        public APTripleEntity Element { get; set; }
 
         public bool IsPublic { get; set; }
     }

@@ -200,7 +200,9 @@ namespace Kroeg.Server.Services
 
         private async Task _queueWebsubDelivery(string userId, int collectionItem, string objectId)
         {
-            foreach (var sub in await _context.WebsubSubscriptions.Where(a => a.UserId == userId && a.Expiry > DateTime.Now).ToListAsync())
+            var actor = await _store.GetEntity(userId, false);
+
+            foreach (var sub in await _context.WebsubSubscriptions.Where(a => a.UserId == actor.DbId && a.Expiry > DateTime.Now).ToListAsync())
             {
                 _context.EventQueue.Add(
                     DeliverToWebSubTask.Make(new DeliverToWebSubData

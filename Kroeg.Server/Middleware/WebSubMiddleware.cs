@@ -61,7 +61,7 @@ namespace Kroeg.Server.Middleware
 
             var leaseSpan = lease_seconds == null ? null : (TimeSpan?) TimeSpan.FromSeconds(int.Parse(lease_seconds));
 
-            var obj = await db.WebSubClients.FirstOrDefaultAsync(a => a.Topic == topic && a.ForUserId == user.Id);
+            var obj = await db.WebSubClients.FirstOrDefaultAsync(a => a.Topic == topic && a.ForUserId == user.DbId);
             if (obj == null)
                 goto error;
 

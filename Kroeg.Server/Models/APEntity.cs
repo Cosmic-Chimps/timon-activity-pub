@@ -19,6 +19,8 @@ namespace Kroeg.Server.Models
 
         public ASObject Data { get; set; }
 
+        public int DbId { get; set; }
+
         public static APEntity From(string id, ASObject @object)
         {
             var type = @object.Type.FirstOrDefault();

@@ -284,7 +284,7 @@ namespace Kroeg.Server.Controllers
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var actor = await _entityStore.GetEntity(id, false);
-            var hasAccess = await _context.UserActorPermissions.AnyAsync(a => a.UserId == userId && a.ActorId == id);
+            var hasAccess = await _context.UserActorPermissions.AnyAsync(a => a.UserId == userId && a.ActorId == actor.DbId);
             if (!hasAccess || actor == null || !actor.IsOwner)
             {
                 if (response_type == "token")
@@ -304,7 +304,7 @@ namespace Kroeg.Server.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var actor = await _entityStore.GetEntity(model.ActorID, false);
-            var hasAccess = await _context.UserActorPermissions.AnyAsync(a => a.UserId == userId && a.ActorId == model.ActorID);
+            var hasAccess = await _context.UserActorPermissions.AnyAsync(a => a.UserId == userId && a.ActorId == actor.DbId);
             model.Actor = actor;
             if (!hasAccess || !ModelState.IsValid) return View("ChooseActorOAuth", model);
             var exp = TimeSpan.FromSeconds(model.Expiry);

@@ -46,7 +46,7 @@ namespace Kroeg.Server.BackgroundTasks
             var topicUrl = (string)targetActor.Data["atomUri"].FirstOrDefault()?.Primitive;
             if (hubUrl == null || topicUrl == null) return;
 
-            var clientObject = await _context.WebSubClients.FirstOrDefaultAsync(a => a.ForUserId == Data.ActorID && a.TargetUserId == Data.ToFollowID);
+            var clientObject = await _context.WebSubClients.FirstOrDefaultAsync(a => a.ForUserId == actor.DbId && a.TargetUserId == targetActor.DbId);
             var hc = new HttpClient();
             if (Data.Unsubscribe)
             {
@@ -72,8 +72,8 @@ namespace Kroeg.Server.BackgroundTasks
             {
                 clientObject = new WebSubClient
                 {
-                    ForUserId = Data.ActorID,
-                    TargetUserId = Data.ToFollowID,
+                    ForUserId = actor.DbId,
+                    TargetUserId = targetActor.DbId,
                     Secret = Guid.NewGuid().ToString()
                 };
 

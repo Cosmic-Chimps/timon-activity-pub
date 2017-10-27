@@ -106,7 +106,7 @@ namespace Kroeg.Server.Controllers
                     Callback = callback,
                     Expiry = DateTime.Now.AddSeconds(int.Parse(lease_seconds ?? "86400")),
                     Secret = secret,
-                    UserId = user.Id
+                    UserId = user.DbId
                 };
                 _context.WebsubSubscriptions.Add(subscription);
             }

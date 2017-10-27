@@ -161,7 +161,10 @@ namespace Kroeg.Server.Controllers
         public async Task<IActionResult> Edit(string id)
         {
             var data = await _getUserInfo();
-            var actor = data.Actors.FirstOrDefault(a => a.ActorId == id);
+            var ac = await _entityStore.GetEntity(id, false);
+            if (ac == null) return await Index();
+
+            var actor = data.Actors.FirstOrDefault(a => a.ActorId == ac.DbId);
             if (actor == null) return await Index();
 
             return View("ShowActor", new EditActorModel { Menu = data, OtherPeople = await _context.UserActorPermissions.Where(a => a.ActorId == actor.ActorId).ToListAsync(), Actor = actor });

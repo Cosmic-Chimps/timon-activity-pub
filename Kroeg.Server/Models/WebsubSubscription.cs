@@ -10,7 +10,7 @@ namespace Kroeg.Server.Models
         public string Callback { get; set; }
         public string Secret { get; set; }
 
-        public string UserId { get; set; }
-        public APDBEntity User { get; set; }
+        public int UserId { get; set; }
+        public APTripleEntity User { get; set; }
     }
 }

@@ -9,11 +9,11 @@ namespace Kroeg.Server.Models
     {
         public int WebSubClientId { get; set; }
 
-        public APDBEntity ForUser { get; set; }
-        public string ForUserId { get; set; }
+        public APTripleEntity ForUser { get; set; }
+        public int ForUserId { get; set; }
 
-        public APDBEntity TargetUser { get; set; }
-        public string TargetUserId { get; set; }
+        public APTripleEntity TargetUser { get; set; }
+        public int TargetUserId { get; set; }
 
         public string Topic { get; set; }
 
