@@ -14,6 +14,32 @@ export class StoreActivityToken {
     }
 }
 
+let _documentStore: {[url: string]: jsonld.DocumentObject} = {};
+let _promiseDocumentStore: {[url: string]: Promise<jsonld.DocumentObject>} = {};
+
+async function _get(url: string): Promise<jsonld.DocumentObject> {
+    let headers = new Headers();
+    headers.append("Accept", "application/ld+json");
+
+    console.log("Fetching " + url);
+
+    let result = await fetch(url, { headers });
+    let json = await result.text();
+    let doc = {documentUrl: url, document: json};
+    _documentStore[url] = doc;
+    return doc;
+}
+
+function loadDocument(url: string, callback: (err: Error | null, documentObject: jsonld.DocumentObject) => void) {
+    if (url in _documentStore) {
+        callback(null, _documentStore[url]);
+    } else {
+        if (!(url in _promiseDocumentStore))
+            _promiseDocumentStore[url] = _get(url);
+        _promiseDocumentStore[url].then(a => callback(null, a), a => callback(a, null));
+    }
+}
+
 export class EntityStore {
     private _handlers: {[id: string]: ChangeHandler[]} = {};
     private _cache: {[id: string]: ASObject} = {};
@@ -95,8 +121,8 @@ export class EntityStore {
         let processor = new jsonld.JsonLdProcessor();
         
         let data = await this.session.getObject(id);
-        let context = {"@context": window.location.origin + "/render/context"};
-        let flattened = await processor.flatten(data, context as any) as any;
+        let context = {"@context": window.location.origin + "/render/context" };
+        let flattened = await processor.flatten(data, context as any, { documentLoader: loadDocument }) as any;
 
         for (let item of flattened["@graph"]) {
             this._addToCache(item["id"], item);

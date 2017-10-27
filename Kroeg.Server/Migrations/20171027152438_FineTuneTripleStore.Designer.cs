@@ -11,9 +11,10 @@ using System;
 namespace Kroeg.Server.Migrations
 {
     [DbContext(typeof(APContext))]
-    partial class APContextModelSnapshot : ModelSnapshot
+    [Migration("20171027152438_FineTuneTripleStore")]
+    partial class FineTuneTripleStore
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -185,7 +186,7 @@ namespace Kroeg.Server.Migrations
                     b.Property<int>("TripleId")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<int?>("AttributeId");
+                    b.Property<int>("AttributeId");
 
                     b.Property<string>("Object");
 
@@ -195,7 +196,7 @@ namespace Kroeg.Server.Migrations
 
                     b.Property<int>("SubjectId");
 
-                    b.Property<int?>("TypeId");
+                    b.Property<int>("TypeId");
 
                     b.HasKey("TripleId");
 
@@ -433,7 +434,8 @@ namespace Kroeg.Server.Migrations
                 {
                     b.HasOne("Kroeg.Server.Models.TripleAttribute", "Attribute")
                         .WithMany()
-                        .HasForeignKey("AttributeId");
+                        .HasForeignKey("AttributeId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Kroeg.Server.Models.TripleAttribute", "Predicate")
                         .WithMany()
@@ -452,7 +454,8 @@ namespace Kroeg.Server.Migrations
 
                     b.HasOne("Kroeg.Server.Models.TripleAttribute", "Type")
                         .WithMany()
-                        .HasForeignKey("TypeId");
+                        .HasForeignKey("TypeId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Kroeg.Server.Models.UserActorPermission", b =>

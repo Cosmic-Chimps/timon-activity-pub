@@ -11,9 +11,10 @@ using System;
 namespace Kroeg.Server.Migrations
 {
     [DbContext(typeof(APContext))]
-    partial class APContextModelSnapshot : ModelSnapshot
+    [Migration("20171027110945_AddTripleStore")]
+    partial class AddTripleStore
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -185,25 +186,17 @@ namespace Kroeg.Server.Migrations
                     b.Property<int>("TripleId")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<int?>("AttributeId");
-
                     b.Property<string>("Object");
 
                     b.Property<int>("PredicateId");
 
-                    b.Property<int>("SubjectEntityId");
-
                     b.Property<int>("SubjectId");
 
-                    b.Property<int?>("TypeId");
+                    b.Property<int>("TypeId");
 
                     b.HasKey("TripleId");
 
-                    b.HasIndex("AttributeId");
-
                     b.HasIndex("PredicateId");
-
-                    b.HasIndex("SubjectEntityId");
 
                     b.HasIndex("SubjectId");
 
@@ -431,18 +424,9 @@ namespace Kroeg.Server.Migrations
 
             modelBuilder.Entity("Kroeg.Server.Models.Triple", b =>
                 {
-                    b.HasOne("Kroeg.Server.Models.TripleAttribute", "Attribute")
-                        .WithMany()
-                        .HasForeignKey("AttributeId");
-
-                    b.HasOne("Kroeg.Server.Models.TripleAttribute", "Predicate")
-                        .WithMany()
-                        .HasForeignKey("PredicateId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("Kroeg.Server.Models.APTripleEntity", "SubjectEntity")
+                    b.HasOne("Kroeg.Server.Models.APTripleEntity", "Predicate")
                         .WithMany("Triples")
-                        .HasForeignKey("SubjectEntityId")
+                        .HasForeignKey("PredicateId")
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Kroeg.Server.Models.TripleAttribute", "Subject")
@@ -452,7 +436,8 @@ namespace Kroeg.Server.Migrations
 
                     b.HasOne("Kroeg.Server.Models.TripleAttribute", "Type")
                         .WithMany()
-                        .HasForeignKey("TypeId");
+                        .HasForeignKey("TypeId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Kroeg.Server.Models.UserActorPermission", b =>

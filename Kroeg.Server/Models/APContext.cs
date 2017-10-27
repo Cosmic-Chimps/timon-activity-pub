@@ -81,5 +81,9 @@ namespace Kroeg.Server.Models
         public DbSet<WebsubSubscription> WebsubSubscriptions { get; set; }
         public DbSet<WebSubClient> WebSubClients { get; set; }
         public DbSet<JWKEntry> JsonWebKeys { get; set; }
+
+        public DbSet<TripleAttribute> Attributes { get; set; }
+        public DbSet<Triple> Triples { get; set; }
+        public DbSet<APTripleEntity> TripleEntities { get; set; }
     }
 }

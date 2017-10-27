@@ -1,4 +1,5 @@
 // pulled from https://github.com/types/npm-jsonld - MIT license, Copyright (c) 2016 Blake Embrey (hello@blakeembrey.com)
+// then manually edited to be closer to accurate
 
 export interface JsonLdObject {
   [key: string]: JsonLdPrimitive | JsonLdPrimitive[];
@@ -155,7 +156,8 @@ export declare class JsonLdProcessor {
    * See: http://json-ld.org/spec/latest/json-ld/#flattened-document-form
    */
   flatten (doc: JsonLd, options?: FlattenOptions): Promise<JsonLd>;
-
+  flatten (doc: JsonLd, context: JsonLd | string, options?: FlattenOptions): Promise<JsonLd>;
+  
   /**
    * Frame a document.
    * See: http://json-ld.org/spec/latest/json-ld-framing/#introduction

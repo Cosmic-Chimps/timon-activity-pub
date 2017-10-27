@@ -114,7 +114,6 @@ namespace Kroeg.Server.Tools
 
             foreach (var kv in @object)
             {
-                if (!IdHolding.Contains(kv.Key)) continue;
                 foreach (var value in kv.Value)
                 {
                     if (value.SubObject == null) continue;

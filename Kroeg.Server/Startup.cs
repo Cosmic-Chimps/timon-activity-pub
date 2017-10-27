@@ -120,13 +120,16 @@ namespace Kroeg.Server
             services.AddTransient<AtomEntryParser>();
             services.AddTransient<AtomEntryGenerator>();
             services.AddTransient<FakeEntityService>();
+            services.AddTransient<TripleEntityStore>();
             services.AddTransient<IEntityStore>((provider) =>
             {
                 var dbservice = provider.GetRequiredService<DatabaseEntityStore>();
+                var triple = provider.GetRequiredService<TripleEntityStore>();
                 var flattener = provider.GetRequiredService<EntityFlattener>();
                 var httpAccessor = provider.GetService<IHttpContextAccessor>();
                 var fakeEntityService = provider.GetService<FakeEntityService>();
-                var retrieving = new RetrievingEntityStore(dbservice, flattener, provider, httpAccessor);
+                triple.Bypass = dbservice;
+                var retrieving = new RetrievingEntityStore(triple, flattener, provider, httpAccessor);
                 return new FakeEntityStore(fakeEntityService, retrieving);
             });
             services.AddTransient<TemplateService>();

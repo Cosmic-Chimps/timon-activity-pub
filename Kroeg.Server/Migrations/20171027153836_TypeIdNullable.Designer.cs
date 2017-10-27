@@ -11,9 +11,10 @@ using System;
 namespace Kroeg.Server.Migrations
 {
     [DbContext(typeof(APContext))]
-    partial class APContextModelSnapshot : ModelSnapshot
+    [Migration("20171027153836_TypeIdNullable")]
+    partial class TypeIdNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -185,7 +186,7 @@ namespace Kroeg.Server.Migrations
                     b.Property<int>("TripleId")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<int?>("AttributeId");
+                    b.Property<int>("AttributeId");
 
                     b.Property<string>("Object");
 
@@ -433,7 +434,8 @@ namespace Kroeg.Server.Migrations
                 {
                     b.HasOne("Kroeg.Server.Models.TripleAttribute", "Attribute")
                         .WithMany()
-                        .HasForeignKey("AttributeId");
+                        .HasForeignKey("AttributeId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Kroeg.Server.Models.TripleAttribute", "Predicate")
                         .WithMany()
