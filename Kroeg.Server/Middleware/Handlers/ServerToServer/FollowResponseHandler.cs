@@ -22,9 +22,9 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
 
         public override async Task<bool> Handle()
         {
-            if (MainObject.Type != "Accept") return true;
+            if (MainObject.Type != "https://www.w3.org/ns/activitystreams#Accept") return true;
             var followObject = await EntityStore.GetEntity(MainObject.Data["object"].Single().Id, false);
-            if (followObject.Type != "Follow") return true;
+            if (followObject.Type != "https://www.w3.org/ns/activitystreams#Follow") return true;
             if (followObject.Data["object"].First().Id != MainObject.Data["actor"].First().Id) throw new InvalidOperationException("I won't let you do that, Starfox!");
             var followUser = followObject.Data["object"].First().Id;
 
@@ -35,7 +35,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
             var relevant = await _relevantEntities.FindRelevantObject(followUser, "Reject", followObject.Id);
             if (relevant != null) throw new InvalidOperationException("Follow has already been Rejected before!");
 
-            if (MainObject.Type == "Accept")
+            if (MainObject.Type == "https://www.w3.org/ns/activitystreams#Accept")
             {
                 relevant = await _relevantEntities.FindRelevantObject(followUser, "Accept", followObject.Id);
                 if (relevant != null) throw new InvalidOperationException("Follow has already been Accepted before!");
@@ -43,9 +43,9 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
 
             var following = await EntityStore.GetEntity(Actor.Data["following"].Single().Id, false);
             var user = await EntityStore.GetEntity(MainObject.Data["actor"].Single().Id, true);
-            if (MainObject.Type == "Accept" && !await _collection.Contains(following.Id, user.Id))
+            if (MainObject.Type == "https://www.w3.org/ns/activitystreams#Accept" && !await _collection.Contains(following.Id, user.Id))
                 await _collection.AddToCollection(following, user);
-            else if (MainObject.Type == "Reject")
+            else if (MainObject.Type == "https://www.w3.org/ns/activitystreams#Reject")
                 await _collection.RemoveFromCollection(following, user);
 
             return true;

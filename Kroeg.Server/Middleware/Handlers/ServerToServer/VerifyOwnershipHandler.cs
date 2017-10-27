@@ -16,7 +16,10 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
 
         public override async Task<bool> Handle()
         {
-            if (MainObject.Type != "Update" && MainObject.Type != "Delete" && MainObject.Type != "Create" && MainObject.Type != "Undo") return true;
+            if (MainObject.Type != "https://www.w3.org/ns/activitystreams#Update"
+                && MainObject.Type != "https://www.w3.org/ns/activitystreams#Delete"
+                && MainObject.Type != "https://www.w3.org/ns/activitystreams#Create"
+                && MainObject.Type != "https://www.w3.org/ns/activitystreams#Undo") return true;
 
             await Task.Yield();
 

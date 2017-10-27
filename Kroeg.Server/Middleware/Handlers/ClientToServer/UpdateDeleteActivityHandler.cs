@@ -30,7 +30,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
 
         public override async Task<bool> Handle()
         {
-            if (MainObject.Type != "Update" && MainObject.Type != "Delete") return true;
+            if (MainObject.Type != "https://www.w3.org/ns/activitystreams#Update" && MainObject.Type != "https://www.w3.org/ns/activitystreams#Delete") return true;
 
             var activityData = MainObject.Data;
 
@@ -46,7 +46,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             if (originatingCreate.Data["actor"].Single().Id != Actor.Id)
                 throw new InvalidOperationException("Cannot remove or update objects that weren't made by you!");
 
-            if (MainObject.Type == "Update")
+            if (MainObject.Type == "https://www.w3.org/ns/activitystreams#Update")
             {
                 var newObject = await EntityStore.GetEntity(activityData["object"].Single().Id, false);
                 if (newObject == oldObject) throw new InvalidOperationException("No new object passed!");

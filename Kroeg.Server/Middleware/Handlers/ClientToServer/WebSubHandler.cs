@@ -21,14 +21,14 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
         public override async Task<bool> Handle()
         {
             var activity = MainObject;
-            if (MainObject.Type == "Undo")
+            if (MainObject.Type == "https://www.w3.org/ns/activitystreams#Undo")
             {
                 var subObject = await EntityStore.GetEntity(activity.Data["object"].First().Id, false);
-                if (subObject?.Type != "Follow") return true;
+                if (subObject?.Type != "https://www.w3.org/ns/activitystreams#Follow") return true;
 
                 activity = subObject;
             }
-            else if (MainObject.Type != "Follow") return true;
+            else if (MainObject.Type != "https://www.w3.org/ns/activitystreams#Follow") return true;
 
             var target = await EntityStore.GetEntity(activity.Data["object"].First().Id, true);
             if (target == null) return true; // can't really fix subscriptions on a thing that doesn't exist
@@ -36,7 +36,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
                 var hubUrl = (string) target.Data["_:hubUrl"].SingleOrDefault()?.Primitive;
                 if (hubUrl == null) return true;
 
-                var taskEvent = WebSubBackgroundTask.Make(new WebSubBackgroundData { Unsubscribe = MainObject.Type == "Undo", ToFollowID = target.Id, ActorID = MainObject.Data["actor"].Single().Id });
+                var taskEvent = WebSubBackgroundTask.Make(new WebSubBackgroundData { Unsubscribe = MainObject.Type == "https://www.w3.org/ns/activitystreams#Undo", ToFollowID = target.Id, ActorID = MainObject.Data["actor"].Single().Id });
                 _context.EventQueue.Add(taskEvent);
                 await _context.SaveChangesAsync();
 

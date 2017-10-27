@@ -20,7 +20,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
 
         public override async Task<bool> Handle()
         {
-            if (MainObject.Type != "Undo") return true;
+            if (MainObject.Type != "https://www.w3.org/ns/activitystreams#Undo") return true;
 
             var toUndo = await EntityStore.GetEntity(MainObject.Data["object"].Single().Id, true);
             if (toUndo == null) return true; 
@@ -29,19 +29,20 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
 
             var toFollowOrLike = await EntityStore.GetEntity(toUndo.Data["object"].Single().Id, true);
             if (toFollowOrLike == null || !toFollowOrLike.IsOwner) return true; // can't undo side effects.
-            if ((toUndo.Type == "Follow" && Actor.Id != toFollowOrLike.Id) || (toUndo.Type != "Follow" && toFollowOrLike.Data["attributedTo"].Single().Id != Actor.Id)) return true;
+            if ((toUndo.Type == "https://www.w3.org/ns/activitystreams#Follow" && Actor.Id != toFollowOrLike.Id)
+                || (toUndo.Type != "https://www.w3.org/ns/activitystreams#Follow" && toFollowOrLike.Data["attributedTo"].Single().Id != Actor.Id)) return true;
 
-            if (toUndo.Type == "Follow")
+            if (toUndo.Type == "https://www.w3.org/ns/activitystreams#Follow")
             {
                 collectionId = toFollowOrLike.Data["followers"].SingleOrDefault()?.Id;
                 objectToAdd = toUndo.Data["actor"].Single().Id;
             }
-            else if (toUndo.Type == "Like")
+            else if (toUndo.Type == "https://www.w3.org/ns/activitystreams#Like")
             {
                 collectionId = toFollowOrLike.Data["likes"].SingleOrDefault()?.Id;
                 objectToAdd = toUndo.Id;
             }
-            else if (toUndo.Type == "Announce")
+            else if (toUndo.Type == "https://www.w3.org/ns/activitystreams#Announce")
             {
                 collectionId = toFollowOrLike.Data["shares"].SingleOrDefault()?.Id;
                 objectToAdd = toUndo.Id;

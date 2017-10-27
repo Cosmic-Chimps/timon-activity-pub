@@ -19,7 +19,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
 
         public override async Task<bool> Handle()
         {
-            if (MainObject.Type != "Delete") return true;
+            if (MainObject.Type != "https://www.w3.org/ns/activitystreams#Delete") return true;
 
             var oldObject = await EntityStore.GetEntity(MainObject.Data["object"].Single().Id, true);
             var newData = oldObject.Data;

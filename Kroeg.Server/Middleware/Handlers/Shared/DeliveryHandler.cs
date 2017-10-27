@@ -20,7 +20,7 @@ namespace Kroeg.Server.Middleware.Handlers.Shared
         public override async Task<bool> Handle()
         {
             var addedTo = await _collection.AddToCollection(TargetBox, MainObject);
-            if (MainObject.Type == "Block") return true;
+            if (MainObject.Type == "https://www.w3.org/ns/activitystreams#Block") return true;
 
             await _deliveryService.QueueDeliveryForEntity(MainObject, addedTo.CollectionItemId, TargetBox.Type == "_inbox" ? Actor.Id : null);
             return true;

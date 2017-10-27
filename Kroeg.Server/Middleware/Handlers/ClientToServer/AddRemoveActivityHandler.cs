@@ -20,7 +20,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
 
         public override async Task<bool> Handle()
         {
-            if (MainObject.Type != "Remove" && MainObject.Type != "Add") return true;
+            if (MainObject.Type != "https://www.w3.org/ns/activitystreams#Remove" && MainObject.Type != "https://www.w3.org/ns/activitystreams#Add") return true;
             var activityData = MainObject.Data;
 
             var targetEntity = await EntityStore.GetEntity(activityData["target"].Single().Id, false);
@@ -30,14 +30,14 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             if (!targetEntity.IsOwner)
                 throw new InvalidOperationException("Cannot add or remove from a collection I'm not owner of!");
 
-            if (targetEntity.Type != "Collection" && targetEntity.Type != "OrderedCollection")
+            if (targetEntity.Type != "https://www.w3.org/ns/activitystreams#Collection" && targetEntity.Type != "https://www.w3.org/ns/activitystreams#OrderedCollection")
                 throw new InvalidOperationException("Cannot add or remove from something that isn't a collection!");
 
             // XXX todo: add authorization on here
 
             var objectId = activityData["object"].Single().Id;
 
-            if (MainObject.Type == "Add")
+            if (MainObject.Type == "https://www.w3.org/ns/activitystreams#Add")
             {
                 var objectEntity = await EntityStore.GetEntity(objectId, true);
                 if (objectEntity == null)
@@ -45,7 +45,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
 
                 await _collection.AddToCollection(targetEntity, objectEntity);
             }
-            else if (MainObject.Type == "Remove")
+            else if (MainObject.Type == "https://www.w3.org/ns/activitystreams#Remove")
                 await _collection.RemoveFromCollection(targetEntity, objectId);
 
             return true;

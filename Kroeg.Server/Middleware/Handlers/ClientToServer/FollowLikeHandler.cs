@@ -23,12 +23,11 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
 
         public override async Task<bool> Handle()
         {
-            if (MainObject.Type != "Like") return true;
+            if (MainObject.Type != "https://www.w3.org/ns/activitystreams#Like") return true;
 
             var userData = Actor.Data;
             string targetCollectionId = null;
-            if (MainObject.Type == "Like")
-                targetCollectionId = userData["liked"].SingleOrDefault()?.Id;
+            targetCollectionId = userData["liked"].SingleOrDefault()?.Id;
 
             if (targetCollectionId == null) return true;
 

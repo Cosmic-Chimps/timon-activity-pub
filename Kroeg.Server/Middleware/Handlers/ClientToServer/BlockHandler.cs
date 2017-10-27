@@ -20,7 +20,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
 
         public override async Task<bool> Handle()
         {
-            if (MainObject.Type != "Block") return true;
+            if (MainObject.Type != "https://www.w3.org/ns/activitystreams#Block") return true;
             var activityData = MainObject.Data;
 
             var toBlock = activityData["object"].First().Id;

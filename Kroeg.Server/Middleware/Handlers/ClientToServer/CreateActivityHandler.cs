@@ -40,7 +40,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
 
         public override async Task<bool> Handle()
         {
-            if (MainObject.Type != "Create") return true;
+            if (MainObject.Type != "https://www.w3.org/ns/activitystreams#Create") return true;
 
             var activityData = MainObject.Data;
             var objectEntity = await EntityStore.GetEntity(activityData["object"].First().Id, false);

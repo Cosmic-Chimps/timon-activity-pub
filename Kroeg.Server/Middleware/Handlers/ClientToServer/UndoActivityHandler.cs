@@ -21,17 +21,20 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
 
         public override async Task<bool> Handle()
         {
-            if (MainObject.Type != "Undo") return true;
+            if (MainObject.Type != "https://www.w3.org/ns/activitystreams#Undo") return true;
             var toUndoId = MainObject.Data["object"].Single().Id;
             var toUndo = await EntityStore.GetEntity(toUndoId, false);
 
             if (toUndo == null || !toUndo.IsOwner) throw new InvalidOperationException("Object to undo does not exist!");
-            if (toUndo.Type != "Like" && toUndo.Type != "Follow" && toUndo.Type != "Block") throw new InvalidOperationException("Cannot undo this type of object!");
+            if (toUndo.Type != "https://www.w3.org/ns/activitystreams#Like"
+                && toUndo.Type != "https://www.w3.org/ns/activitystreams#Follow"
+                && toUndo.Type != "https://www.w3.org/ns/activitystreams#Block")
+                throw new InvalidOperationException("Cannot undo this type of object!");
             if (!toUndo.Data["actor"].Any(a => a.Id == Actor.Id)) throw new InvalidOperationException("You are not allowed to undo this activity!");
 
             var userData = Actor.Data;
             string targetCollectionId = null;
-            if (toUndo.Type == "Block")
+            if (toUndo.Type == "https://www.w3.org/ns/activitystreams#Block")
             {
                 var blocksCollection = await EntityStore.GetEntity(userData["blocks"].Single().Id, false);
                 var blockedCollection = await EntityStore.GetEntity(blocksCollection.Data["_blocked"].Single().Id, false);
@@ -43,9 +46,9 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
 
                 return true;
             }
-            else if (toUndo.Type == "Like")
+            else if (toUndo.Type == "https://www.w3.org/ns/activitystreams#Like")
                 targetCollectionId = userData["likes"].Single().Id;
-            else if (toUndo.Type == "Follow")
+            else if (toUndo.Type == "https://www.w3.org/ns/activitystreams#Follow")
                 targetCollectionId = userData["following"].Single().Id;
 
             var targetCollection = await EntityStore.GetEntity(targetCollectionId, false);

@@ -30,7 +30,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
 
         public override async Task<bool> Handle()
         {
-            if (MainObject.Type == "Follow")
+            if (MainObject.Type == "https://www.w3.org/ns/activitystreams#Follow")
             {
                 if (Actor.Data["manuallyApprovesFollowers"].Any(a => !(bool) a.Primitive))
                 {
@@ -53,7 +53,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
                 return true;
             }
 
-            if (MainObject.Type != "Like" && MainObject.Type != "Announce") return true;
+            if (MainObject.Type != "https://www.w3.org/ns/activitystreams#Like" && MainObject.Type != "https://www.w3.org/ns/activitystreams#Announce") return true;
 
             var toFollowOrLike = await EntityStore.GetEntity(MainObject.Data["object"].Single().Id, false);
             if (toFollowOrLike == null || !toFollowOrLike.IsOwner) return true; // not going to update side effects now.
@@ -65,11 +65,11 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
 
             switch (MainObject.Type)
             {
-                case "Like":
+                case "https://www.w3.org/ns/activitystreams#Like":
                     collectionId = toFollowOrLike.Data["likes"].SingleOrDefault()?.Id;
                     objectToAdd = MainObject.Id;
                     break;
-                case "Announce":
+                case "https://www.w3.org/ns/activitystreams#Announce":
                     collectionId = toFollowOrLike.Data["shares"].SingleOrDefault()?.Id;
                     objectToAdd = MainObject.Id;
                     break;
