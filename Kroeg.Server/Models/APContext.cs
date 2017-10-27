@@ -5,11 +5,20 @@ using System.Threading.Tasks;
 using System.Threading;
 using Kroeg.Server.BackgroundTasks;
 using Kroeg.Server.Services;
+using Microsoft.EntityFrameworkCore.Design;
 
 namespace Kroeg.Server.Models
 {
     public class APContext : IdentityDbContext<APUser>
     {
+        public class ContextBuilder : IDesignTimeDbContextFactory<APContext>
+        {
+            APContext IDesignTimeDbContextFactory<APContext>.CreateDbContext(string[] args)
+            {
+                return new APContext(new DbContextOptionsBuilder().UseNpgsql("Host=localhost;Username=postgres;Password=postgres;Database=kroeg2").Options, null);
+            }
+        }
+
         private readonly INotifier _notifier;
 
         public APContext(DbContextOptions options, INotifier notifier)
@@ -63,7 +72,7 @@ namespace Kroeg.Server.Models
             return res;
         }
 
-        public DbSet<APEntity> Entities { get; set; }
+        public DbSet<APDBEntity> Entities { get; set; }
         public DbSet<CollectionItem> CollectionItems { get; set; }
         public DbSet<UserActorPermission> UserActorPermissions { get; set; }
         public DbSet<EventQueueItem> EventQueue { get; set; }

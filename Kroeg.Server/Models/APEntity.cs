@@ -11,14 +11,13 @@ namespace Kroeg.Server.Models
         [Key]
         public string Id { get; set; }
 
-        [Column(TypeName = "jsonb")]
-        public string SerializedData { get; set; }
-
         public string Type { get; set; }
 
         public DateTime Updated { get; set; }
 
         public bool IsOwner { get; set; }
+
+        public ASObject Data { get; set; }
 
         public static APEntity From(string id, ASObject @object)
         {
@@ -49,14 +48,6 @@ namespace Kroeg.Server.Models
                 IsOwner = isOwner,
                 Updated = DateTime.Now
             };
-        }
-
-        [NotMapped]
-        public ASObject Data
-        {
-            get => ASObject.Parse(SerializedData, true);
-
-            set => SerializedData = value.Serialize(false).ToString(Newtonsoft.Json.Formatting.None);
         }
     }
 }

@@ -24,6 +24,7 @@
   </ItemGroup>
   <ItemGroup>
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="*" />
+    <DotNetCliToolReference Include="Microsoft.EntityFrameworkCore.Tools.DotNet" Version="*" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kroeg.ActivityStreams\Kroeg.ActivityStreams.csproj" />

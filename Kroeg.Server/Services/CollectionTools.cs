@@ -46,15 +46,16 @@ namespace Kroeg.Server.Services
         private bool _verifyAudience(string user, CollectionItem entity)
         {
             if (entity.IsPublic) return true;
-            if (_configuration.IsActor(entity.Element.Data)) return true;
-            var audience = DeliveryService.GetAudienceIds(entity.Element.Data);
+            var entityData = entity.Element.Entity;
+            if (_configuration.IsActor(entityData.Data)) return true;
+            var audience = DeliveryService.GetAudienceIds(entityData.Data);
             return audience.Contains(user);
         }
 
         public async Task<List<CollectionItem>> GetItems(string id, int fromId = int.MaxValue, int count = 10)
         {
             var isOwner = false;
-            var entity = await _context.Entities.FirstOrDefaultAsync(a => a.Id == id && a.IsOwner);
+            var entity = (await _context.Entities.FirstOrDefaultAsync(a => a.Id == id && a.IsOwner))?.Entity;
             var user = _getUser();
             if (entity != null && entity.Data["attributedTo"].Any(a => a.Id == user)) isOwner = true;
 
@@ -78,22 +79,22 @@ namespace Kroeg.Server.Services
             if (user == null)
                 list = list.Where(a => a.IsPublic);
 
-            return await list.Select(a => a.Element).ToListAsync();
+            return await list.Select(a => a.Element.Entity).ToListAsync();
         }
 
         public async Task<List<APEntity>> CollectionsContaining(string containId, string type = null)
         {
             var collectionItems = _context.CollectionItems.Where(a => a.ElementId == containId).Select(a => a.Collection);
             if (type != null) collectionItems = collectionItems.Where(a => a.Type == type);
-            return await collectionItems.ToListAsync();
+            return await collectionItems.Select(a => a.Entity).ToListAsync();
         }
 
         public async Task<CollectionItem> AddToCollection(APEntity collection, APEntity entity)
         {
             var ci = new CollectionItem
             {
-                Collection = collection,
-                Element = entity,
+                CollectionId = collection.Id,
+                ElementId = entity.Id,
                 IsPublic = DeliveryService.IsPublic(entity.Data) || _configuration.IsActor(entity.Data)
             };
 

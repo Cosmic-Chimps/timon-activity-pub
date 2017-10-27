@@ -9,6 +9,7 @@ using System.Net.Http;
 using Kroeg.Server.Models;
 using Kroeg.Server.Services.EntityStore;
 using Kroeg.Server.Tools;
+using Kroeg.Server.Services;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -20,12 +21,14 @@ namespace Kroeg.Server.Controllers
         private readonly APContext _context;
         private readonly IEntityStore _entityStore;
         private readonly EntityData _entityData;
+        private readonly RelevantEntitiesService _relevantEntities;
 
-        public WellKnownController(APContext context, IEntityStore entityStore, EntityData entityData)
+        public WellKnownController(APContext context, IEntityStore entityStore, EntityData entityData, RelevantEntitiesService relevantEntities)
         {
             _context = context;
             _entityStore = entityStore;
             _entityData = entityData;
+            _relevantEntities = relevantEntities;
         }
 
         public class WebfingerLink
@@ -42,12 +45,6 @@ namespace Kroeg.Server.Controllers
             public List<string> aliases { get; set; }
             public List<WebfingerLink> links { get; set; }
         }
-
-        private class _queryParam
-        {
-            public string preferredUsername { get; set; }
-        }
-
 
         [HttpPost("hub")]
         public async Task<IActionResult> ProcessPushRequest()
@@ -109,7 +106,7 @@ namespace Kroeg.Server.Controllers
                     Callback = callback,
                     Expiry = DateTime.Now.AddSeconds(int.Parse(lease_seconds ?? "86400")),
                     Secret = secret,
-                    User = user
+                    UserId = user.Id
                 };
                 _context.WebsubSubscriptions.Add(subscription);
             }
@@ -124,10 +121,7 @@ namespace Kroeg.Server.Controllers
 
             var username = resource.Split(':')[1].Split('@');
 
-            var param = new _queryParam() { preferredUsername = username[0] };
-
-            var items = await _context.Entities.FromSql("SELECT * from \"Entities\" WHERE \"SerializedData\" @> {0}::jsonb", JsonConvert.SerializeObject(param))
-                .Where(a => a.Type == "Person").ToListAsync();
+            var items = await _relevantEntities.FindEntitiesWithPreferredUsername(username[0]);
             if (items.Count == 0) return NotFound();
 
             var item = items.First();

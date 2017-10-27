@@ -8,7 +8,7 @@
         public string UserId { get; set; }
 
         public string ActorId { get; set; }
-        public APEntity Actor { get; set; }
+        public APDBEntity Actor { get; set; }
 
         public bool IsAdmin { get; set; }
     }

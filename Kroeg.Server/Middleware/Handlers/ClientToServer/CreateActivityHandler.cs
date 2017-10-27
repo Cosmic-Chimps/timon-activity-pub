@@ -60,7 +60,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             _merge(activityData["bcc"], objectData["bcc"]);
             _merge(activityData["audience"], objectData["audience"]);
 
-            objectData.Replace("published", ASTerm.MakePrimitive(DateTime.Now.ToString("o")));
+            objectData.Replace("published", ASTerm.MakeDateTime(DateTime.Now));
 
             objectEntity.Data = objectData;
             MainObject.Data = activityData;

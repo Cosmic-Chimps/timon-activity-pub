@@ -8,10 +8,10 @@ namespace Kroeg.Server.Models
         public int CollectionItemId { get; set; }
 
         public string CollectionId { get; set; }
-        public APEntity Collection { get; set; }
+        public APDBEntity Collection { get; set; }
 
         public string ElementId { get; set; }
-        public APEntity Element { get; set; }
+        public APDBEntity Element { get; set; }
 
         public bool IsPublic { get; set; }
     }

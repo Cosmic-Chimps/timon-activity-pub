@@ -21,7 +21,7 @@ namespace Kroeg.Server.Services.EntityStore
             var entity = await _context.Entities.FirstOrDefaultAsync(a => a.Id == id);
             if (entity == null || (!entity.IsOwner && doRemote && entity.Id.StartsWith("http") && (DateTime.Now - entity.Updated).TotalDays > 7)) return null; // mini-cache
 
-            return entity;
+            return entity.Entity;
         }
 
         public async Task<APEntity> StoreEntity(APEntity entity)
@@ -30,14 +30,11 @@ namespace Kroeg.Server.Services.EntityStore
             if (exists == null)
             {
                 entity.Updated = DateTime.Now;
-                await _context.Entities.AddAsync(entity);
+                await _context.Entities.AddAsync(new APDBEntity { Entity = entity });
             }
             else
             {
-                exists.SerializedData = entity.SerializedData;
-                exists.Updated = DateTime.Now;
-                exists.Type = entity.Type;
-                entity = exists;
+                exists.Entity = entity;
             }
 
             return entity;

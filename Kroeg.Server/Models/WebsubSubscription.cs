@@ -11,6 +11,6 @@ namespace Kroeg.Server.Models
         public string Secret { get; set; }
 
         public string UserId { get; set; }
-        public APEntity User { get; set; }
+        public APDBEntity User { get; set; }
     }
 }

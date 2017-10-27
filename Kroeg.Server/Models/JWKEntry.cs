@@ -15,7 +15,7 @@ namespace Kroeg.Server.Models
         public string Id { get; set; }
 
         public string OwnerId { get; set; }
-        public APEntity Owner { get; set; }
+        public APDBEntity Owner { get; set; }
 
         public string SerializedData { get; set; }
 

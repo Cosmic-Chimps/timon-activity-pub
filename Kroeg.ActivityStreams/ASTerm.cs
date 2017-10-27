@@ -20,7 +20,18 @@ namespace Kroeg.ActivityStreams
         public ASTerm(ASObject value) { SubObject = value; }
 
         public const string NON_NEGATIVE_INTEGER = "http://www.w3.org/2001/XMLSchema#nonNegativeInteger";
+        public const string DATETIME = "http://www.w3.org/2001/XMLSchema#dateTime";
+        public const string FLOAT = "http://www.w3.org/2001/XMLSchema#float";
 
+        public static ASTerm MakeDateTime(DateTime dt)
+        {
+            return new ASTerm { Primitive = dt.ToString("o"), Type = DATETIME };
+        }
+
+        public static ASTerm MakeFloat(float f)
+        {
+            return new ASTerm { Primitive = f, Type = FLOAT };
+        }
 
         public static ASTerm MakePrimitive(object obj, string type = null)
         {

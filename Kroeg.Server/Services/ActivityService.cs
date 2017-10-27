@@ -31,7 +31,7 @@ namespace Kroeg.Server.Services
         {
             var serializedJson = JsonConvert.SerializeObject(new OriginatingCreateJson { Type = "Create", Object = id });
 
-            return await _context.Entities.FromSql("SELECT * from \"Entities\" WHERE \"SerializedData\"@> {0}::jsonb", serializedJson).FirstOrDefaultAsync();
+            return (await _context.Entities.FromSql("SELECT * from \"Entities\" WHERE \"SerializedData\"@> {0}::jsonb", serializedJson).FirstOrDefaultAsync())?.Entity;
         }
     }
 }

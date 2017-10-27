@@ -100,7 +100,7 @@ namespace Kroeg.Server.Services
             {
                 if (kid == null) return null; // can't do that for remote actors
 
-                var key = await _context.JsonWebKeys.FirstOrDefaultAsync(a => a.Owner == actor && a.Id == kid);
+                var key = await _context.JsonWebKeys.FirstOrDefaultAsync(a => a.OwnerId == actor.Id && a.Id == kid);
                 if (key == null)
                 {
                     // well here we go
@@ -123,7 +123,7 @@ namespace Kroeg.Server.Services
 
                     key = new JWKEntry
                     {
-                        Owner = actor,
+                        OwnerId = actor.Id,
                         Id = kid,
                         SerializedData = JsonConvert.SerializeObject(jwkey)
                     };
@@ -136,7 +136,7 @@ namespace Kroeg.Server.Services
             }
             else
             {
-                var key = await _context.JsonWebKeys.FirstOrDefaultAsync(a => a.Owner == actor);
+                var key = await _context.JsonWebKeys.FirstOrDefaultAsync(a => a.OwnerId == actor.Id);
                 if (key == null)
                 {
                     var jwk = new JsonWebKey();
@@ -152,7 +152,7 @@ namespace Kroeg.Server.Services
                     jwk.Y = Base64UrlEncoder.Encode(parms.Q.Y);
                     jwk.D = Base64UrlEncoder.Encode(parms.D);
 
-                    key = new JWKEntry { Id = jwk.Kid, Owner = actor, SerializedData = JsonConvert.SerializeObject(jwk) };
+                    key = new JWKEntry { Id = jwk.Kid, OwnerId = actor.Id, SerializedData = JsonConvert.SerializeObject(jwk) };
                     _context.JsonWebKeys.Add(key);
                     await _context.SaveChangesAsync();
                 }
