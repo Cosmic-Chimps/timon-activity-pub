@@ -16,9 +16,7 @@ namespace Kroeg.ActivityStreams
         public List<string> Type { get; } = new List<string>();
         public string Id { get; set; }
 
-        private static JToken _context = new JArray("https://www.w3.org/ns/activitystreams", new JObject() {
-            ["manuallyApprovesFollowers"] = "as:manuallyApprovesFollowers"
-        });
+        private static JToken _context = "https://www.w3.org/ns/activitystreams";
 
         private static Dictionary<string, JObject> _objectStore = new Dictionary<string, JObject>();
         private static JsonLD.API _api = new JsonLD.API(_resolve);
