@@ -79,7 +79,7 @@ namespace Kroeg.ActivityStreams
                 return new ASTerm { Primitive = obj["@value"].ToObject<object>(), Type = obj["@type"].ToObject<string>() };
             else if (obj["@value"] != null)
                 return new ASTerm { Primitive = obj["@value"].ToObject<object>() };
-            throw new NotImplementedException();
+            return new ASTerm { SubObject = ASObject.Parse(obj) };
         }
 
         public JObject Serialize(bool compact)
