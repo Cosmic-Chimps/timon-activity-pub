@@ -37,7 +37,7 @@ namespace Kroeg.Server.Services
 
         public async Task<APUser> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
         {
-            return await _connection.QuerySingleOrDefaultAsync<APUser>("select * from \"Users\" where \"Username\" = @Username limit 1", new  { Username = normalizedUserName });
+            return await _connection.QuerySingleOrDefaultAsync<APUser>("select * from \"Users\" where \"NormalisedUsername\" = @Username limit 1", new  { Username = normalizedUserName });
         }
 
         public Task<string> GetNormalizedUserNameAsync(APUser user, CancellationToken cancellationToken)
