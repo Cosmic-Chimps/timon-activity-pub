@@ -14,7 +14,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
         private readonly CollectionTools _collection;
         private readonly RelevantEntitiesService _relevantEntities;
 
-        public FollowResponseHandler(StagingEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection, RelevantEntitiesService relevantEntities) : base(entityStore, mainObject, actor, targetBox, user)
+        public FollowResponseHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection, RelevantEntitiesService relevantEntities) : base(entityStore, mainObject, actor, targetBox, user)
         {
             _collection = collection;
             _relevantEntities = relevantEntities;
@@ -43,7 +43,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
 
             var following = await EntityStore.GetEntity(Actor.Data["following"].Single().Id, false);
             var user = await EntityStore.GetEntity(MainObject.Data["actor"].Single().Id, true);
-            if (MainObject.Type == "https://www.w3.org/ns/activitystreams#Accept" && !await _collection.Contains(following.Id, user.Id))
+            if (MainObject.Type == "https://www.w3.org/ns/activitystreams#Accept" && !await _collection.Contains(following, user.Id))
                 await _collection.AddToCollection(following, user);
             else if (MainObject.Type == "https://www.w3.org/ns/activitystreams#Reject")
                 await _collection.RemoveFromCollection(following, user);

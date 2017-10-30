@@ -9,6 +9,7 @@ using Kroeg.ActivityStreams;
 using Kroeg.Server.Models;
 using Kroeg.Server.Services.EntityStore;
 using Kroeg.Server.Tools;
+using Kroeg.Server.Services;
 
 namespace Kroeg.Server.OStatusCompat
 {
@@ -42,6 +43,7 @@ namespace Kroeg.Server.OStatusCompat
         private readonly IEntityStore _entityStore;
         private readonly EntityData _entityConfiguration;
         private readonly APContext _context;
+        private readonly RelevantEntitiesService _relevantEntities;
 
         private ASObject _parseAuthor(XElement element)
         {
@@ -274,23 +276,6 @@ namespace Kroeg.Server.OStatusCompat
             return ASTerm.MakeSubObject(ao);
         }
 
-        private class RelevantObjectJson
-        {
-            [JsonProperty("type")]
-            public string Type { get; set; }
-            [JsonProperty("object")]
-            public string Object { get; set; }
-            [JsonProperty("actor")]
-            public string Actor { get; set; }
-        }
-
-        private async Task<ASTerm> _findRelevantObject(string authorId, string objectType, string objectId)
-        {
-            return ASTerm.MakeId((await _context.Entities.FromSql("SELECT * FROM \"Entities\" WHERE \"SerializedData\" @> {0}::jsonb ORDER BY \"SerializedData\"->'published'", JsonConvert.SerializeObject(
-                new RelevantObjectJson { Type = objectType, Object = objectId, Actor = authorId })).LastOrDefaultAsync())?.Id);
-            // how?
-        }
-
         [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         private async Task<ASTerm> _parseActivity(XElement element, string authorId, string targetUser)
         {
@@ -375,10 +360,10 @@ namespace Kroeg.Server.OStatusCompat
 
                 if (verb == "Undo" && originalVerb == "Unfavorite")
                 {
-                    parsedActivityObject = await _findRelevantObject(authorId, "Like", _getId(parsedActivityObject));
+                    parsedActivityObject = ASTerm.MakeId((await _relevantEntities.FindRelevantObject(authorId, "https://www.w3.org/ns/activitystreams#Like", _getId(parsedActivityObject))).FirstOrDefault()?.Id);
                 }
                 else if (verb == "Undo" && originalVerb == "Unfollow")
-                    parsedActivityObject = await _findRelevantObject(authorId, "Follow", _getId(parsedActivityObject));
+                    parsedActivityObject = ASTerm.MakeId((await _relevantEntities.FindRelevantObject(authorId, "https://www.w3.org/ns/activitystreams#Follow", _getId(parsedActivityObject))).FirstOrDefault()?.Id);
 
                 ao.Replace("object", parsedActivityObject);
             }
@@ -389,7 +374,7 @@ namespace Kroeg.Server.OStatusCompat
 
                 // .. what
 
-                ao.Replace("object", await _findRelevantObject(authorId, "Follow", targetUser));
+                ao.Replace("object", ASTerm.MakeId((await _relevantEntities.FindRelevantObject(authorId, "https://www.w3.org/ns/activitystreams#Follow", targetUser)).FirstOrDefault()?.Id));
             }
             else
             {
@@ -476,11 +461,12 @@ namespace Kroeg.Server.OStatusCompat
             return ao;
         }
 
-        public AtomEntryParser(IEntityStore entityStore, EntityData entityConfiguration, APContext context)
+        public AtomEntryParser(IEntityStore entityStore, EntityData entityConfiguration, APContext context, RelevantEntitiesService relevantEntities)
         {
             _entityStore = entityStore;
             _entityConfiguration = entityConfiguration;
             _context = context;
+            _relevantEntities = relevantEntities;
         }
 
         public async Task<ASObject> Parse(XDocument doc, bool translateSingleActivity, string targetUser)

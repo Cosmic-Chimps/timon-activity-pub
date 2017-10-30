@@ -6,16 +6,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Kroeg.Server.Services.EntityStore;
 
 namespace Kroeg.Server.Services
 {
     public class RelevantEntitiesService
     {
         private readonly APContext _context;
+        private readonly TripleEntityStore _entityStore;
 
-        public RelevantEntitiesService(APContext context)
+        public RelevantEntitiesService(APContext context, TripleEntityStore entityStore)
         {
             _context = context;
+            _entityStore = entityStore;
         }
 
         private class RelevantObjectJson
@@ -40,31 +43,53 @@ namespace Kroeg.Server.Services
             public string Followers { get; set; }
         }
 
-        private async Task<List<APEntity>> _search(object obj)
+        private async Task<List<APEntity>> _search(Dictionary<string, string> lookFor, bool? isOwner = null)
         {
-            return await _context.Entities.FromSql("SELECT * FROM \"Entities\" WHERE \"SerializedData\" @> {0}::jsonb", JsonConvert.SerializeObject(
-                obj, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore })).Select(a => a.Entity).ToListAsync();
-        }
+            var attributeMapping = new Dictionary<int, int>();
+            foreach (var val in lookFor)
+            {
+                var reverseId = await _entityStore.ReverseAttribute(val.Key, false);
+                if (reverseId == null) return new List<APEntity>();
 
-        private async Task<List<APEntity>> _search(object obj, bool isOwner)
-        {
-            return await _context.Entities.FromSql("SELECT * FROM \"Entities\" WHERE \"SerializedData\" @> {0}::jsonb AND \"IsOwner\" = {1}", JsonConvert.SerializeObject(
-                obj, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }), isOwner).Select(a => a.Entity).ToListAsync();
+                var reverseVal = await _entityStore.ReverseAttribute(val.Value, false);
+                if (reverseVal == null) return new List<APEntity>();
+
+                attributeMapping[reverseId.Value] = reverseVal.Value;
+            }
+
+            IQueryable<APTripleEntity> query = _context.TripleEntities;
+            foreach (var item in attributeMapping)
+            {
+                query = query.Where(a => a.Triples.Any(b => b.SubjectId == a.IdId && b.PredicateId == item.Key && b.AttributeId == item.Value));
+            }
+
+            if (isOwner.HasValue)
+                query = query.Where(a => a.IsOwner == isOwner.Value);
+
+            return await _entityStore.GetEntities(await query.Select(a => a.EntityId).ToListAsync());
         }
 
         public async Task<List<APEntity>> FindRelevantObject(string authorId, string objectType, string objectId)
         {
-            return await _search(new RelevantObjectJson { Type = objectType, Object = objectId, Actor = authorId });
+            return await _search(new Dictionary<string, string> {
+                ["rdf:type"] = objectType,
+                ["https://www.w3.org/ns/activitystreams#object"] = objectType,
+                ["https://www.w3.org/ns/activitystreams#actor"] = authorId
+            });
         }
 
         public async Task<List<APEntity>> FindEntitiesWithFollowerId(string followerId)
         {
-            return await _search(new FollowerJson { Followers = followerId });
+            return await _search(new Dictionary<string, string> {
+                ["https://www.w3.org/ns/activitystreams#followers"] = followerId
+            });
         }
 
         public async Task<List<APEntity>> FindEntitiesWithPreferredUsername(string username)
         {
-            return await _search(new PreferredUsernameJson { PreferredUsername = username }, true);
+            return await _search(new Dictionary<string, string> {
+                ["https://www.w3.org/ns/activitystreams#preferredUsername"] = username
+            }, true);
         }
     }
 }

@@ -15,7 +15,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
         private readonly EntityData _data;
         private readonly CollectionTools _collection;
 
-        public AcceptRejectFollowHandler(StagingEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, EntityData data, CollectionTools collection) : base(entityStore, mainObject, actor, targetBox, user)
+        public AcceptRejectFollowHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, EntityData data, CollectionTools collection) : base(entityStore, mainObject, actor, targetBox, user)
         {
             _data = data;
             _collection = collection;
@@ -36,9 +36,9 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             bool isAccept = MainObject.Type == "https://www.w3.org/ns/activitystreams#Accept";
             var followers = await EntityStore.GetEntity(Actor.Data["followers"].Single().Id, false);
 
-            if (isAccept && !await _collection.Contains(followers.Id, requestedUser.Id))
+            if (isAccept && !await _collection.Contains(followers, requestedUser.Id))
                 await _collection.AddToCollection(followers, requestedUser);
-            if (!isAccept && await _collection.Contains(followers.Id, requestedUser.Id))
+            if (!isAccept && await _collection.Contains(followers, requestedUser.Id))
                 await _collection.RemoveFromCollection(followers, requestedUser);
             return true;
         }

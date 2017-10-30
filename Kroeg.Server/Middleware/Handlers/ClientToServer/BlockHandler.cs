@@ -13,7 +13,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
     {
         private readonly CollectionTools _collection;
 
-        public BlockHandler(StagingEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection) : base(entityStore, mainObject, actor, targetBox, user)
+        public BlockHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection) : base(entityStore, mainObject, actor, targetBox, user)
         {
             _collection = collection;
         }

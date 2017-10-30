@@ -62,8 +62,6 @@ namespace Kroeg.Server.Services
 
             foreach (var salmon in audienceInbox.Item3)
                 _queueSalmonDelivery(salmon, entity);
-
-            await _context.SaveChangesAsync();
         }
 
         public async Task<List<APEntity>> GetUsersForSharedInbox(ASObject objectToProcess)
@@ -157,7 +155,7 @@ namespace Kroeg.Server.Services
                 if ((iscollection && shouldForward) && entity.Item1 < depth)
                 {
                     foreach (var item in await _collectionTools.GetAll(entity.Item2.Id))
-                        stack.Push(new Tuple<int, APEntity, bool>(entity.Item1 + 1, item, useSharedInbox));
+                        stack.Push(new Tuple<int, APEntity, bool>(entity.Item1 + 1, item.Entity, useSharedInbox));
                 }
                 else if (forward == null && _configuration.IsActor(data))
                 {

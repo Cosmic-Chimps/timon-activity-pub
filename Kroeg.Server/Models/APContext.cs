@@ -6,6 +6,7 @@ using System.Threading;
 using Kroeg.Server.BackgroundTasks;
 using Kroeg.Server.Services;
 using Microsoft.EntityFrameworkCore.Design;
+using System;
 
 namespace Kroeg.Server.Models
 {
@@ -33,6 +34,12 @@ namespace Kroeg.Server.Models
 
             builder.Entity<JWKEntry>()
                 .HasKey(a => new { a.Id, a.OwnerId });
+
+            builder.Entity<TripleAttribute>()
+                .HasIndex(a => a.Uri);
+            
+            builder.Entity<Triple>()
+                .HasIndex(a => a.SubjectEntityId);
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default(CancellationToken))
@@ -47,22 +54,32 @@ namespace Kroeg.Server.Models
                 await _notifier.Notify(BackgroundTaskQueuer.BackgroundTaskPath, "new");
             }
 
-            foreach (var collectionItemEntry in collectionItemEntries)
+            var neededIds = collectionItemEntries.Select(a => a.ElementId).ToList();
+            var neededEntities = await TripleEntities.Where(a => neededIds.Contains(a.EntityId)).Select(a => a.Id.Uri).ToListAsync();
+            foreach (var collectionItemEntry in collectionItemEntries.Zip(neededEntities, (a, b) => new System.Tuple<CollectionItem, string>(a, b)))
             {
-                await _notifier.Notify("collection/" + collectionItemEntry.CollectionId, collectionItemEntry.ElementId);
+                await _notifier.Notify("collection/" + collectionItemEntry.Item1.CollectionId, collectionItemEntry.Item2);
             }
 
             return returnValue;
         }
 
+        public bool Dirty { get; set; }
+
         public async Task<SalmonKey> GetKey(string entityId)
         {
-            var res = await SalmonKeys.FirstOrDefaultAsync(a => a.EntityId == entityId);
+            var inverse = await Attributes.FirstOrDefaultAsync(a => a.Uri == entityId);
+            if (inverse == null) return null;
+
+            var entity = await TripleEntities.FirstOrDefaultAsync(a => a.IdId == inverse.AttributeId);
+            if (entity == null) return null;
+
+            var res = await SalmonKeys.FirstOrDefaultAsync(a => a.EntityId == entity.EntityId);
             if (res != null) return res;
 
             res = new SalmonKey()
             {
-                EntityId = entityId,
+                EntityId = entity.EntityId,
                 PrivateKey = Salmon.MagicKey.Generate().PrivateKey
             };
 
@@ -72,7 +89,6 @@ namespace Kroeg.Server.Models
             return res;
         }
 
-        public DbSet<APDBEntity> Entities { get; set; }
         public DbSet<CollectionItem> CollectionItems { get; set; }
         public DbSet<UserActorPermission> UserActorPermissions { get; set; }
         public DbSet<EventQueueItem> EventQueue { get; set; }

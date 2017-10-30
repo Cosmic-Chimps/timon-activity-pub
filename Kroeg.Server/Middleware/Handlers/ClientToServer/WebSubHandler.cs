@@ -13,7 +13,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
     {
         private readonly APContext _context;
 
-        public WebSubHandler(StagingEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, APContext context) : base(entityStore, mainObject, actor, targetBox, user)
+        public WebSubHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, APContext context) : base(entityStore, mainObject, actor, targetBox, user)
         {
             _context = context;
         }
@@ -36,9 +36,8 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
                 var hubUrl = (string) target.Data["_:hubUrl"].SingleOrDefault()?.Primitive;
                 if (hubUrl == null) return true;
 
-                var taskEvent = WebSubBackgroundTask.Make(new WebSubBackgroundData { Unsubscribe = MainObject.Type == "https://www.w3.org/ns/activitystreams#Undo", ToFollowID = target.Id, ActorID = MainObject.Data["actor"].Single().Id });
+                var taskEvent = WebSubBackgroundTask.Make(new WebSubBackgroundData { Unsubscribe = MainObject.Type == "https://www.w3.org/ns/activitystreams#Undo", ToFollowID = target.DbId, ActorID = MainObject.Data["actor"].Single().Id });
                 _context.EventQueue.Add(taskEvent);
-                await _context.SaveChangesAsync();
 
             return true;
         }

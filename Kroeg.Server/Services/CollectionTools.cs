@@ -16,11 +16,11 @@ namespace Kroeg.Server.Services
     public class CollectionTools
     {
         private readonly APContext _context;
-        private readonly IEntityStore _entityStore;
+        private readonly TripleEntityStore _entityStore;
         private readonly EntityData _configuration;
         private readonly IHttpContextAccessor _contextAccessor;
 
-        public CollectionTools(APContext context, IEntityStore entityStore, EntityData configuration, IServiceProvider serviceProvider)
+        public CollectionTools(APContext context, TripleEntityStore entityStore, EntityData configuration, IServiceProvider serviceProvider)
         {
             _context = context;
             _entityStore = entityStore;
@@ -43,13 +43,42 @@ namespace Kroeg.Server.Services
 
         private string _getUser() => _contextAccessor.HttpContext.User.FindFirstValue(JwtTokenSettings.ActorClaim);
 
-        private bool _verifyAudience(string user, CollectionItem entity)
+        private static HashSet<string> _audienceIds = new HashSet<string> {
+            "https://www.w3.org/ns/activitystreams#to",
+            "https://www.w3.org/ns/activitystreams#bto",
+            "https://www.w3.org/ns/activitystreams#cc",
+            "https://www.w3.org/ns/activitystreams#bcc",
+            "https://www.w3.org/ns/activitystreams#audience",
+            "https://www.w3.org/ns/activitystreams#attributedTo",
+            "https://www.w3.org/ns/activitystreams#actor"
+        };
+
+        private async Task<IQueryable<CollectionItem>> _filterAudience(string user, bool isOwner, IQueryable<CollectionItem> entities, int count)
         {
-            if (entity.IsPublic) return true;
-            var entityData = await _entityStore.GetEntity(entity.Element.Id.Uri, false);
-            if (_configuration.IsActor(entityData.Data)) return true;
-            var audience = DeliveryService.GetAudienceIds(entityData.Data);
-            return audience.Contains(user);
+            if (isOwner)
+                if (count > 0)
+                    return entities.Take(count);
+                else
+                    return entities;
+            var ids = new List<int>();
+            foreach (var audienceId in _audienceIds)
+            {
+                var id = await _entityStore.ReverseAttribute(audienceId, false);
+                if (id.HasValue)
+                    ids.Add(id.Value);
+            }
+
+            int? userId = null;
+            if (user!= null) userId = await _entityStore.ReverseAttribute(user, false);
+            var res = entities;
+            if (userId == null)
+                res = entities.Where(a => a.IsPublic);
+            else
+                res = entities.Where(a => a.IsPublic || a.Element.Triples.Any(b => ids.Contains(b.PredicateId) && b.SubjectId == a.Element.IdId && b.AttributeId == userId));
+
+            if (count > 0)
+                return res.Take(count);
+            return res;
         }
 
         public class EntityCollectionItem {
@@ -57,64 +86,73 @@ namespace Kroeg.Server.Services
             public APEntity Entity { get; set; }
         }
 
-        public async Task<List<CollectionItem>> GetItems(string id, int fromId = int.MaxValue, int count = 10)
+        public async Task<List<EntityCollectionItem>> GetItems(string id, int fromId = int.MaxValue, int count = 10)
         {
             var isOwner = false;
             var entity = await _entityStore.GetEntity(id, false);
             var user = _getUser();
             if (entity != null && entity.Data["attributedTo"].Any(a => a.Id == user)) isOwner = true;
 
-            IQueryable<CollectionItem> data = _context.CollectionItems.Where(a => a.CollectionId == entity.DbId && a.CollectionItemId < fromId).Include(a => a.Element).ThenInclude(a => a.Id).OrderByDescending(a => a.CollectionItemId);
-            if (user == null)
-            {
-                return await data.Where(a => a.IsPublic).Take(count).ToListAsync();
-            }
-            else if (isOwner)
-                return await data.Take(count).ToListAsync();
-            else
-            {
-                return (await data.ToListAsync()).Where((a) => _verifyAudience(user, a)).Take(count).ToList();
-            }
+
+            IQueryable<CollectionItem> data = _context.CollectionItems.Where(a => a.CollectionId == entity.DbId && a.CollectionItemId < fromId).OrderByDescending(a => a.CollectionItemId);
+            data = await _filterAudience(user, isOwner, data, count);
+
+            var collectionItems = await data.ToListAsync();
+            return (await _entityStore.GetEntities(collectionItems.Select(a => a.ElementId).ToList())).Zip(collectionItems, (a, b) => new EntityCollectionItem { CollectionItemId = b.CollectionItemId, Entity = a}).ToList();
         }
 
-        public async Task<List<APEntity>> GetAll(string id)
+        public async Task<List<EntityCollectionItem>> GetAll(string id)
         {
-            var entity = await _context.Entities.FirstOrDefaultAsync(a => a.Id == id && a.IsOwner);
+            var entity = await _entityStore.GetEntity(id, false);
             var user = _getUser();
+            var isOwner = entity != null && entity.Data["attributedTo"].Any(a => a.Id == user);
 
-            IQueryable<CollectionItem> list = _context.CollectionItems.Where(a => a.CollectionId == id).Include(a => a.Element).OrderByDescending(a => a.CollectionItemId);
-            if (user == null)
-                list = list.Where(a => a.IsPublic);
+            IQueryable<CollectionItem> list = _context.CollectionItems.Where(a => a.CollectionId == entity.DbId).OrderByDescending(a => a.CollectionItemId);
+            list = await _filterAudience(user, isOwner, list, -1);
 
-            return await list.Select(a => a.Element.Entity).ToListAsync();
+            var collectionItems = await list.ToListAsync();
+            return (await _entityStore.GetEntities(collectionItems.Select(a => a.ElementId).ToList())).Zip(collectionItems, (a, b) => new EntityCollectionItem { CollectionItemId = b.CollectionItemId, Entity = a}).ToList();
         }
 
         public async Task<List<APEntity>> CollectionsContaining(string containId, string type = null)
         {
-            var collectionItems = _context.CollectionItems.Where(a => a.ElementId == containId).Select(a => a.Collection);
-            if (type != null) collectionItems = collectionItems.Where(a => a.Type == type);
-            return await collectionItems.Select(a => a.Entity).ToListAsync();
+            var idString = await _entityStore.ReverseAttribute(containId, false);
+            if (idString == null) return new List<APEntity> {};
+
+            var collectionItems = _context.CollectionItems.Where(a => a.ElementId == idString.Value);
+            if (type != null) collectionItems = collectionItems.Where(a => a.Collection.Type == type);
+
+            return await _entityStore.GetEntities(await collectionItems.Select(a => a.CollectionId).ToListAsync());
         }
 
         public async Task<CollectionItem> AddToCollection(APEntity collection, APEntity entity)
         {
             var ci = new CollectionItem
             {
-                CollectionId = collection.Id,
-                ElementId = entity.Id,
+                CollectionId = collection.DbId,
+                ElementId = entity.DbId,
                 IsPublic = DeliveryService.IsPublic(entity.Data) || _configuration.IsActor(entity.Data)
             };
 
-//            await _context.CollectionItems.AddAsync(ci);
+            await _context.CollectionItems.AddAsync(ci);
 
             return ci;
         }
 
-        public async Task<bool> Contains(string collection, string otherId) => await _context.CollectionItems.AnyAsync(a => a.CollectionId == collection && a.ElementId == otherId);
+        public async Task<bool> Contains(APEntity collection, string otherId)
+        {
+            var otherEntity = await _entityStore.ReverseAttribute(otherId, false);
+            if (otherEntity == null) return false;
+
+            return await _context.CollectionItems.AnyAsync(a => a.CollectionId == collection.DbId && a.ElementId == otherEntity.Value);
+        }
 
         public async Task RemoveFromCollection(APEntity collection, string id)
         {
-            var item = await _context.CollectionItems.FirstOrDefaultAsync(a => a.CollectionId == collection.Id && a.ElementId == id);
+            var otherEntity = await _entityStore.ReverseAttribute(id, false);
+            if (otherEntity == null) return;
+
+            var item = await _context.CollectionItems.FirstOrDefaultAsync(a => a.CollectionId == collection.DbId && a.ElementId == otherEntity.Value);
             if (item != null)
                 _context.CollectionItems.Remove(item);
         }
@@ -136,7 +174,7 @@ namespace Kroeg.Server.Services
             {
                 Id = mold.Id,
                 Data = mold,
-                Type = type ?? "OrderedCollection",
+                Type = type ?? "https://www.w3.org/ns/activitystreams#OrderedCollection",
                 IsOwner = owner
             };
 

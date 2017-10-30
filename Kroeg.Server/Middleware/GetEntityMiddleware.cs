@@ -183,7 +183,11 @@ namespace Kroeg.Server.Middleware
                 }
                 else if (context.Request.Method == "POST" && data != null)
                 {
-                    data = await handler.Post(context, fullpath, data);
+                    using (var transaction = await handler._context.Database.BeginTransactionAsync())
+                    {
+                        data = await handler.Post(context, fullpath, data);
+                        transaction.Commit();
+                    }
                 }
             }
             catch (UnauthorizedAccessException e)
@@ -235,7 +239,7 @@ namespace Kroeg.Server.Middleware
         }
         public class GetEntityHandler
         {
-            private readonly APContext _context;
+            internal readonly APContext _context;
             private readonly EntityFlattener _flattener;
             private readonly IEntityStore _mainStore;
             private readonly AtomEntryGenerator _entryGenerator;
@@ -341,12 +345,13 @@ namespace Kroeg.Server.Middleware
                 if (context.Request.Headers.ContainsKey("Last-Event-ID"))
                 {
                     var lastEventId = context.Request.Headers["Last-Event-ID"];
-                    var location = await _context.CollectionItems.FirstOrDefaultAsync(a => a.CollectionId == fullpath && a.ElementId == lastEventId);
+                    var location = await _context.CollectionItems.FirstOrDefaultAsync(a => a.CollectionId == entity.DbId && a.ElementId == lastEventId);
                     if (location != null)
                     {
-                        var itemsAfter = await _context.CollectionItems.Where(a => a.CollectionId == fullpath && a.CollectionItemId > location.CollectionItemId).ToListAsync();
-                        foreach (var item in itemsAfter)
-                            toSend.Enqueue(item.ElementId);
+                        var tripleStore = _mainStore.Find<TripleEntityStore>();
+                        var idsAfter = await _context.CollectionItems.Where(a => a.CollectionId == entity.DbId && a.CollectionItemId > location.CollectionItemId).Select(a => a.Element.Id.Uri).ToListAsync();
+                        foreach (var item in idsAfter)
+                            toSend.Enqueue(item);
                     }
                 }
 
@@ -507,7 +512,7 @@ namespace Kroeg.Server.Middleware
                         page["attributedTo"].Add(collection["attributedTo"].First());
                     if (items.Count > 10)
                         page["next"].Add(ASTerm.MakeId(entity.Id + "?from_id=" + (items[9].CollectionItemId - 1).ToString()));
-                    page["orderedItems"].AddRange(items.Take(10).Select(a => ASTerm.MakeId(a.ElementId)));
+                    page["orderedItems"].AddRange(items.Take(10).Select(a => ASTerm.MakeId(a.Entity.Id)));
 
                     return page;
                 }
@@ -550,8 +555,6 @@ namespace Kroeg.Server.Middleware
             {
                 typeof(VerifyOwnershipHandler),
                 typeof(DeleteHandler),
-                // likes, follows, announces, and undos change collections. Ownership has been verified, so it's prooobably safe to commit changes into the database.
-                typeof(CommitChangesHandler),
                 typeof(FollowResponseHandler),
                 typeof(LikeFollowAnnounceHandler),
                 typeof(UndoHandler),
@@ -587,34 +590,31 @@ namespace Kroeg.Server.Middleware
                 if (user.Data["blocks"].Any())
                 {
                     var blocks = await _mainStore.GetEntity(user.Data["blocks"].First().Id, false);
-                    if (await _collectionTools.Contains(blocks.Data["_blocked"].First().Id, sentBy))
+                    var blocked = await _mainStore.GetEntity(blocks.Data["_blocked"].First().Id, false);
+                    if (await _collectionTools.Contains(blocked, sentBy))
                         throw new UnauthorizedAccessException("You are blocked.");
                 }
 
-                if (await _collectionTools.Contains(inbox.Id, id))
+                if (await _collectionTools.Contains(inbox, id))
                     return flattened.Data;
+
+                await stagingStore.CommitChanges();
 
                 _serverToServerMutex.WaitOne();
 
                 try
                 {
-                    using (var transaction = _context.Database.BeginTransaction())
+                    foreach (var type in _serverToServerHandlers)
                     {
-                        foreach (var type in _serverToServerHandlers)
-                        {
-                            var handler = (BaseHandler)ActivatorUtilities.CreateInstance(_serviceProvider, type,
-                                stagingStore, flattened, user, inbox, _user);
-                            var handled = await handler.Handle();
-                            flattened = handler.MainObject;
-                            if (!handled) break;
-                        }
-
-                        await _context.SaveChangesAsync();
-
-                        transaction.Commit();
-
-                        return flattened.Data;
+                        var handler = (BaseHandler)ActivatorUtilities.CreateInstance(_serviceProvider, type,
+                            _mainStore, flattened, user, inbox, _user);
+                        var handled = await handler.Handle();
+                        flattened = handler.MainObject;
+                        if (!handled) break;
                     }
+                    await _context.SaveChangesAsync();
+
+                    return flattened.Data;
                 }
                 finally
                 {
@@ -676,30 +676,21 @@ namespace Kroeg.Server.Middleware
                 }
 
                 var flattened = await _flattener.FlattenAndStore(stagingStore, activity);
-                IDbContextTransaction transaction = null;
-                if (_context.Database.CurrentTransaction == null)
-                    transaction = _context.Database.BeginTransaction();
-                try
+                IEntityStore store = stagingStore;
+
+                foreach (var type in _clientToServerHandlers)
                 {
-                    foreach (var type in _clientToServerHandlers)
-                    {
-                        var handler = (BaseHandler)ActivatorUtilities.CreateInstance(_serviceProvider, type,
-                            stagingStore, flattened, user, outbox, _user);
-                        var handled = await handler.Handle();
-                        flattened = handler.MainObject;
-                        if (!handled) break;
-                    }
-
-                    await _context.SaveChangesAsync();
-
-                    transaction?.Commit();
-
-                    return flattened.Data;
+                    var handler = (BaseHandler)ActivatorUtilities.CreateInstance(_serviceProvider, type,
+                        store, flattened, user, outbox, _user);
+                    var handled = await handler.Handle();
+                    flattened = handler.MainObject;
+                    if (!handled) break;
+                    if (type == typeof(CommitChangesHandler))
+                        store = _mainStore;
                 }
-                finally
-                {
-                    transaction?.Dispose();
-                }
+
+                await _context.SaveChangesAsync();
+                return flattened.Data;
             }
         }
     }

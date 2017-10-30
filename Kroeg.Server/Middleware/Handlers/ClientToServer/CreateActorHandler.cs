@@ -19,7 +19,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
         private readonly APContext _context;
         public string UserOverride { get; set; }
 
-        public CreateActorHandler(StagingEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection, EntityData entityData, APContext context) : base(entityStore, mainObject, actor, targetBox, user)
+        public CreateActorHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection, EntityData entityData, APContext context) : base(entityStore, mainObject, actor, targetBox, user)
         {
             _collection = collection;
             _entityData = entityData;
@@ -71,7 +71,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             blocks.Data = blocksData;
 
             if (!objectData["manuallyApprovesFollowers"].Any())
-                activityData.Replace("manuallyApprovesFollowers", ASTerm.MakePrimitive(false));
+                objectData.Replace("manuallyApprovesFollowers", ASTerm.MakePrimitive(false));
 
             objectEntity.Data = objectData;
 
@@ -80,14 +80,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             await EntityStore.StoreEntity(objectEntity);
 
             var userId = UserOverride ?? User.FindFirst(ClaimTypes.NameIdentifier).Value;
-            _context.UserActorPermissions.Add(new UserActorPermission { UserId = userId, ActorId = objectEntity.Id, IsAdmin = true });
-
-            var key = new SalmonKey();
-            var salmon = MagicKey.Generate();
-            key.EntityId = objectEntity.Id;
-            key.PrivateKey = salmon.PrivateKey;
-
-            _context.SalmonKeys.Add(key);
+            _context.UserActorPermissions.Add(new UserActorPermission { UserId = userId, ActorId = objectEntity.DbId, IsAdmin = true });
 
             if (!activityData["actor"].Any())
                 activityData["actor"].Add(ASTerm.MakeId(objectEntity.Id));
@@ -95,8 +88,6 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             MainObject.Data = activityData;
             await EntityStore.StoreEntity(MainObject);
 
-            await EntityStore.CommitChanges();
-            await _context.SaveChangesAsync();
             return true;
         }
     }

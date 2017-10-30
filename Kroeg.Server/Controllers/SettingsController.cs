@@ -171,20 +171,6 @@ namespace Kroeg.Server.Controllers
 
         }
 
-        private async Task<APEntity> _newCollection(string type, string attributedTo)
-        {
-            var obj = new ASObject();
-            obj.Type.Add("https://www.w3.org/ns/activitystreams#OrderedCollection");
-            obj["attributedTo"].Add(ASTerm.MakeId(attributedTo));
-            obj.Id = await _entityData.FindUnusedID(_entityStore, obj, type, attributedTo);
-            var entity = APEntity.From(obj, true);
-            entity.Type = "_" + type;
-            entity = await _entityStore.StoreEntity(entity);
-            await _entityStore.CommitChanges();
-
-            return entity;
-        }
-
         [Authorize, HttpPost("uploadMedia")]
         public async Task<IActionResult> UploadMedia()
         {
@@ -235,7 +221,6 @@ namespace Kroeg.Server.Controllers
                 obj.Id = null;
                 obj.Replace("attributedTo", ASTerm.MakeId(User.FindFirstValue(JwtTokenSettings.ActorClaim)));
                 obj = (await _flattener.FlattenAndStore(_entityStore, obj)).Data;
-                await _entityStore.CommitChanges();
             }
 
             obj = await _flattener.Unflatten(_entityStore, APEntity.From(obj, true));

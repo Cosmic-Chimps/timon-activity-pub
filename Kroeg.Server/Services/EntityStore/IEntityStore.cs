@@ -25,5 +25,16 @@ namespace Kroeg.Server.Services.EntityStore
 
             return default(T);
         }
+
+        public static Task<APEntity> GetDBEntity(this IEntityStore entityStore, int id)
+        {
+            while (entityStore != null)
+            {
+                if (entityStore.GetType() == typeof(TripleEntityStore)) return ((TripleEntityStore)entityStore).GetEntity(id);
+                entityStore = entityStore.Bypass;
+            }
+
+            return Task.FromResult<APEntity>(null);
+        }
     }
 }

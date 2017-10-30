@@ -14,7 +14,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
     {
         private readonly EntityData _entityData;
 
-        public ObjectWrapperHandler(StagingEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, EntityData entityData)
+        public ObjectWrapperHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, EntityData entityData)
             : base(entityStore, mainObject, actor, targetBox, user)
         {
             _entityData = entityData;

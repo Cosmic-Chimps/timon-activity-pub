@@ -12,7 +12,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
 {
     public class ActivityMissingFieldsHandler : BaseHandler
     {
-        public ActivityMissingFieldsHandler(StagingEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user) : base(entityStore, mainObject, actor, targetBox, user)
+        public ActivityMissingFieldsHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user) : base(entityStore, mainObject, actor, targetBox, user)
         {
         }
 

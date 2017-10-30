@@ -10,14 +10,14 @@ namespace Kroeg.Server.Middleware.Handlers
 {
     public abstract class BaseHandler
     {
-        protected readonly StagingEntityStore  EntityStore;
+        protected readonly IEntityStore  EntityStore;
         protected readonly APEntity Actor;
         protected readonly APEntity TargetBox;
         protected readonly ClaimsPrincipal User;
 
         public APEntity MainObject { get; protected set; }
 
-        protected BaseHandler(StagingEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user)
+        protected BaseHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user)
         {
             EntityStore = entityStore;
             MainObject = mainObject;

@@ -192,48 +192,52 @@ namespace Kroeg.Server.Controllers
 
             if (!ModelState.IsValid) return View("Register", model);
 
-            var result = await _userManager.CreateAsync(apuser, model.Password);
-            if (!result.Succeeded)
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                ModelState.AddModelError("", result.Errors.First().Description);
-            }
+                var result = await _userManager.CreateAsync(apuser, model.Password);
+                if (!result.Succeeded)
+                {
+                    ModelState.AddModelError("", result.Errors.First().Description);
+                }
 
-            if (!ModelState.IsValid) return View("Register", model);
+                if (!ModelState.IsValid) return View("Register", model);
 
-            if (await _context.Users.CountAsync() == 1)
-            {
-                await _userManager.AddClaimAsync(apuser, new Claim("admin", "true"));
+                if (await _context.Users.CountAsync() == 1)
+                {
+                    await _userManager.AddClaimAsync(apuser, new Claim("admin", "true"));
+                    await _context.SaveChangesAsync();
+                }
+
+                await _signInManager.SignInAsync(apuser, false);
+
+                var user = model.Username;
+
+                var obj = new ASObject();
+                obj.Type.Add("https://www.w3.org/ns/activitystreams#Person");
+                obj["preferredUsername"].Add(ASTerm.MakePrimitive(user));
+                obj["name"].Add(ASTerm.MakePrimitive(user));
+
+                var create = new ASObject();
+                create.Type.Add("https://www.w3.org/ns/activitystreams#Create");
+                create["object"].Add(ASTerm.MakeSubObject(obj));
+                create["to"].Add(ASTerm.MakeId("https://www.w3.org/ns/activitystreams#Public"));
+
+                var apo = await _entityFlattener.FlattenAndStore(_entityStore, create);
+                var handler = new CreateActorHandler(_entityStore, apo, null, null, User, _collectionTools, _entityConfiguration, _context);
+                handler.UserOverride = apuser.Id;
+                await handler.Handle();
+
+                var resultUser = await _entityStore.GetEntity(handler.MainObject.Data["object"].First().Id, false);
+                var outbox = await _entityStore.GetEntity(resultUser.Data["outbox"].First().Id, false);
+                var delivery = new DeliveryHandler(_entityStore, handler.MainObject, resultUser, outbox, User, _collectionTools, _provider.GetRequiredService<DeliveryService>());
+                await delivery.Handle();
+                
                 await _context.SaveChangesAsync();
+
+                transaction.Commit();
+                return RedirectToActionPermanent("Index", "Settings");
             }
 
-            await _signInManager.SignInAsync(apuser, false);
-
-            var user = model.Username;
-
-            var obj = new ASObject();
-            obj.Type.Add("https://www.w3.org/ns/activitystreams#Person");
-            obj["preferredUsername"].Add(ASTerm.MakePrimitive(user));
-            obj["name"].Add(ASTerm.MakePrimitive(user));
-
-            var create = new ASObject();
-            create.Type.Add("https://www.w3.org/ns/activitystreams#Create");
-            create["object"].Add(ASTerm.MakeSubObject(obj));
-            create["to"].Add(ASTerm.MakeId("https://www.w3.org/ns/activitystreams#Public"));
-
-            var stagingStore = new StagingEntityStore(_entityStore);
-            var apo = await _entityFlattener.FlattenAndStore(stagingStore, create);
-            var handler = new CreateActorHandler(stagingStore, apo, null, null, User, _collectionTools, _entityConfiguration, _context);
-            handler.UserOverride = apuser.Id;
-            await handler.Handle();
-
-            await stagingStore.CommitChanges();
-
-            var resultUser = await _entityStore.GetEntity(handler.MainObject.Data["object"].First().Id, false);
-            var outbox = await _entityStore.GetEntity(resultUser.Data["outbox"].First().Id, false);
-            var delivery = new DeliveryHandler(stagingStore, handler.MainObject, resultUser, outbox, User, _collectionTools, _provider.GetRequiredService<DeliveryService>());
-            await delivery.Handle();
-
-            return RedirectToActionPermanent("Index", "Settings");
         }
 
         private string _appendToUri(string uri, string query)
@@ -258,22 +262,26 @@ namespace Kroeg.Server.Controllers
             if (!_entityConfiguration.IsActivity(data)) return StatusCode(403, "Not an activity?");
             if (!data["actor"].Any((a) => a.Id == userId)) return StatusCode(403, "Invalid signature!");
 
-            var temporaryStore = new StagingEntityStore(_entityStore);
-            var resultEntity = await _entityFlattener.FlattenAndStore(temporaryStore, data, false);
-            temporaryStore.TrimDown((new Uri(new Uri(userId), "/")).ToString());
-            await temporaryStore.CommitChanges(); // shouuuuld be safe
-
-            var users = await _deliveryService.GetUsersForSharedInbox(data);
-
-            foreach (var user in users)
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                if (user.IsOwner)
-                    _context.EventQueue.Add(DeliverToActivityPubTask.Make(new DeliverToActivityPubData { ObjectId = resultEntity.Id, TargetInbox = user.Data["inbox"].First().Id }));
+                var temporaryStore = new StagingEntityStore(_entityStore);
+                var resultEntity = await _entityFlattener.FlattenAndStore(temporaryStore, data, false);
+                temporaryStore.TrimDown((new Uri(new Uri(userId), "/")).ToString());
+                await temporaryStore.CommitChanges();
+
+                var users = await _deliveryService.GetUsersForSharedInbox(data);
+
+                foreach (var user in users)
+                {
+                    if (user.IsOwner)
+                        _context.EventQueue.Add(DeliverToActivityPubTask.Make(new DeliverToActivityPubData { ObjectId = resultEntity.Id, TargetInbox = user.Data["inbox"].First().Id }));
+                }
+
+                await _context.SaveChangesAsync();
+
+                transaction.Commit();
+                return StatusCode(202);
             }
-
-            await _context.SaveChangesAsync();
-
-            return StatusCode(202);
         }
 
         [Authorize("pass"), HttpGet("oauth")]

@@ -13,7 +13,6 @@ namespace Kroeg.Server.Services.EntityStore
 {
     public class CollectionEntityStore : IEntityStore
     {
-        private readonly Dictionary<string, APEntity> _entities = new Dictionary<string, APEntity>();
         private readonly CollectionTools _collectionTools;
 
         private async Task<ASObject> _buildPage(APEntity entity, int from_id)
@@ -30,7 +29,7 @@ namespace Kroeg.Server.Services.EntityStore
                 page["attributedTo"].Add(collection["attributedTo"].First());
             if (items.Count > 10)
                 page["next"].Add(ASTerm.MakeId(entity.Id + "?from_id=" + (items[9].CollectionItemId - 1).ToString()));
-            page["orderedItems"].AddRange(items.Take(10).Select(a => ASTerm.MakeId(a.ElementId)));
+            page["orderedItems"].AddRange(items.Take(10).Select(a => ASTerm.MakeId(a.Entity.Id)));
             return page;
         }
 
@@ -91,33 +90,14 @@ namespace Kroeg.Server.Services.EntityStore
 
         public Task<APEntity> StoreEntity(APEntity entity)
         {
-            _entities[entity.Id] = entity;
-            return Task.FromResult(entity);
+            return Bypass.StoreEntity(entity);
         }
 
         public async Task CommitChanges()
         {
-            foreach (var item in _entities.ToList())
-                await Bypass.StoreEntity(item.Value);
-
-            _entities.Clear();
-
             await Bypass.CommitChanges();
         }
-
-        public void TrimDown(string prefix)
-        {
-            foreach (var item in _entities.Keys.ToList())
-            {
-                if (item.StartsWith(prefix)) continue;
-                var data = _entities[item].Data;
-                if (data["_:origin"].Any((a) => (string) a.Primitive == "atom") && data["atomUri"].Any((a) => ((string) a.Primitive).StartsWith(prefix))) continue;
-
-                _entities.Remove(item);
-            }
-                
-        }
-
+        
         public IEntityStore Bypass { get; }
     }
 }

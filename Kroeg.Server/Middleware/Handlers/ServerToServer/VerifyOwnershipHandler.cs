@@ -10,7 +10,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
 {
     public class VerifyOwnershipHandler : BaseHandler
     {
-        public VerifyOwnershipHandler(StagingEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user) : base(entityStore, mainObject, actor, targetBox, user)
+        public VerifyOwnershipHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user) : base(entityStore, mainObject, actor, targetBox, user)
         {
         }
 

@@ -11,7 +11,7 @@ namespace Kroeg.Server.Middleware.Handlers.Shared
         private readonly CollectionTools _collection;
         private readonly DeliveryService _deliveryService;
 
-        public DeliveryHandler(StagingEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection, DeliveryService deliveryService) : base(entityStore, mainObject, actor, targetBox, user)
+        public DeliveryHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection, DeliveryService deliveryService) : base(entityStore, mainObject, actor, targetBox, user)
         {
             _collection = collection;
             _deliveryService = deliveryService;

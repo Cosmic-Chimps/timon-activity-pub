@@ -108,27 +108,25 @@ namespace Kroeg.Server
             }
 
             services.AddSingleton<BackgroundTaskQueuer>();
-
             services.AddSingleton(Configuration);
 
-            services.AddTransient<EntityFlattener>();
-            services.AddTransient<CollectionTools>();
             services.AddTransient<DeliveryService>();
             services.AddTransient<RelevantEntitiesService>();
-            services.AddTransient<DatabaseEntityStore>();
             services.AddTransient<ActivityService>();
             services.AddTransient<AtomEntryParser>();
             services.AddTransient<AtomEntryGenerator>();
-            services.AddTransient<FakeEntityService>();
-            services.AddTransient<TripleEntityStore>();
-            services.AddTransient<IEntityStore>((provider) =>
+
+            services.AddScoped<TripleEntityStore>();
+            services.AddScoped<CollectionTools>();
+            services.AddScoped<FakeEntityService>();
+            services.AddScoped<EntityFlattener>();
+
+            services.AddScoped<IEntityStore>((provider) =>
             {
-                var dbservice = provider.GetRequiredService<DatabaseEntityStore>();
                 var triple = provider.GetRequiredService<TripleEntityStore>();
                 var flattener = provider.GetRequiredService<EntityFlattener>();
                 var httpAccessor = provider.GetService<IHttpContextAccessor>();
                 var fakeEntityService = provider.GetService<FakeEntityService>();
-                triple.Bypass = null;
                 var retrieving = new RetrievingEntityStore(triple, flattener, provider, httpAccessor);
                 return new FakeEntityStore(fakeEntityService, retrieving);
             });

@@ -16,19 +16,9 @@ namespace Kroeg.Server.Services.EntityStore
         private static Dictionary<int, string> _attributeMapping = new Dictionary<int, string>();
         private static Dictionary<string, int> _inverseAttributeMapping = new Dictionary<string, int>();
 
-        private void _commitCache()
-        {
-            foreach (var item in _reverseAttributeCache)
-            {
-                if (item.Value.AttributeId > 0)
-                {
-                    _attributeMapping[item.Value.AttributeId] = item.Value.Uri;
-                    _inverseAttributeMapping[item.Value.Uri] = item.Value.AttributeId;
-                }
-            }
-        }
+        private Dictionary<string, APEntity> _quickMap = new Dictionary<string, APEntity>();
 
-        private Dictionary<string, TripleAttribute> _reverseAttributeCache = new Dictionary<string, TripleAttribute>();
+
         private static JsonLD.API _api = new JsonLD.API(null);
 
         public TripleEntityStore(APContext context)
@@ -40,14 +30,20 @@ namespace Kroeg.Server.Services.EntityStore
 
         private async Task _preload(IEnumerable<int> ids)
         {
+            Console.WriteLine("___ start _preload");
             var idset = new HashSet<int>(ids.Where(a => !_attributeMapping.ContainsKey(a)));
-            
-            var dbs = await _context.Attributes.Where(a => idset.Contains(a.AttributeId)).ToListAsync();
-            foreach (var item in dbs)
+            if (idset.Count > 0)
             {
-                _attributeMapping[item.AttributeId] = item.Uri;
-                _inverseAttributeMapping[item.Uri] = item.AttributeId;
+                var dbs = await _context.Attributes.Where(a => idset.Contains(a.AttributeId)).ToListAsync();
+                foreach (var item in dbs)
+                {
+                    _attributeMapping[item.AttributeId] = item.Uri;
+                    _inverseAttributeMapping[item.Uri] = item.AttributeId;
+                }
             }
+            
+            Console.WriteLine("___ end _preload");
+
         }
 
         private string _get(int id)
@@ -57,57 +53,93 @@ namespace Kroeg.Server.Services.EntityStore
             return null;
         }
 
-        private async Task<int?> _reverseAttribute(string uri, bool rename)
+        public async Task<int?> ReverseAttribute(string uri, bool create)
         {
-            if (_inverseAttributeMapping.ContainsKey(uri)) return _inverseAttributeMapping[uri];
-            if (_reverseAttributeCache.ContainsKey(uri)) return _reverseAttributeCache[uri].AttributeId;
+            Console.WriteLine("___ start ReverseAttribute");
+            if (_inverseAttributeMapping.ContainsKey(uri))
+            {
+                Console.WriteLine("___ end ReverseAttribute");
+                return _inverseAttributeMapping[uri];
+            }
 
             var item = await _context.Attributes.FirstOrDefaultAsync(a => a.Uri == uri);
 
             if (item == null)
             {
-                if (!rename) return null;
+                if (!create)
+                {
+                    Console.WriteLine("___ end ReverseAttribute");
+                    return null;
+                }
 
                 item = new TripleAttribute { Uri = uri };
                 _context.Attributes.Add(item);
+                await _context.SaveChangesAsync();
             }
 
-            if (item.AttributeId > 0)
-            {
-                _inverseAttributeMapping[uri] = item.AttributeId;
-                _attributeMapping[item.AttributeId] = uri;
-            }
-            else
-            {
-                _reverseAttributeCache[uri] = item;
-            }
+            _inverseAttributeMapping[uri] = item.AttributeId;
+            _attributeMapping[item.AttributeId] = uri;
 
+            Console.WriteLine("___ end ReverseAttribute");
             return item.AttributeId;
+        }
+
+        public async Task<List<APEntity>> GetEntities(List<int> ids)
+        {
+            Console.WriteLine("___ start GetEntities");
+            
+            var allEntities = await _context.TripleEntities.Where(a => ids.Contains(a.EntityId)).OrderBy(a => ids.IndexOf(a.EntityId)).ToListAsync();
+            var allTriples = await _context.Triples.Where(a => ids.Contains(a.SubjectEntityId)).ToListAsync();
+
+            List<APEntity> results = new List<APEntity>();
+
+            await _preload(allTriples.Select(a => a.SubjectId)
+                                .Concat(allTriples.Where(a => a.TypeId.HasValue).Select(a => a.TypeId.Value))
+                                .Concat(allTriples.Where(a => a.AttributeId.HasValue).Select(a => a.AttributeId.Value)
+                                .Concat(allTriples.Select(a => a.PredicateId))));
+
+            var rdfType = await ReverseAttribute("rdf:type", true);
+
+            foreach (var mold in allEntities)
+            {
+                results.Add(_buildRaw(mold, allTriples.Where(a => a.SubjectEntityId == mold.EntityId), rdfType.Value));
+            }
+
+            Console.WriteLine("___ end GetEntities");
+            return results;
         }
 
 
         public async Task<APEntity> GetEntity(string id, bool doRemote)
         {
-            var attr = await _reverseAttribute(id, false);
+            Console.WriteLine("___ start GetEntity");
+
+            var attr = await ReverseAttribute(id, false);
             APTripleEntity tripleEntity = null;
             if (attr != null)
-                tripleEntity = await _context.TripleEntities.Include(a => a.Triples).FirstOrDefaultAsync(a => a.IdId == attr.Value);
+                tripleEntity = await _context.TripleEntities.FirstOrDefaultAsync(a => a.IdId == attr.Value);
             if (tripleEntity == null || (!tripleEntity.IsOwner && doRemote && id.StartsWith("http") && (DateTime.Now - tripleEntity.Updated).TotalDays > 7)) return null; // mini-cache
             if (tripleEntity == null) return null;
 
-            return await _build(tripleEntity);
+            var b = await _build(tripleEntity);
+            Console.WriteLine("___ end GetEntity");
+            return b;
         }
 
-        private async Task<APEntity> _build(APTripleEntity mold)
+        public async Task<APEntity> GetEntity(int id)
         {
-            var triples = await _context.Triples.Where(a => a.SubjectEntityId == mold.EntityId).ToListAsync();
+            Console.WriteLine("___ start GetEntity");
 
-            await _preload(triples.Select(a => a.SubjectId)
-                                .Concat(triples.Where(a => a.TypeId.HasValue).Select(a => a.TypeId.Value))
-                                .Concat(triples.Where(a => a.AttributeId.HasValue).Select(a => a.AttributeId.Value)
-                                .Concat(triples.Select(a => a.PredicateId))));
-            var rdfType = await _reverseAttribute("rdf:type", true);
+            var entity = await _context.TripleEntities.FirstOrDefaultAsync(a => a.EntityId == id);
+            if (entity == null) return null;
 
+            var b = await _build(entity);
+            Console.WriteLine("___ end GetEntity");
+            return b;
+        }
+
+        private APEntity _buildRaw(APTripleEntity mold, IEnumerable<Triple> triples, int rdfType)
+        {
             var subjects = triples.GroupBy(a => a.SubjectId).ToDictionary(a => a.Key, a => a);
             Dictionary<int, ASObject> objects = subjects.ToDictionary(a => a.Key, a => new ASObject { Id = _attributeMapping[a.Key] });
             foreach (var obj in objects)
@@ -116,11 +148,11 @@ namespace Kroeg.Server.Services.EntityStore
 
                 if (result.Id.StartsWith("_:")) result.Id = null;
 
-                result.Type.AddRange(subjects[obj.Key].Where(a => a.PredicateId == rdfType.Value).Select(a => _attributeMapping[a.AttributeId.Value]));
+                result.Type.AddRange(subjects[obj.Key].Where(a => a.PredicateId == rdfType).Select(a => _attributeMapping[a.AttributeId.Value]));
 
                 foreach (var triple in subjects[obj.Key])
                 {
-                    if (triple.PredicateId == rdfType.Value) continue;
+                    if (triple.PredicateId == rdfType) continue;
 
                     var term = new ASTerm();
                     var predicateUrl = _attributeMapping[triple.PredicateId];
@@ -141,9 +173,23 @@ namespace Kroeg.Server.Services.EntityStore
             }
 
             var mainObj = objects[mold.IdId];
-            _commitCache();
 
-            return new APEntity { Data = mainObj, Id = mainObj.Id, Updated = mold.Updated, IsOwner = mold.IsOwner, Type = mold.Type };
+            return new APEntity { Data = mainObj, Id = mainObj.Id, Updated = mold.Updated, IsOwner = mold.IsOwner, Type = mold.Type, DbId = mold.EntityId };
+        }
+
+        private async Task<APEntity> _build(APTripleEntity mold)
+        {
+            var triples = await _context.Triples.Where(a => a.SubjectEntityId == mold.EntityId).ToListAsync();
+
+            await _preload(triples.Select(a => a.SubjectId)
+                                .Concat(triples.Where(a => a.TypeId.HasValue).Select(a => a.TypeId.Value))
+                                .Concat(triples.Where(a => a.AttributeId.HasValue).Select(a => a.AttributeId.Value)
+                                .Concat(triples.Select(a => a.PredicateId))));
+            var rdfType = await ReverseAttribute("rdf:type", true);
+
+            var result = _buildRaw(mold, triples, rdfType.Value);
+
+            return result;
         }
 
         private static HashSet<string> _defaultTypes = new HashSet<string>
@@ -174,15 +220,15 @@ namespace Kroeg.Server.Services.EntityStore
             {
                 var trans = new Triple();
                 if (triple.Object.TypeIri == null)
-                    trans.AttributeId = await _reverseAttribute(triple.Object.LexicalForm, true);
+                    trans.AttributeId = await ReverseAttribute(triple.Object.LexicalForm, true);
                 else
                 {
                     trans.Object = triple.Object.LexicalForm;
-                    trans.TypeId = await _reverseAttribute(triple.Object.TypeIri, true);
+                    trans.TypeId = await ReverseAttribute(triple.Object.TypeIri, true);
                 }
 
-                trans.SubjectId = (await _reverseAttribute(triple.Subject, true)).Value;
-                trans.PredicateId = (await _reverseAttribute(triple.Predicate, true)).Value;
+                trans.SubjectId = (await ReverseAttribute(triple.Subject, true)).Value;
+                trans.PredicateId = (await ReverseAttribute(triple.Predicate, true)).Value;
 
                 result.Add(trans);
             }
@@ -192,37 +238,38 @@ namespace Kroeg.Server.Services.EntityStore
 
         public async Task<APEntity> StoreEntity(APEntity entity)
         {
-            var attr = (await _reverseAttribute(entity.Id, true)).Value;
-
-            var exists = await _context.TripleEntities.FirstOrDefaultAsync(a => a.IdId == attr);
+            var exists = await _context.TripleEntities.FindAsync(entity.DbId);
+            
             if (exists == null)
             {
                 entity.Updated = DateTime.Now;
                 var dbEntity = new APTripleEntity { Updated = entity.Updated, IsOwner = entity.IsOwner, Type = entity.Type };
+                var attr = (await ReverseAttribute(entity.Id, true)).Value;
                 dbEntity.IdId = attr;
+                _context.TripleEntities.Add(dbEntity);
 
-                var triples = await _newTriples(entity);
-                foreach (var triple in triples)
+                var allTriples = await _newTriples(entity);
+                foreach (var triple in allTriples)
                 {
-                    triple.SubjectEntity = dbEntity;
+                    triple.SubjectEntityId = dbEntity.EntityId;
                     _context.Triples.Add(triple);
                 }
 
-                _context.TripleEntities.Add(dbEntity);
+                exists = dbEntity;
             }
             else
             {
-                var triples = await _context.Triples.Where(a => a.PredicateId == exists.EntityId).GroupBy(a => a.TypeId).ToDictionaryAsync(a => a.Key, b => b);
-                var compare = (await _newTriples(entity)).GroupBy(a => a.TypeId).ToDictionary(a => a.Key, b => b);
+                var triples = await _context.Triples.Where(a => a.SubjectEntityId == exists.EntityId).GroupBy(a => a.PredicateId).ToDictionaryAsync(a => a.Key, b => b);
+                var compare = (await _newTriples(entity)).GroupBy(a => a.PredicateId).ToDictionary(a => a.Key, b => b);
 
-                var allKeys = new HashSet<int?>(triples.Keys.Concat(compare.Keys));
+                var allKeys = new HashSet<int>(triples.Keys.Concat(compare.Keys));
                 foreach (var key in allKeys)
                 {
                     if (compare.ContainsKey(key) && !triples.ContainsKey(key))
                     {
                         foreach (var triple in compare[key])
                         {
-                            triple.PredicateId = exists.EntityId;
+                            triple.SubjectEntityId = exists.EntityId;
                             _context.Triples.Add(triple);
                         }
                     }
@@ -232,26 +279,28 @@ namespace Kroeg.Server.Services.EntityStore
                     }
                     else
                     {
-                        var equal = triples[key].Where(a => compare[key].Any(b => b.Object ==a.Object && b.TypeId == a.TypeId && b.SubjectEntityId == a.SubjectEntityId)).ToList();
-                        var removed = triples[key].Where(a => !compare[key].Any(b => b.Object ==a.Object && b.TypeId == a.TypeId && b.SubjectEntityId == a.SubjectEntityId)).ToList();
-                        var added = compare[key].Where(a => !triples[key].Any(b => b.Object ==a.Object && b.TypeId == a.TypeId && b.SubjectEntityId == a.SubjectEntityId)).ToList();
+                        var removed = triples[key].Where(a => !compare[key].Any(b => b.Object == a.Object && b.TypeId == a.TypeId && b.SubjectId == a.SubjectId)).ToList();
+                        var added = compare[key].Where(a => !triples[key].Any(b => b.Object == a.Object && b.TypeId == a.TypeId && b.SubjectId == a.SubjectId)).ToList();
 
                         _context.Triples.RemoveRange(removed);
                         foreach (var triple in added)
                         {
-                            triple.PredicateId = exists.EntityId;
+                            triple.SubjectEntityId = exists.EntityId;
                             _context.Triples.Add(triple);
                         }
                     }
                 }
             }
 
+            await _context.SaveChangesAsync();
+
+            entity.DbId = exists.EntityId;
+
             return entity;
         }
 
         public async Task CommitChanges()
         {
-            await _context.SaveChangesAsync();
         }
     }
 }

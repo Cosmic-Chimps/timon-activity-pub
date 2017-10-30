@@ -16,7 +16,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
         private static readonly HashSet<string> UpdateBlacklist = new HashSet<string> { "attributedTo", "published", "id", "deleted", "type", "object", "actor" };
         private static readonly HashSet<string> DeleteWhitelist = new HashSet<string> { "id", "type", "published", "updated" };
 
-        public UpdateDeleteActivityHandler(StagingEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, ActivityService activityService) : base(entityStore, mainObject, actor, targetBox, user)
+        public UpdateDeleteActivityHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, ActivityService activityService) : base(entityStore, mainObject, actor, targetBox, user)
         {
             _activityService = activityService;
         }

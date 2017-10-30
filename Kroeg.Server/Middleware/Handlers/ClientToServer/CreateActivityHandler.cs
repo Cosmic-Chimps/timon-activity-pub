@@ -16,7 +16,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
         private readonly CollectionTools _collection;
         private readonly EntityData _entityData;
 
-        public CreateActivityHandler(StagingEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection, EntityData entityData) : base(entityStore, mainObject, actor, targetBox, user)
+        public CreateActivityHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection, EntityData entityData) : base(entityStore, mainObject, actor, targetBox, user)
         {
             _collection = collection;
             _entityData = entityData;

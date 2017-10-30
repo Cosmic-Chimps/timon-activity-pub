@@ -124,7 +124,6 @@ namespace Kroeg.Server.Services.EntityStore
 
             // forces out the old lazy load, if used
             await _entityFlattener.FlattenAndStore(Bypass, data, false);
-            await Bypass.CommitChanges();
 
             return await Bypass.GetEntity(id, true);
         }
@@ -133,7 +132,7 @@ namespace Kroeg.Server.Services.EntityStore
 
         public async Task CommitChanges()
         {
-            if (Bypass != null) await Bypass.CommitChanges();
+            await Bypass?.CommitChanges();
         }
     }
 }

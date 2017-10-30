@@ -20,7 +20,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
         private readonly RelevantEntitiesService _relevantEntities;
         private readonly IServiceProvider _serviceProvider;
 
-        public LikeFollowAnnounceHandler(StagingEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection, EntityData data, RelevantEntitiesService relevantEntities, IServiceProvider serviceProvider) : base(entityStore, mainObject, actor, targetBox, user)
+        public LikeFollowAnnounceHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection, EntityData data, RelevantEntitiesService relevantEntities, IServiceProvider serviceProvider) : base(entityStore, mainObject, actor, targetBox, user)
         {
             _collection = collection;
             _data = data;

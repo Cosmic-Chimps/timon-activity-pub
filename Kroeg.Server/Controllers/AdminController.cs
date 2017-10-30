@@ -66,7 +66,7 @@ namespace Kroeg.Server.Controllers
         [HttpGet("complete")]
         public async Task<IActionResult> Autocomplete(string id)
         {
-            return Json(await _context.Entities.Where(a => a.Id.StartsWith(id)).Take(10).Select(a => a.Id).ToListAsync());
+            return Json(await _context.Attributes.Where(a => a.Uri.StartsWith(id)).Take(10).Select(a => a.Uri).ToListAsync());
         }
 
         [HttpGet("entity")]
@@ -89,8 +89,8 @@ namespace Kroeg.Server.Controllers
 
             entity.Data = ASObject.Parse(data);
             await _entityStore.StoreEntity(entity);
-            await _entityStore.CommitChanges();
 
+            await _context.SaveChangesAsync();
             return Ok();
         }
     }

@@ -11,8 +11,8 @@ using System;
 namespace Kroeg.Server.Migrations
 {
     [DbContext(typeof(APContext))]
-    [Migration("20171027153836_TypeIdNullable")]
-    partial class TypeIdNullable
+    [Migration("20171029221840_AddIndexes")]
+    partial class AddIndexes
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -20,25 +20,6 @@ namespace Kroeg.Server.Migrations
             modelBuilder
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn)
                 .HasAnnotation("ProductVersion", "2.0.0-rtm-26452");
-
-            modelBuilder.Entity("Kroeg.Server.Models.APDBEntity", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd();
-
-                    b.Property<bool>("IsOwner");
-
-                    b.Property<string>("SerializedData")
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("Type");
-
-                    b.Property<DateTime>("Updated");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Entities");
-                });
 
             modelBuilder.Entity("Kroeg.Server.Models.APTripleEntity", b =>
                 {
@@ -115,9 +96,9 @@ namespace Kroeg.Server.Migrations
                     b.Property<int>("CollectionItemId")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<string>("CollectionId");
+                    b.Property<int>("CollectionId");
 
-                    b.Property<string>("ElementId");
+                    b.Property<int>("ElementId");
 
                     b.Property<bool>("IsPublic");
 
@@ -154,7 +135,7 @@ namespace Kroeg.Server.Migrations
                 {
                     b.Property<string>("Id");
 
-                    b.Property<string>("OwnerId");
+                    b.Property<int>("OwnerId");
 
                     b.Property<string>("SerializedData");
 
@@ -170,7 +151,7 @@ namespace Kroeg.Server.Migrations
                     b.Property<int>("SalmonKeyId")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<string>("EntityId");
+                    b.Property<int>("EntityId");
 
                     b.Property<string>("PrivateKey");
 
@@ -186,7 +167,7 @@ namespace Kroeg.Server.Migrations
                     b.Property<int>("TripleId")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<int>("AttributeId");
+                    b.Property<int?>("AttributeId");
 
                     b.Property<string>("Object");
 
@@ -222,6 +203,8 @@ namespace Kroeg.Server.Migrations
 
                     b.HasKey("AttributeId");
 
+                    b.HasIndex("Uri");
+
                     b.ToTable("Attributes");
                 });
 
@@ -230,7 +213,7 @@ namespace Kroeg.Server.Migrations
                     b.Property<int>("UserActorPermissionId")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<string>("ActorId");
+                    b.Property<int>("ActorId");
 
                     b.Property<bool>("IsAdmin");
 
@@ -252,11 +235,11 @@ namespace Kroeg.Server.Migrations
 
                     b.Property<DateTime>("Expiry");
 
-                    b.Property<string>("ForUserId");
+                    b.Property<int>("ForUserId");
 
                     b.Property<string>("Secret");
 
-                    b.Property<string>("TargetUserId");
+                    b.Property<int>("TargetUserId");
 
                     b.Property<string>("Topic");
 
@@ -280,7 +263,7 @@ namespace Kroeg.Server.Migrations
 
                     b.Property<string>("Secret");
 
-                    b.Property<string>("UserId");
+                    b.Property<int>("UserId");
 
                     b.HasKey("Id");
 
@@ -406,18 +389,20 @@ namespace Kroeg.Server.Migrations
 
             modelBuilder.Entity("Kroeg.Server.Models.CollectionItem", b =>
                 {
-                    b.HasOne("Kroeg.Server.Models.APDBEntity", "Collection")
+                    b.HasOne("Kroeg.Server.Models.APTripleEntity", "Collection")
                         .WithMany()
-                        .HasForeignKey("CollectionId");
+                        .HasForeignKey("CollectionId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("Kroeg.Server.Models.APDBEntity", "Element")
+                    b.HasOne("Kroeg.Server.Models.APTripleEntity", "Element")
                         .WithMany()
-                        .HasForeignKey("ElementId");
+                        .HasForeignKey("ElementId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Kroeg.Server.Models.JWKEntry", b =>
                 {
-                    b.HasOne("Kroeg.Server.Models.APDBEntity", "Owner")
+                    b.HasOne("Kroeg.Server.Models.APTripleEntity", "Owner")
                         .WithMany()
                         .HasForeignKey("OwnerId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -425,17 +410,17 @@ namespace Kroeg.Server.Migrations
 
             modelBuilder.Entity("Kroeg.Server.Models.SalmonKey", b =>
                 {
-                    b.HasOne("Kroeg.Server.Models.APDBEntity", "Entity")
+                    b.HasOne("Kroeg.Server.Models.APTripleEntity", "Entity")
                         .WithMany()
-                        .HasForeignKey("EntityId");
+                        .HasForeignKey("EntityId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Kroeg.Server.Models.Triple", b =>
                 {
                     b.HasOne("Kroeg.Server.Models.TripleAttribute", "Attribute")
                         .WithMany()
-                        .HasForeignKey("AttributeId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("AttributeId");
 
                     b.HasOne("Kroeg.Server.Models.TripleAttribute", "Predicate")
                         .WithMany()
@@ -459,9 +444,10 @@ namespace Kroeg.Server.Migrations
 
             modelBuilder.Entity("Kroeg.Server.Models.UserActorPermission", b =>
                 {
-                    b.HasOne("Kroeg.Server.Models.APDBEntity", "Actor")
+                    b.HasOne("Kroeg.Server.Models.APTripleEntity", "Actor")
                         .WithMany()
-                        .HasForeignKey("ActorId");
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Kroeg.Server.Models.APUser", "User")
                         .WithMany()
@@ -470,20 +456,23 @@ namespace Kroeg.Server.Migrations
 
             modelBuilder.Entity("Kroeg.Server.Models.WebSubClient", b =>
                 {
-                    b.HasOne("Kroeg.Server.Models.APDBEntity", "ForUser")
+                    b.HasOne("Kroeg.Server.Models.APTripleEntity", "ForUser")
                         .WithMany()
-                        .HasForeignKey("ForUserId");
+                        .HasForeignKey("ForUserId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("Kroeg.Server.Models.APDBEntity", "TargetUser")
+                    b.HasOne("Kroeg.Server.Models.APTripleEntity", "TargetUser")
                         .WithMany()
-                        .HasForeignKey("TargetUserId");
+                        .HasForeignKey("TargetUserId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Kroeg.Server.Models.WebsubSubscription", b =>
                 {
-                    b.HasOne("Kroeg.Server.Models.APDBEntity", "User")
+                    b.HasOne("Kroeg.Server.Models.APTripleEntity", "User")
                         .WithMany()
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

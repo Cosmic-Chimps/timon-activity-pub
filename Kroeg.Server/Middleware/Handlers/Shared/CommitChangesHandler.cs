@@ -10,7 +10,7 @@ namespace Kroeg.Server.Middleware.Handlers.Shared
 {
     public class CommitChangesHandler : BaseHandler
     {
-        public CommitChangesHandler(StagingEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user) : base(entityStore, mainObject, actor, targetBox, user)
+        public CommitChangesHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user) : base(entityStore, mainObject, actor, targetBox, user)
         {
         }
 

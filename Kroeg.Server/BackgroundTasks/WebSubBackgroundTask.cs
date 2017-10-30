@@ -19,7 +19,7 @@ namespace Kroeg.Server.BackgroundTasks
     {
         public bool Unsubscribe { get; set; }
         public string ActorID { get; set; }
-        public string ToFollowID { get; set; }
+        public int ToFollowID { get; set; }
     }
 
     public class WebSubBackgroundTask : BaseTask<WebSubBackgroundData, WebSubBackgroundTask>
@@ -37,7 +37,7 @@ namespace Kroeg.Server.BackgroundTasks
 
         public override async Task Go()
         {
-            var targetActor = await _entityStore.GetEntity(Data.ToFollowID, true);
+            var targetActor = await _entityStore.GetDBEntity(Data.ToFollowID);
             var actor = await _entityStore.GetEntity(Data.ActorID, true);
 
             if (targetActor == null || actor == null) return;
@@ -81,6 +81,7 @@ namespace Kroeg.Server.BackgroundTasks
             }
 
             clientObject.Topic = topicUrl;
+
             await _context.SaveChangesAsync();
 
             var subscribeContent = new FormUrlEncodedContent(new Dictionary<string, string>

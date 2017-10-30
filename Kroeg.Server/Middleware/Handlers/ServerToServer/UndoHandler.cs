@@ -13,7 +13,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
     {
         private readonly CollectionTools _collection;
 
-        public UndoHandler(StagingEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection) : base(entityStore, mainObject, actor, targetBox, user)
+        public UndoHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection) : base(entityStore, mainObject, actor, targetBox, user)
         {
             _collection = collection;
         }
