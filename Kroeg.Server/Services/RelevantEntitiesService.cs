@@ -96,9 +96,13 @@ namespace Kroeg.Server.Services
 
         public async Task<List<APEntity>> FindEntitiesWithPreferredUsername(string username)
         {
-            return await _search(new Dictionary<string, string> {
-                ["https://www.w3.org/ns/activitystreams#preferredUsername"] = username
-            }, true);
+            var reverseId = await _entityStore.ReverseAttribute("https://www.w3.org/ns/activitystreams#preferredUsername", false);
+            if (reverseId == null) return new List<APEntity>();
+
+            var b = await _connection.QueryAsync<APTripleEntity>("select a.* from \"TripleEntities\" a, \"Triples\" b where a.\"IsOwner\" = TRUE and b.\"SubjectId\" = a.\"IdId\" and b.\"SubjectEntityId\" = a.\"EntityId\" and b.\"PredicateId\" = @Predicate and b.\"Object\" = @Object",
+                new { Predicate = reverseId.Value, Object = username });
+
+            return await _entityStore.GetEntities(b.Select(a => a.EntityId).ToList());
         }
     }
 }
