@@ -65,7 +65,7 @@ namespace Kroeg.Server.Services
             int? userId = null;
             if (user!= null) userId = await _entityStore.ReverseAttribute(user, false);
             if (userId == null)
-                return await _connection.QueryAsync<CollectionItem>("select * from \"CollectionItems\" WHERE \"CollectionItemId\" < @Under and \"IsPublic\" = TRUE and \"CollectionId\" = @DbId ", new { Under = under, DbId = dbId });
+                return await _connection.QueryAsync<CollectionItem>("select * from \"CollectionItems\" WHERE \"CollectionItemId\" < @Under and \"IsPublic\" = TRUE and \"CollectionId\" = @DbId " + postfix, new { Under = under, DbId = dbId });
 
              var ids = new List<int>();
              foreach (var audienceId in _audienceIds)
