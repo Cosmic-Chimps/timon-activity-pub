@@ -43,7 +43,7 @@ namespace Kroeg.Server.Services
             var key = await _entityStore.GetEntity(parameters["keyId"], true);
             if (key == null) return new Tuple<bool, string>(false, null);
 
-            var owner = await _entityStore.GetEntity(key.Data["owner"].First().Id, true);
+            var owner = await _entityStore.GetEntity(key.Data["owner"].First().Id ?? (string) key.Data["owner"].First().Primitive, true);
             if (!owner.Data["publicKey"].Any((a) => a.Id == key.Id)) return new Tuple<bool, string>(false, null);
 
             var stringKey = (string)key.Data["publicKeyPem"].First().Primitive;

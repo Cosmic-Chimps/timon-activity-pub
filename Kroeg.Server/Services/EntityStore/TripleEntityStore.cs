@@ -105,7 +105,9 @@ namespace Kroeg.Server.Services.EntityStore
 
 
         public async Task<APEntity> GetEntity(string id, bool doRemote)
-        { 
+        {
+            if (id == null) return null;
+
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
