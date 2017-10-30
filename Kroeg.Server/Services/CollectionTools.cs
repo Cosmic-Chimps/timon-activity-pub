@@ -58,7 +58,7 @@ namespace Kroeg.Server.Services
 
         private async Task<IEnumerable<CollectionItem>> _filterAudience(string user, bool isOwner, int dbId, int count, int under = int.MaxValue)
         {
-            var postfix = "order by \"CollectionItemId\" " + (count > 0 ? $"limit {count}" : "");
+            var postfix = "order by \"CollectionItemId\" desc " + (count > 0 ? $"limit {count}" : "");
             if (isOwner)
                 return await _connection.QueryAsync<CollectionItem>("select * from \"CollectionItems\" WHERE \"CollectionItemId\" < @Under and \"CollectionId\" = @DbId " + postfix, new { Under = under, DbId = dbId });
 
@@ -80,7 +80,7 @@ namespace Kroeg.Server.Services
             return await _connection.QueryAsync<CollectionItem>(
                 "select c.* from \"CollectionItems\" c, \"TripleEntities\" e WHERE e.\"EntityId\" = c.\"ElementId\" and \"CollectionItemId\" < @Under and \"CollectionId\" = @DbId"
                 + " and exists(select 1 from \"Triples\" where \"PredicateId\" = any(@Ids) and \"AttributeId\" = @UserId and \"SubjectId\" = e.\"IdId\" and \"SubjectEntityId\" = e.\"EntityId\" limit 1) "
-                 + "order by c.\"CollectionItemId\" " + (count > 0 ? $"limit {count}" : ""),
+                 + "order by c.\"CollectionItemId\" desc " + (count > 0 ? $"limit {count}" : ""),
                  new { Under = under, Ids = ids, UserId = userId.Value, DbId = dbId }
             );
         }
