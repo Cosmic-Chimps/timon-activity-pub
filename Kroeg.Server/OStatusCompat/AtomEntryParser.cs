@@ -42,7 +42,6 @@ namespace Kroeg.Server.OStatusCompat
 
         private readonly IEntityStore _entityStore;
         private readonly EntityData _entityConfiguration;
-        private readonly APContext _context;
         private readonly RelevantEntitiesService _relevantEntities;
 
         private ASObject _parseAuthor(XElement element)
@@ -461,11 +460,10 @@ namespace Kroeg.Server.OStatusCompat
             return ao;
         }
 
-        public AtomEntryParser(IEntityStore entityStore, EntityData entityConfiguration, APContext context, RelevantEntitiesService relevantEntities)
+        public AtomEntryParser(IEntityStore entityStore, EntityData entityConfiguration, RelevantEntitiesService relevantEntities)
         {
             _entityStore = entityStore;
             _entityConfiguration = entityConfiguration;
-            _context = context;
             _relevantEntities = relevantEntities;
         }
 

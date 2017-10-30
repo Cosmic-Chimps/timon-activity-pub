@@ -33,6 +33,9 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
 using Microsoft.Extensions.Primitives;
 using Microsoft.EntityFrameworkCore.Storage;
+using System.Data;
+using System.Transactions;
+using System.Data.Common;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -183,7 +186,8 @@ namespace Kroeg.Server.Middleware
                 }
                 else if (context.Request.Method == "POST" && data != null)
                 {
-                    using (var transaction = await handler._context.Database.BeginTransactionAsync())
+                    await handler._connection.OpenAsync();
+                    using (var transaction = handler._connection.BeginTransaction())
                     {
                         data = await handler.Post(context, fullpath, data);
                         transaction.Commit();
@@ -239,7 +243,7 @@ namespace Kroeg.Server.Middleware
         }
         public class GetEntityHandler
         {
-            internal readonly APContext _context;
+            internal readonly DbConnection _connection;
             private readonly EntityFlattener _flattener;
             private readonly IEntityStore _mainStore;
             private readonly AtomEntryGenerator _entryGenerator;
@@ -252,12 +256,12 @@ namespace Kroeg.Server.Middleware
             private readonly JwtTokenSettings _tokenSettings;
             private readonly SignatureVerifier _verifier;
 
-            public GetEntityHandler(APContext acontext, EntityFlattener flattener, IEntityStore mainStore,
+            public GetEntityHandler(DbConnection connection, EntityFlattener flattener, IEntityStore mainStore,
                 AtomEntryGenerator entryGenerator, IServiceProvider serviceProvider, DeliveryService deliveryService,
                 EntityData entityData, ClaimsPrincipal user, CollectionTools collectionTools, INotifier notifier, JwtTokenSettings tokenSettings,
                 SignatureVerifier verifier)
             {
-                _context = acontext;
+                _connection = connection;
                 _flattener = flattener;
                 _mainStore = mainStore;
                 _entryGenerator = entryGenerator;
@@ -342,18 +346,7 @@ namespace Kroeg.Server.Middleware
                 await context.Response.WriteAsync(": hello, world!\n");
                 await context.Response.Body.FlushAsync();
 
-                if (context.Request.Headers.ContainsKey("Last-Event-ID"))
-                {
-                    var lastEventId = context.Request.Headers["Last-Event-ID"];
-                    var location = await _context.CollectionItems.FirstOrDefaultAsync(a => a.CollectionId == entity.DbId && a.ElementId == lastEventId);
-                    if (location != null)
-                    {
-                        var tripleStore = _mainStore.Find<TripleEntityStore>();
-                        var idsAfter = await _context.CollectionItems.Where(a => a.CollectionId == entity.DbId && a.CollectionItemId > location.CollectionItemId).Select(a => a.Element.Id.Uri).ToListAsync();
-                        foreach (var item in idsAfter)
-                            toSend.Enqueue(item);
-                    }
-                }
+                // todo: Last-Event-Id
 
                 while (true)
                 {
@@ -612,7 +605,6 @@ namespace Kroeg.Server.Middleware
                         flattened = handler.MainObject;
                         if (!handled) break;
                     }
-                    await _context.SaveChangesAsync();
 
                     return flattened.Data;
                 }
@@ -689,7 +681,6 @@ namespace Kroeg.Server.Middleware
                         store = _mainStore;
                 }
 
-                await _context.SaveChangesAsync();
                 return flattened.Data;
             }
         }

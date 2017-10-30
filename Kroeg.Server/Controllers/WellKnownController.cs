@@ -10,6 +10,9 @@ using Kroeg.Server.Models;
 using Kroeg.Server.Services.EntityStore;
 using Kroeg.Server.Tools;
 using Kroeg.Server.Services;
+using System.Data;
+using Dapper;
+using System.Data.Common;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -18,17 +21,19 @@ namespace Kroeg.Server.Controllers
     [Route(".well-known")]
     public class WellKnownController : Controller
     {
-        private readonly APContext _context;
         private readonly IEntityStore _entityStore;
         private readonly EntityData _entityData;
         private readonly RelevantEntitiesService _relevantEntities;
+        private readonly KeyService _keyService;
+        private readonly DbConnection _connection;
 
-        public WellKnownController(APContext context, IEntityStore entityStore, EntityData entityData, RelevantEntitiesService relevantEntities)
+        public WellKnownController(IEntityStore entityStore, EntityData entityData, RelevantEntitiesService relevantEntities, KeyService keyService, DbConnection connection)
         {
-            _context = context;
             _entityStore = entityStore;
             _entityData = entityData;
             _relevantEntities = relevantEntities;
+            _keyService = keyService;
+            _connection = connection;
         }
 
         public class WebfingerLink
@@ -90,14 +95,20 @@ namespace Kroeg.Server.Controllers
             if (await result.Content.ReadAsStringAsync() != challenge)
                 return;
 
-            WebsubSubscription subscription = await _context.WebsubSubscriptions.FirstOrDefaultAsync(a => a.Callback == callback);
+            WebsubSubscription subscription = await _connection.QueryFirstOrDefaultAsync<WebsubSubscription>("select * from \"WebsubSubscriptions\" \"Callback\" = @Callback", new { Callback = callback });
 
             if (subscription != null)
             {
-                subscription.Expiry = DateTime.Now.AddSeconds(int.Parse(lease_seconds ?? "86400"));
-                subscription.Secret = secret;
                 if (mode == "unsubscribe")
-                    _context.WebsubSubscriptions.Remove(subscription);
+                {
+                    await _connection.ExecuteAsync("delete from \"WebsubSubscriptions\" where \"Id\" = @Id", new { Id = subscription.Id });
+                }
+                else
+                {
+                    subscription.Expiry = DateTime.Now.AddSeconds(int.Parse(lease_seconds ?? "86400"));
+                    subscription.Secret = secret;
+                    await _connection.ExecuteAsync("update \"WebsubSubscriptions\" set \"Expiry\"=@Expiry, \"Secret\"=@Secret where \"Id\" = @Id", subscription);
+                }
             }
             else if (mode == "subscribe")
             {
@@ -108,10 +119,9 @@ namespace Kroeg.Server.Controllers
                     Secret = secret,
                     UserId = user.DbId
                 };
-                _context.WebsubSubscriptions.Add(subscription);
-            }
 
-            await _context.SaveChangesAsync();
+                await _connection.ExecuteAsync("insert into \"WebsubSubscriptions\" (\"Callback\", \"Expiry\", \"Secret\", \"UserId\") values (@Callback, @Expiry, @Secret, @UserId)", subscription);
+            }
         }
 
         [HttpGet("webfinger")]
@@ -177,7 +187,7 @@ namespace Kroeg.Server.Controllers
                 }
             };
 
-            var salmon = await _context.GetKey(item.Id);
+            var salmon = await _keyService.GetKey(item.Id);
             var magicKey = new Salmon.MagicKey(salmon.PrivateKey);
 
             result.links.Add(new WebfingerLink

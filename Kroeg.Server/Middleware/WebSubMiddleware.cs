@@ -23,6 +23,9 @@ using Kroeg.Server.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using Kroeg.Server.Middleware.Renderers;
 using Kroeg.Server.BackgroundTasks;
+using System.Data;
+using Dapper;
+using System.Data.Common;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -37,7 +40,7 @@ namespace Kroeg.Server.Middleware
             _next = next;
         }
 
-        public async Task Invoke(HttpContext context, IServiceProvider serviceProvider, IEntityStore entityStore, APContext db, EntityData entityData)
+        public async Task Invoke(HttpContext context, IServiceProvider serviceProvider, IEntityStore entityStore, DbConnection connection, EntityData entityData)
         {
             if (!context.Request.Query["hub.mode"].Any())
             {
@@ -61,17 +64,15 @@ namespace Kroeg.Server.Middleware
 
             var leaseSpan = lease_seconds == null ? null : (TimeSpan?) TimeSpan.FromSeconds(int.Parse(lease_seconds));
 
-            var obj = await db.WebSubClients.FirstOrDefaultAsync(a => a.Topic == topic && a.ForUserId == user.DbId);
+            var obj = await connection.QueryFirstOrDefaultAsync<WebSubClient>("select * from \"WebSubClients\" where \"Topic\" = @Topic and \"ForUserId\" = @ForUserId", new { Topic = topic , ForUserId = user.DbId });
             if (obj == null)
                 goto error;
 
             if (mode == "subscribe")
             {
                 obj.Expiry = DateTime.Now + leaseSpan.Value;
-                var task = WebSubBackgroundTask.Make(new WebSubBackgroundData { ActorID = user.Id, ToFollowID = obj.TargetUserId });
-                task.NextAttempt = obj.Expiry;
-                db.EventQueue.Add(task);
-                await db.SaveChangesAsync();
+                await connection.ExecuteAsync("update \"WebSubClients\" set \"Expiry\" = @Expiry where \"WebSubClientId\" = @Id", new { Expiry = obj.Expiry, Id = obj.WebSubClientId });
+                await WebSubBackgroundTask.Make(new WebSubBackgroundData { ActorID = user.Id, ToFollowID = obj.TargetUserId }, connection, obj.Expiry);
 
                 context.Response.StatusCode = 200;
                 await context.Response.WriteAsync(challenge);

@@ -23,6 +23,9 @@ using Kroeg.Server.Services.Template;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
+using Npgsql;
+using System.Data;
+using System.Data.Common;
 
 namespace Kroeg.Server
 {
@@ -46,10 +49,13 @@ namespace Kroeg.Server
             // Add framework services.
             services.AddMvc();
 
-            services.AddDbContext<APContext>(options => options.UseNpgsql(Configuration.GetConnectionString("Default")).EnableSensitiveDataLogging());
+            services.AddTransient<DbConnection>((svc) => new NpgsqlConnection(Configuration.GetConnectionString("Default")));
+
+            services.AddTransient<IUserStore<APUser>, KroegUserStore>();
+            services.AddTransient<IUserPasswordStore<APUser>, KroegUserStore>();
+            services.AddTransient<IRoleStore<IdentityRole>, KroegUserStore>();
 
             services.AddIdentity<APUser, IdentityRole>()
-                .AddEntityFrameworkStores<APContext>()
                 .AddDefaultTokenProviders();
 
             services.AddAuthorization(options =>
@@ -120,6 +126,7 @@ namespace Kroeg.Server
             services.AddScoped<CollectionTools>();
             services.AddScoped<FakeEntityService>();
             services.AddScoped<EntityFlattener>();
+            services.AddScoped<KeyService>();
 
             services.AddScoped<IEntityStore>((provider) =>
             {
@@ -149,13 +156,15 @@ namespace Kroeg.Server
                 options.Cookie.Name = "Kroeg.Auth";
                 options.LoginPath = "/auth/login";
             });
+
+            services.AddScoped<DatabaseManager>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public async void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-            loggerFactory.AddDebug();
+            loggerFactory.AddDebug(LogLevel.Trace);
 
             app.UseAuthentication();
             app.UseWebSockets();
@@ -166,8 +175,7 @@ namespace Kroeg.Server
             app.UseMiddleware<GetEntityMiddleware>();
             app.UseMvc();
 
-
-            app.ApplicationServices.GetRequiredService<APContext>().Database.Migrate();
+            app.ApplicationServices.GetRequiredService<DatabaseManager>().EnsureExists();
             app.ApplicationServices.GetRequiredService<BackgroundTaskQueuer>(); // kickstart background tasks!
 
             var sevc = app.ApplicationServices.GetRequiredService<EntityData>();

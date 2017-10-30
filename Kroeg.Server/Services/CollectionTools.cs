@@ -10,29 +10,32 @@ using System;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Kroeg.Server.Configuration;
+using System.Data;
+using Dapper;
+using System.Data.Common;
 
 namespace Kroeg.Server.Services
 {
     public class CollectionTools
     {
-        private readonly APContext _context;
         private readonly TripleEntityStore _entityStore;
         private readonly EntityData _configuration;
         private readonly IHttpContextAccessor _contextAccessor;
+        private readonly DbConnection _connection;
 
-        public CollectionTools(APContext context, TripleEntityStore entityStore, EntityData configuration, IServiceProvider serviceProvider)
+        public CollectionTools(TripleEntityStore entityStore, EntityData configuration, IServiceProvider serviceProvider, DbConnection connection)
         {
-            _context = context;
             _entityStore = entityStore;
             _configuration = configuration;
-            _contextAccessor  = (IHttpContextAccessor)serviceProvider.GetService(typeof(IHttpContextAccessor));
+            _contextAccessor = (IHttpContextAccessor)serviceProvider.GetService(typeof(IHttpContextAccessor));
+            _connection = connection;
         }
 
         public async Task<int> Count(string id)
         {
             var entity = await _entityStore.GetEntity(id, true);
             if (entity.IsOwner)
-                return await _context.CollectionItems.CountAsync(a => a.CollectionId == entity.DbId);
+                return await _connection.ExecuteScalarAsync<int>("select count(*) from \"CollectionItems\" where \"CollectionId\" = @Id", new { Id = entity.DbId });
 
             var data = entity.Data;
             if (data["totalItems"].Any())
@@ -55,6 +58,7 @@ namespace Kroeg.Server.Services
 
         private async Task<IQueryable<CollectionItem>> _filterAudience(string user, bool isOwner, IQueryable<CollectionItem> entities, int count)
         {
+            throw new NotImplementedException();
             if (isOwner)
                 if (count > 0)
                     return entities.Take(count);
@@ -94,11 +98,12 @@ namespace Kroeg.Server.Services
             if (entity != null && entity.Data["attributedTo"].Any(a => a.Id == user)) isOwner = true;
 
 
-            IQueryable<CollectionItem> data = _context.CollectionItems.Where(a => a.CollectionId == entity.DbId && a.CollectionItemId < fromId).OrderByDescending(a => a.CollectionItemId);
-            data = await _filterAudience(user, isOwner, data, count);
+            throw new NotImplementedException();
+//            IQueryable<CollectionItem> data = _context.CollectionItems.Where(a => a.CollectionId == entity.DbId && a.CollectionItemId < fromId).OrderByDescending(a => a.CollectionItemId);
+//            data = await _filterAudience(user, isOwner, data, count);
 
-            var collectionItems = await data.ToListAsync();
-            return (await _entityStore.GetEntities(collectionItems.Select(a => a.ElementId).ToList())).Zip(collectionItems, (a, b) => new EntityCollectionItem { CollectionItemId = b.CollectionItemId, Entity = a}).ToList();
+//            var collectionItems = await data.ToListAsync();
+//            return (await _entityStore.GetEntities(collectionItems.Select(a => a.ElementId).ToList())).Zip(collectionItems, (a, b) => new EntityCollectionItem { CollectionItemId = b.CollectionItemId, Entity = a}).ToList();
         }
 
         public async Task<List<EntityCollectionItem>> GetAll(string id)
@@ -107,11 +112,13 @@ namespace Kroeg.Server.Services
             var user = _getUser();
             var isOwner = entity != null && entity.Data["attributedTo"].Any(a => a.Id == user);
 
+            throw new NotImplementedException(); /*
             IQueryable<CollectionItem> list = _context.CollectionItems.Where(a => a.CollectionId == entity.DbId).OrderByDescending(a => a.CollectionItemId);
             list = await _filterAudience(user, isOwner, list, -1);
 
             var collectionItems = await list.ToListAsync();
             return (await _entityStore.GetEntities(collectionItems.Select(a => a.ElementId).ToList())).Zip(collectionItems, (a, b) => new EntityCollectionItem { CollectionItemId = b.CollectionItemId, Entity = a}).ToList();
+            */
         }
 
         public async Task<List<APEntity>> CollectionsContaining(string containId, string type = null)
@@ -119,10 +126,13 @@ namespace Kroeg.Server.Services
             var idString = await _entityStore.ReverseAttribute(containId, false);
             if (idString == null) return new List<APEntity> {};
 
-            var collectionItems = _context.CollectionItems.Where(a => a.ElementId == idString.Value);
-            if (type != null) collectionItems = collectionItems.Where(a => a.Collection.Type == type);
+            IEnumerable<CollectionItem> collectionItems;
+            if (type == null)
+                collectionItems = await _connection.QueryAsync<CollectionItem>("select * from \"CollectionItems\" where \"ElementId\" = @Id", new { Id = idString.Value });
+            else
+                collectionItems = await _connection.QueryAsync<CollectionItem>("select * from \"CollectionItems\" where \"ElementId\" = @Id and \"Type\" = @Type", new { Id = idString.Value, Type = type });
 
-            return await _entityStore.GetEntities(await collectionItems.Select(a => a.CollectionId).ToListAsync());
+            return await _entityStore.GetEntities(collectionItems.Select(a => a.CollectionId).ToList());
         }
 
         public async Task<CollectionItem> AddToCollection(APEntity collection, APEntity entity)
@@ -134,7 +144,8 @@ namespace Kroeg.Server.Services
                 IsPublic = DeliveryService.IsPublic(entity.Data) || _configuration.IsActor(entity.Data)
             };
 
-            await _context.CollectionItems.AddAsync(ci);
+
+            await _connection.ExecuteAsync("insert into \"CollectionItems\" (\"CollectionId\", \"ElementId\", \"IsPublic\") values (@CollectionId, @ElementId, @IsPublic)", ci);
 
             return ci;
         }
@@ -144,7 +155,7 @@ namespace Kroeg.Server.Services
             var otherEntity = await _entityStore.ReverseAttribute(otherId, false);
             if (otherEntity == null) return false;
 
-            return await _context.CollectionItems.AnyAsync(a => a.CollectionId == collection.DbId && a.ElementId == otherEntity.Value);
+            return await _connection.ExecuteScalarAsync<bool>("select exists(select 1 from \"CollectionItems\" where \"CollectionId\" = @CollectionId and \"ElementId\" = @ElementId)", new { CollectionId = collection.DbId, ElementId = otherEntity.Value });
         }
 
         public async Task RemoveFromCollection(APEntity collection, string id)
@@ -152,9 +163,7 @@ namespace Kroeg.Server.Services
             var otherEntity = await _entityStore.ReverseAttribute(id, false);
             if (otherEntity == null) return;
 
-            var item = await _context.CollectionItems.FirstOrDefaultAsync(a => a.CollectionId == collection.DbId && a.ElementId == otherEntity.Value);
-            if (item != null)
-                _context.CollectionItems.Remove(item);
+            await _connection.ExecuteAsync("delete from \"CollectionItems\" where \"CollectionId\" = @CollectionId and \"ElementId\" = @ElementId", new { CollectionId = collection.DbId, ElementId = otherEntity.Value });
         }
 
         public async Task RemoveFromCollection(APEntity collection, APEntity entity)

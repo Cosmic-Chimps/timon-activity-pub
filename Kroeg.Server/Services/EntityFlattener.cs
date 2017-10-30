@@ -13,12 +13,10 @@ namespace Kroeg.Server.Tools
     public class EntityFlattener
     {
         private readonly EntityData _configuration;
-        private readonly APContext _context;
 
-        public EntityFlattener(APContext context, EntityData configuration)
+        public EntityFlattener(EntityData configuration)
         {
             _configuration = configuration;
-            _context = context;
         }
 
         public async Task<APEntity> FlattenAndStore(IEntityStore store, ASObject @object, bool generateId = true, Dictionary<string, APEntity> dict = null)

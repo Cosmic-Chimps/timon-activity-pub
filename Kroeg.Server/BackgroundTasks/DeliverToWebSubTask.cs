@@ -10,6 +10,9 @@ using Kroeg.ActivityStreams;
 using Kroeg.Server.Models;
 using Kroeg.Server.OStatusCompat;
 using Kroeg.Server.Services.EntityStore;
+using System.Data;
+using Dapper;
+using System.Data.Common;
 
 namespace Kroeg.Server.BackgroundTasks
 {
@@ -24,9 +27,9 @@ namespace Kroeg.Server.BackgroundTasks
     public class DeliverToWebSubTask : BaseTask<DeliverToWebSubData, DeliverToWebSubTask>
     {
         private readonly IEntityStore _entityStore;
-        private readonly APContext _context;
         private WebsubSubscription _subscription;
         private readonly AtomEntryGenerator _entryGenerator;
+        private readonly DbConnection _connection;
 
         private async Task<ASObject> _object()
         {
@@ -50,16 +53,16 @@ namespace Kroeg.Server.BackgroundTasks
             return $"sha1={bytestring}";
         }
 
-        public DeliverToWebSubTask(EventQueueItem item, IEntityStore entityStore, APContext context, AtomEntryGenerator entryGenerator) : base(item)
+        public DeliverToWebSubTask(EventQueueItem item, IEntityStore entityStore, AtomEntryGenerator entryGenerator, DbConnection connection) : base(item)
         {
             _entityStore = entityStore;
-            _context = context;
             _entryGenerator = entryGenerator;
+            _connection = connection;
         }
 
         public override async Task Go()
         {
-            _subscription = await _context.WebsubSubscriptions.FirstOrDefaultAsync(a => a.Id == Data.Subscription);
+            _subscription = await _connection.QuerySingleOrDefaultAsync<WebsubSubscription>("select * from WebsubSubscriptions where Id = @Id", new { Id = Data.Subscription });
             if (_subscription == null)
                 return; // gone
             var objdata = await _object();

@@ -30,6 +30,9 @@ using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Kroeg.Server.Middleware.Handlers.ClientToServer;
 using Kroeg.Server.Middleware.Handlers.Shared;
+using System.Data.Common;
+using System.Transactions;
+using Dapper;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -38,7 +41,7 @@ namespace Kroeg.Server.Controllers
     [Route("/auth")]
     public class AuthController : Controller
     {
-        private readonly APContext _context;
+        private readonly DbConnection _connection;
         private readonly UserManager<APUser> _userManager;
         private readonly SignInManager<APUser> _signInManager;
         private readonly JwtTokenSettings _tokenSettings;
@@ -53,9 +56,9 @@ namespace Kroeg.Server.Controllers
         private readonly CollectionTools _collectionTools;
         private readonly RelevantEntitiesService _relevantEntities;
 
-        public AuthController(APContext context, UserManager<APUser> userManager, SignInManager<APUser> signInManager, JwtTokenSettings tokenSettings, EntityFlattener entityFlattener, IEntityStore entityStore, EntityData entityConfiguration, IDataProtectionProvider dataProtectionProvider, IConfigurationRoot configuration, DeliveryService deliveryService, SignatureVerifier verifier, IServiceProvider provider, CollectionTools collectionTools, RelevantEntitiesService relevantEntities)
+        public AuthController(DbConnection connection, UserManager<APUser> userManager, SignInManager<APUser> signInManager, JwtTokenSettings tokenSettings, EntityFlattener entityFlattener, IEntityStore entityStore, EntityData entityConfiguration, IDataProtectionProvider dataProtectionProvider, IConfigurationRoot configuration, DeliveryService deliveryService, SignatureVerifier verifier, IServiceProvider provider, CollectionTools collectionTools, RelevantEntitiesService relevantEntities)
         {
-            _context = context;
+            _connection = connection;
             _userManager = userManager;
             _signInManager = signInManager;
             _tokenSettings = tokenSettings;
@@ -176,7 +179,7 @@ namespace Kroeg.Server.Controllers
             if (!_configuration.GetSection("Kroeg").GetValue<bool>("CanRegister")) return NotFound();
             var apuser = new APUser
             {
-                UserName = model.Username,
+                Username = model.Username,
                 Email = model.Email
             };
 
@@ -192,7 +195,8 @@ namespace Kroeg.Server.Controllers
 
             if (!ModelState.IsValid) return View("Register", model);
 
-            using (var transaction = await _context.Database.BeginTransactionAsync())
+            await _connection.OpenAsync();
+            using (var trans = _connection.BeginTransaction())
             {
                 var result = await _userManager.CreateAsync(apuser, model.Password);
                 if (!result.Succeeded)
@@ -202,10 +206,9 @@ namespace Kroeg.Server.Controllers
 
                 if (!ModelState.IsValid) return View("Register", model);
 
-                if (await _context.Users.CountAsync() == 1)
+                if (await _connection.ExecuteAsync("select count(*) from \"Users\"") == 1)
                 {
-                    await _userManager.AddClaimAsync(apuser, new Claim("admin", "true"));
-                    await _context.SaveChangesAsync();
+//                    await _userManager.AddClaimAsync(apuser, new Claim("admin", "true"));
                 }
 
                 await _signInManager.SignInAsync(apuser, false);
@@ -223,7 +226,7 @@ namespace Kroeg.Server.Controllers
                 create["to"].Add(ASTerm.MakeId("https://www.w3.org/ns/activitystreams#Public"));
 
                 var apo = await _entityFlattener.FlattenAndStore(_entityStore, create);
-                var handler = new CreateActorHandler(_entityStore, apo, null, null, User, _collectionTools, _entityConfiguration, _context);
+                var handler = new CreateActorHandler(_entityStore, apo, null, null, User, _collectionTools, _entityConfiguration, _connection);
                 handler.UserOverride = apuser.Id;
                 await handler.Handle();
 
@@ -232,9 +235,7 @@ namespace Kroeg.Server.Controllers
                 var delivery = new DeliveryHandler(_entityStore, handler.MainObject, resultUser, outbox, User, _collectionTools, _provider.GetRequiredService<DeliveryService>());
                 await delivery.Handle();
                 
-                await _context.SaveChangesAsync();
-
-                transaction.Commit();
+                trans.Commit();
                 return RedirectToActionPermanent("Index", "Settings");
             }
 
@@ -262,7 +263,8 @@ namespace Kroeg.Server.Controllers
             if (!_entityConfiguration.IsActivity(data)) return StatusCode(403, "Not an activity?");
             if (!data["actor"].Any((a) => a.Id == userId)) return StatusCode(403, "Invalid signature!");
 
-            using (var transaction = await _context.Database.BeginTransactionAsync())
+            await _connection.OpenAsync();
+            using (var transaction = _connection.BeginTransaction())
             {
                 var temporaryStore = new StagingEntityStore(_entityStore);
                 var resultEntity = await _entityFlattener.FlattenAndStore(temporaryStore, data, false);
@@ -273,11 +275,8 @@ namespace Kroeg.Server.Controllers
 
                 foreach (var user in users)
                 {
-                    if (user.IsOwner)
-                        _context.EventQueue.Add(DeliverToActivityPubTask.Make(new DeliverToActivityPubData { ObjectId = resultEntity.Id, TargetInbox = user.Data["inbox"].First().Id }));
+                    await DeliverToActivityPubTask.Make(new DeliverToActivityPubData { ObjectId = resultEntity.Id, TargetInbox = user.Data["inbox"].First().Id }, _connection);
                 }
-
-                await _context.SaveChangesAsync();
 
                 transaction.Commit();
                 return StatusCode(202);
@@ -292,7 +291,7 @@ namespace Kroeg.Server.Controllers
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var actor = await _entityStore.GetEntity(id, false);
-            var hasAccess = await _context.UserActorPermissions.AnyAsync(a => a.UserId == userId && a.ActorId == actor.DbId);
+            var hasAccess = await _connection.ExecuteScalarAsync<bool>("select exists(select 1 from \"UserActorPermissions\" where \"UserId\" = @UserId and \"ActorId\" = @ActorId)", new { UserId = userId, ActorId = actor.DbId });
             if (!hasAccess || actor == null || !actor.IsOwner)
             {
                 if (response_type == "token")
@@ -312,7 +311,7 @@ namespace Kroeg.Server.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var actor = await _entityStore.GetEntity(model.ActorID, false);
-            var hasAccess = await _context.UserActorPermissions.AnyAsync(a => a.UserId == userId && a.ActorId == actor.DbId);
+            var hasAccess = await _connection.ExecuteScalarAsync<bool>("select exists(select 1 from \"UserActorPermissions\" where \"UserId\" = @UserId and \"ActorId\" = @ActorId)", new { UserId = userId, ActorId = actor.DbId });
             model.Actor = actor;
             if (!hasAccess || !ModelState.IsValid) return View("ChooseActorOAuth", model);
             var exp = TimeSpan.FromSeconds(model.Expiry);

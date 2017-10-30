@@ -15,18 +15,21 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Data;
+using Dapper;
+using System.Data.Common;
 
 namespace Kroeg.Server.Services
 {
     public class SignatureVerifier
     {
         private readonly IEntityStore _entityStore;
-        private readonly APContext _context;
+        private readonly DbConnection _connection;
 
-        public SignatureVerifier(IEntityStore entityStore, APContext context)
+        public SignatureVerifier(IEntityStore entityStore, DbConnection connection)
         {
             _entityStore = entityStore;
-            _context = context;
+            _connection = connection;
         }
 
         public async Task<Tuple<bool, string>> VerifyHttpSignature(HttpContext context)
@@ -100,7 +103,7 @@ namespace Kroeg.Server.Services
             {
                 if (kid == null) return null; // can't do that for remote actors
 
-                var key = await _context.JsonWebKeys.FirstOrDefaultAsync(a => a.OwnerId == actor.DbId && a.Id == kid);
+                var key = await _connection.QuerySingleOrDefaultAsync<JWKEntry>("select * from \"JsonWebKeys\" where \"OwnerId\" = @OwnerId and \"Id\" = @KeyId", new { OwnerId = actor.DbId, KeyId = kid });
                 if (key == null)
                 {
                     // well here we go
@@ -128,15 +131,14 @@ namespace Kroeg.Server.Services
                         SerializedData = JsonConvert.SerializeObject(jwkey)
                     };
 
-                    _context.JsonWebKeys.Add(key);
-                    await _context.SaveChangesAsync();
+                    await _connection.ExecuteAsync("insert into \"JsonWebKeys\" (\"OwnerId\", \"Id\", \"SerializedData\") values (@OwnerId, @Id, @SerializedData)", key);
                 }
 
                 return key;
             }
             else
             {
-                var key = await _context.JsonWebKeys.FirstOrDefaultAsync(a => a.OwnerId == actor.DbId);
+                var key = await _connection.QuerySingleOrDefaultAsync<JWKEntry>("select * from \"JsonWebKeys\" where \"OwnerId\" = @OwnerId", new { OwnerId = actor.DbId });
                 if (key == null)
                 {
                     var jwk = new JsonWebKey();
@@ -153,8 +155,7 @@ namespace Kroeg.Server.Services
                     jwk.D = Base64UrlEncoder.Encode(parms.D);
 
                     key = new JWKEntry { Id = jwk.Kid, OwnerId = actor.DbId, SerializedData = JsonConvert.SerializeObject(jwk) };
-                    _context.JsonWebKeys.Add(key);
-                    await _context.SaveChangesAsync();
+                    await _connection.ExecuteAsync("insert into \"JsonWebKeys\" (\"OwnerId\", \"Id\", \"SerializedData\") values (@OwnerId, @Id, @SerializedData)", key);
                 }
 
                 return key;

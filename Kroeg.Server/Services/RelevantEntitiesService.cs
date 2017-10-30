@@ -7,17 +7,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Kroeg.Server.Services.EntityStore;
+using System.Data;
+using System.Data.Common;
 
 namespace Kroeg.Server.Services
 {
     public class RelevantEntitiesService
     {
-        private readonly APContext _context;
+        private readonly DbConnection _connection;
         private readonly TripleEntityStore _entityStore;
 
-        public RelevantEntitiesService(APContext context, TripleEntityStore entityStore)
+        public RelevantEntitiesService(TripleEntityStore entityStore, DbConnection connection)
         {
-            _context = context;
+            _connection = connection;
             _entityStore = entityStore;
         }
 
@@ -57,6 +59,7 @@ namespace Kroeg.Server.Services
                 attributeMapping[reverseId.Value] = reverseVal.Value;
             }
 
+/*
             IQueryable<APTripleEntity> query = _context.TripleEntities;
             foreach (var item in attributeMapping)
             {
@@ -67,6 +70,8 @@ namespace Kroeg.Server.Services
                 query = query.Where(a => a.IsOwner == isOwner.Value);
 
             return await _entityStore.GetEntities(await query.Select(a => a.EntityId).ToListAsync());
+            */
+            throw new NotImplementedException("AAAA");
         }
 
         public async Task<List<APEntity>> FindRelevantObject(string authorId, string objectType, string objectId)

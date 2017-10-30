@@ -12,19 +12,19 @@
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="*" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="*" />
     <PackageReference Include="Microsoft.AspNetCore.WebSockets" Version="*" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="*" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="*" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="*" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="*" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="*" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="*" />
+    <PackageReference Include="Dapper" Version="*" />
+    <PackageReference Include="Dapper.Contrib" Version="*" />
     <PackageReference Include="Npgsql" Version="*" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="*" />
     <PackageReference Include="StackExchange.Redis" Version="*" />
     <PackageReference Include="HtmlAgilityPack" Version="*" />
     <PackageReference Include="Jint" Version="*" />
   </ItemGroup>
   <ItemGroup>
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="*" />
-    <DotNetCliToolReference Include="Microsoft.EntityFrameworkCore.Tools.DotNet" Version="*" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kroeg.ActivityStreams\Kroeg.ActivityStreams.csproj" />

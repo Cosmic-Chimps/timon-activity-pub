@@ -12,6 +12,9 @@ using Kroeg.Server.OStatusCompat;
 using Kroeg.Server.Services.EntityStore;
 using Kroeg.Server.Services;
 using System.Collections.Generic;
+using System.Data;
+using Dapper;
+using System.Data.Common;
 
 namespace Kroeg.Server.BackgroundTasks
 {
@@ -25,13 +28,13 @@ namespace Kroeg.Server.BackgroundTasks
     public class WebSubBackgroundTask : BaseTask<WebSubBackgroundData, WebSubBackgroundTask>
     {
         private readonly IEntityStore _entityStore;
-        private readonly APContext _context;
+        private readonly DbConnection _connection;
         private readonly CollectionTools _collectionTools;
 
-        public WebSubBackgroundTask(EventQueueItem item, IEntityStore entityStore, APContext context, CollectionTools collectionTools) : base(item)
+        public WebSubBackgroundTask(EventQueueItem item, IEntityStore entityStore, DbConnection connection, CollectionTools collectionTools) : base(item)
         {
             _entityStore = entityStore;
-            _context = context;
+            _connection = connection;
             _collectionTools = collectionTools;
         }
 
@@ -46,7 +49,7 @@ namespace Kroeg.Server.BackgroundTasks
             var topicUrl = (string)targetActor.Data["atomUri"].FirstOrDefault()?.Primitive;
             if (hubUrl == null || topicUrl == null) return;
 
-            var clientObject = await _context.WebSubClients.FirstOrDefaultAsync(a => a.ForUserId == actor.DbId && a.TargetUserId == targetActor.DbId);
+            var clientObject = await _connection.QuerySingleOrDefaultAsync<WebSubClient>("select * from WebSubClients where ForUserId = @ForUserId and TargetUserId = @TargetUserId", new { ForUserID = actor.DbId, TargetUserId = targetActor.DbId});
             var hc = new HttpClient();
             if (Data.Unsubscribe)
             {
@@ -64,7 +67,7 @@ namespace Kroeg.Server.BackgroundTasks
 
                 }
 
-                _context.WebSubClients.Remove(clientObject);
+                await _connection.ExecuteAsync("delete from \"WebSubClients\" where \"WebSubClientId\" = @Id", new { Id = clientObject.WebSubClientId });
                 return;
             }
 
@@ -74,15 +77,12 @@ namespace Kroeg.Server.BackgroundTasks
                 {
                     ForUserId = actor.DbId,
                     TargetUserId = targetActor.DbId,
-                    Secret = Guid.NewGuid().ToString()
+                    Secret = Guid.NewGuid().ToString(),
+                    Topic = clientObject.Topic
                 };
 
-                _context.WebSubClients.Add(clientObject);
+                await _connection.ExecuteAsync("insert into \"WebSubClients\" (\"ForUserId\", \"TargetUserId\", \"Secret\", \"Topic\") VALUES (@ForUserId, @TargetUserId, @Secret, @Topic", clientObject);
             }
-
-            clientObject.Topic = topicUrl;
-
-            await _context.SaveChangesAsync();
 
             var subscribeContent = new FormUrlEncodedContent(new Dictionary<string, string>
             {

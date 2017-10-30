@@ -15,20 +15,23 @@ using System.Security.Cryptography;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using Kroeg.Server.Configuration;
+using System.Data;
+using Dapper;
+using System.Data.Common;
 
 namespace Kroeg.Server.Services
 {
     public class DeliveryService
     {
-        private readonly APContext _context;
+        private readonly DbConnection _connection;
         private readonly EntityData _configuration;
         private readonly CollectionTools _collectionTools;
         private readonly IEntityStore _store;
         private readonly RelevantEntitiesService _relevantEntities;
 
-        public DeliveryService(APContext context, CollectionTools collectionTools, EntityData configuration, IEntityStore store, RelevantEntitiesService relevantEntities)
+        public DeliveryService(DbConnection connection, CollectionTools collectionTools, EntityData configuration, IEntityStore store, RelevantEntitiesService relevantEntities)
         {
-            _context = context;
+            _connection = connection;
             _collectionTools = collectionTools;
             _configuration = configuration;
             _store = store;
@@ -58,10 +61,10 @@ namespace Kroeg.Server.Services
             }
 
             foreach (var target in audienceInbox.Item1)
-                _queueInboxDelivery(target, entity);
+                await _queueInboxDelivery(target, entity);
 
             foreach (var salmon in audienceInbox.Item3)
-                _queueSalmonDelivery(salmon, entity);
+                await _queueSalmonDelivery(salmon, entity);
         }
 
         public async Task<List<APEntity>> GetUsersForSharedInbox(ASObject objectToProcess)
@@ -176,40 +179,37 @@ namespace Kroeg.Server.Services
             return new Tuple<HashSet<string>, bool, HashSet<string>>(targets, isPublic, salmons);
         }
 
-        private void _queueInboxDelivery(string targetUrl, APEntity entity)
+        private async Task _queueInboxDelivery(string targetUrl, APEntity entity)
         {
-            _context.EventQueue.Add(
-                DeliverToActivityPubTask.Make(new DeliverToActivityPubData
+            await DeliverToActivityPubTask.Make(new DeliverToActivityPubData
                 {
                     ObjectId = entity.Id,
                     TargetInbox = targetUrl
-                }));
+                }, _connection);
         }
 
-        private void _queueSalmonDelivery(string targetUrl, APEntity entity)
+        private async Task _queueSalmonDelivery(string targetUrl, APEntity entity)
         {
-            _context.EventQueue.Add(
-                DeliverToSalmonTask.Make(new DeliverToSalmonData
+           await DeliverToSalmonTask.Make(new DeliverToSalmonData
                 {
                     EntityId = entity.Id,
                     SalmonUrl = targetUrl
-                }));
+                }, _connection);
         }
 
         private async Task _queueWebsubDelivery(string userId, int collectionItem, string objectId)
         {
             var actor = await _store.GetEntity(userId, false);
 
-            foreach (var sub in await _context.WebsubSubscriptions.Where(a => a.UserId == actor.DbId && a.Expiry > DateTime.Now).ToListAsync())
+            foreach (var sub in await (_connection.QueryAsync<WebsubSubscription>("select * from \"WebsubSubscriptions\" where \"UserId\" = @UserId and \"Expiry\" > @Expiry", new { UserId = actor.DbId, Expiry = DateTime.Now })))
             {
-                _context.EventQueue.Add(
-                    DeliverToWebSubTask.Make(new DeliverToWebSubData
+                await DeliverToWebSubTask.Make(new DeliverToWebSubData
                     {
                         CollectionItem = collectionItem,
                         ObjectId = objectId,
                         SourceUserId = userId,
                         Subscription = sub.Id
-                    }));
+                    }, _connection);
             }
         }
     }

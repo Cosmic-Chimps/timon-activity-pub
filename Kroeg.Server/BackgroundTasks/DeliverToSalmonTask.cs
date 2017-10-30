@@ -11,6 +11,7 @@ using Kroeg.Server.Models;
 using Kroeg.Server.OStatusCompat;
 using Kroeg.Server.Services.EntityStore;
 using Kroeg.Server.Salmon;
+using Kroeg.Server.Services;
 
 namespace Kroeg.Server.BackgroundTasks
 {
@@ -23,14 +24,14 @@ namespace Kroeg.Server.BackgroundTasks
     public class DeliverToSalmonTask : BaseTask<DeliverToSalmonData, DeliverToSalmonTask>
     {
         private readonly IEntityStore _entityStore;
-        private readonly APContext _context;
         private readonly AtomEntryGenerator _entryGenerator;
+        private readonly KeyService _keyService;
 
-        public DeliverToSalmonTask(EventQueueItem item, IEntityStore entityStore, APContext context, AtomEntryGenerator entryGenerator) : base(item)
+        public DeliverToSalmonTask(EventQueueItem item, IEntityStore entityStore, AtomEntryGenerator entryGenerator, KeyService keyService) : base(item)
         {
             _entityStore = entityStore;
-            _context = context;
             _entryGenerator = entryGenerator;
+            _keyService = keyService;
         }
 
         public override async Task Go()
@@ -41,7 +42,7 @@ namespace Kroeg.Server.BackgroundTasks
             var actorId = entity.Data["actor"].Concat(entity.Data["attributedTo"]).FirstOrDefault();
             if (actorId == null) return; // ???
 
-            var key = await _context.GetKey(actorId.Id);
+            var key = await _keyService.GetKey(actorId.Id);
 
             var doc = await _entryGenerator.Build(entity.Data);
 

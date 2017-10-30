@@ -29,19 +29,19 @@ namespace Kroeg.Server.BackgroundTasks
         private readonly EntityFlattener _entityFlattener;
         private readonly IServiceProvider _serviceProvider;
         private readonly DeliveryService _deliveryService;
-        private readonly APContext _context;
         private readonly EntityData _data;
         private readonly SignatureVerifier _verifier;
+        private readonly KeyService _keyService;
 
-        public DeliverToActivityPubTask(EventQueueItem item, IEntityStore entityStore, EntityFlattener entityFlattener, IServiceProvider serviceProvider, DeliveryService deliveryService, APContext context, EntityData data, SignatureVerifier verifier) : base(item)
+        public DeliverToActivityPubTask(EventQueueItem item, IEntityStore entityStore, EntityFlattener entityFlattener, IServiceProvider serviceProvider, DeliveryService deliveryService, EntityData data, SignatureVerifier verifier, KeyService keyService) : base(item)
         {
             _entityStore = entityStore;
             _entityFlattener = entityFlattener;
             _serviceProvider = serviceProvider;
             _deliveryService = deliveryService;
-            _context = context;
             _data = data;
             _verifier = verifier;
+            _keyService = keyService;
         }
 
         private async Task<string> _buildSignature(string ownerId, HttpRequestMessage message)
@@ -65,7 +65,7 @@ namespace Kroeg.Server.BackgroundTasks
 
             toSign.Remove(toSign.Length - 1, 1);
 
-            var key = await _context.GetKey(ownerId);
+            var key = await _keyService.GetKey(ownerId);
             var magic = new MagicKey(key.PrivateKey);
             var signed = Convert.ToBase64String(magic.Sign(Encoding.UTF8.GetBytes(toSign.ToString())));
 

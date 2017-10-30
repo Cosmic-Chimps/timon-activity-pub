@@ -25,6 +25,9 @@ using Newtonsoft.Json.Linq;
 using Kroeg.Server.Middleware.Handlers.ClientToServer;
 using Kroeg.Server.Middleware.Handlers.Shared;
 using System.IO;
+using System.Data;
+using Dapper;
+using System.Data.Common;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -33,7 +36,7 @@ namespace Kroeg.Server.Controllers
     [Route("admin"), Authorize("admin")]
     public class AdminController : Controller
     {
-        private readonly APContext _context;
+        private readonly DbConnection _connection;
         private readonly IEntityStore _entityStore;
         private readonly EntityData _entityData;
         private readonly JwtTokenSettings _tokenSettings;
@@ -45,9 +48,9 @@ namespace Kroeg.Server.Controllers
         private readonly RelevantEntitiesService _relevantEntities;
         private readonly CollectionTools _collectionTools;
 
-        public AdminController(APContext context, IEntityStore entityStore, EntityData entityData, JwtTokenSettings tokenSettings, SignInManager<APUser> signInManager, IServiceProvider provider, IConfigurationRoot configuration, EntityFlattener flattener, UserManager<APUser> userManager, RelevantEntitiesService relevantEntities, CollectionTools collectionTools)
+        public AdminController(DbConnection connection, IEntityStore entityStore, EntityData entityData, JwtTokenSettings tokenSettings, SignInManager<APUser> signInManager, IServiceProvider provider, IConfigurationRoot configuration, EntityFlattener flattener, UserManager<APUser> userManager, RelevantEntitiesService relevantEntities, CollectionTools collectionTools)
         {
-            _context = context;
+            _connection = connection;
             _entityStore = entityStore;
             _entityData = entityData;
             _tokenSettings = tokenSettings;
@@ -66,7 +69,10 @@ namespace Kroeg.Server.Controllers
         [HttpGet("complete")]
         public async Task<IActionResult> Autocomplete(string id)
         {
-            return Json(await _context.Attributes.Where(a => a.Uri.StartsWith(id)).Take(10).Select(a => a.Uri).ToListAsync());
+            _connection.Open();
+            
+            var attributes = await _connection.QueryAsync<TripleAttribute>("select * from \"TripleAttributes\" where \"Uri\" like @str limit 10", new { str = id + "%" });
+            return Json(attributes.Select(a => a.Uri).ToList());
         }
 
         [HttpGet("entity")]
@@ -90,7 +96,6 @@ namespace Kroeg.Server.Controllers
             entity.Data = ASObject.Parse(data);
             await _entityStore.StoreEntity(entity);
 
-            await _context.SaveChangesAsync();
             return Ok();
         }
     }

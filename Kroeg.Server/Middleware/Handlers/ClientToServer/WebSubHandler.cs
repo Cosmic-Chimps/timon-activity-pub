@@ -6,16 +6,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using System.Data;
+using System.Data.Common;
 
 namespace Kroeg.Server.Middleware.Handlers.ClientToServer
 {
     public class WebSubHandler : BaseHandler
     {
-        private readonly APContext _context;
+        private readonly DbConnection _connection;
 
-        public WebSubHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, APContext context) : base(entityStore, mainObject, actor, targetBox, user)
+        public WebSubHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, DbConnection connection) : base(entityStore, mainObject, actor, targetBox, user)
         {
-            _context = context;
+            _connection = connection;
         }
 
         public override async Task<bool> Handle()
@@ -33,11 +35,10 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             var target = await EntityStore.GetEntity(activity.Data["object"].First().Id, true);
             if (target == null) return true; // can't really fix subscriptions on a thing that doesn't exist
 
-                var hubUrl = (string) target.Data["_:hubUrl"].SingleOrDefault()?.Primitive;
-                if (hubUrl == null) return true;
+            var hubUrl = (string) target.Data["_:hubUrl"].SingleOrDefault()?.Primitive;
+            if (hubUrl == null) return true;
 
-                var taskEvent = WebSubBackgroundTask.Make(new WebSubBackgroundData { Unsubscribe = MainObject.Type == "https://www.w3.org/ns/activitystreams#Undo", ToFollowID = target.DbId, ActorID = MainObject.Data["actor"].Single().Id });
-                _context.EventQueue.Add(taskEvent);
+            await WebSubBackgroundTask.Make(new WebSubBackgroundData { Unsubscribe = MainObject.Type == "https://www.w3.org/ns/activitystreams#Undo", ToFollowID = target.DbId, ActorID = MainObject.Data["actor"].Single().Id }, _connection);
 
             return true;
         }

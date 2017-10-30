@@ -27,6 +27,9 @@ using Kroeg.Server.Middleware.Handlers.Shared;
 using Kroeg.Server.Services.Template;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Data;
+using Dapper;
+using System.Data.Common;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -61,7 +64,6 @@ namespace Kroeg.Server.Controllers
             public string AuthorizeOther { get; set; }
         }
 
-        private readonly APContext _context;
         private readonly IEntityStore _entityStore;
         private readonly EntityData _entityData;
         private readonly JwtTokenSettings _tokenSettings;
@@ -73,10 +75,11 @@ namespace Kroeg.Server.Controllers
         private readonly RelevantEntitiesService _relevantEntities;
         private readonly CollectionTools _collectionTools;
         private readonly TemplateService _templateService;
+        private readonly DbConnection _connection;
 
-        public SettingsController(APContext context, IEntityStore entityStore, EntityData entityData, JwtTokenSettings tokenSettings, SignInManager<APUser> signInManager, IServiceProvider provider, IConfigurationRoot configuration, EntityFlattener flattener, UserManager<APUser> userManager, RelevantEntitiesService relevantEntities, CollectionTools collectionTools, TemplateService templateService)
+        public SettingsController(DbConnection connection, IEntityStore entityStore, EntityData entityData, JwtTokenSettings tokenSettings, SignInManager<APUser> signInManager, IServiceProvider provider, IConfigurationRoot configuration, EntityFlattener flattener, UserManager<APUser> userManager, RelevantEntitiesService relevantEntities, CollectionTools collectionTools, TemplateService templateService)
         {
-            _context = context;
+            _connection = connection;
             _entityStore = entityStore;
             _entityData = entityData;
             _tokenSettings = tokenSettings;
@@ -100,10 +103,8 @@ namespace Kroeg.Server.Controllers
         private async Task<BaseModel> _getUserInfo()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _context.Users.FirstOrDefaultAsync(a => a.Id == userId);
-            var actors = await _context.UserActorPermissions.Where(a => a.User == user).Include(a => a.Actor).ToListAsync();
 
-            return new BaseModel { User = user, Actors = actors };
+            throw new NotImplementedException();
         }
 
         [Authorize]
@@ -111,7 +112,7 @@ namespace Kroeg.Server.Controllers
         {
             var data = await _getUserInfo();
             if (data.Actors.Count == 0) return View("NewActor", new NewActorModel() { Menu = data });
-            return View("ShowActor", new EditActorModel { Menu = data, OtherPeople = await _context.UserActorPermissions.Where(a => a.ActorId == data.Actors[0].ActorId).ToListAsync(), Actor = data.Actors[0] });
+            throw new NotImplementedException();
         }
 
         [Authorize, HttpGet("new")]
@@ -129,7 +130,7 @@ namespace Kroeg.Server.Controllers
             if (claims == null || validatedToken.ValidTo < DateTime.UtcNow) return Unauthorized();
 
             var userId = claims.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _context.Users.FirstOrDefaultAsync(a => a.Id == userId);
+            var user = await _connection.QuerySingleOrDefaultAsync<APUser>("select * from \"Users\" where \"Id\" = @Id", new { Id = userId });
             await _signInManager.SignInAsync(user, false);
             return RedirectToActionPermanent("Index");
         }
@@ -167,8 +168,7 @@ namespace Kroeg.Server.Controllers
             var actor = data.Actors.FirstOrDefault(a => a.ActorId == ac.DbId);
             if (actor == null) return await Index();
 
-            return View("ShowActor", new EditActorModel { Menu = data, OtherPeople = await _context.UserActorPermissions.Where(a => a.ActorId == actor.ActorId).ToListAsync(), Actor = actor });
-
+            throw new NotImplementedException();
         }
 
         [Authorize, HttpPost("uploadMedia")]
@@ -272,7 +272,7 @@ namespace Kroeg.Server.Controllers
 
             var stagingStore = new StagingEntityStore(_entityStore);
             var apo = await _flattener.FlattenAndStore(stagingStore, create);
-            var handler = new CreateActorHandler(stagingStore, apo, null, null, User, _collectionTools, _entityData, _context);
+            var handler = new CreateActorHandler(stagingStore, apo, null, null, User, _collectionTools, _entityData, _connection);
             await handler.Handle();
 
             var resultUser = await _entityStore.GetEntity(handler.MainObject.Data["object"].First().Id, false);

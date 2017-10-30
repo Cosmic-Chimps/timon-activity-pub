@@ -9,6 +9,9 @@ using Kroeg.Server.Services;
 using Kroeg.Server.Services.EntityStore;
 using Kroeg.Server.Tools;
 using Kroeg.Server.Salmon;
+using System.Data;
+using Dapper;
+using System.Data.Common;
 
 namespace Kroeg.Server.Middleware.Handlers.ClientToServer
 {
@@ -16,14 +19,14 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
     {
         private readonly CollectionTools _collection;
         private readonly EntityData _entityData;
-        private readonly APContext _context;
+        private readonly DbConnection _connection;
         public string UserOverride { get; set; }
 
-        public CreateActorHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection, EntityData entityData, APContext context) : base(entityStore, mainObject, actor, targetBox, user)
+        public CreateActorHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection, EntityData entityData, DbConnection connection) : base(entityStore, mainObject, actor, targetBox, user)
         {
             _collection = collection;
             _entityData = entityData;
-            _context = context;
+            _connection = connection;
         }
 
         private async Task<APEntity> AddCollection(ASObject entity, string obj, string parent)
@@ -80,13 +83,14 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             await EntityStore.StoreEntity(objectEntity);
 
             var userId = UserOverride ?? User.FindFirst(ClaimTypes.NameIdentifier).Value;
-            _context.UserActorPermissions.Add(new UserActorPermission { UserId = userId, ActorId = objectEntity.DbId, IsAdmin = true });
 
             if (!activityData["actor"].Any())
                 activityData["actor"].Add(ASTerm.MakeId(objectEntity.Id));
 
             MainObject.Data = activityData;
             await EntityStore.StoreEntity(MainObject);
+
+            await _connection.ExecuteAsync("insert into \"UserActorPermissions\" (\"UserId\", \"ActorId\", \"IsAdmin\") values (@UserId, @ActorId, TRUE)", new { UserId = userId, ActorId = objectEntity.DbId });
 
             return true;
         }

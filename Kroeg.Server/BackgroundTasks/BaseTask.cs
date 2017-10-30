@@ -3,6 +3,10 @@ using Newtonsoft.Json;
 using System;
 using System.Threading.Tasks;
 using Kroeg.Server.Models;
+using System.Data;
+using Dapper;
+using System.Transactions;
+using System.Data.Common;
 
 namespace Kroeg.Server.BackgroundTasks
 {
@@ -15,7 +19,7 @@ namespace Kroeg.Server.BackgroundTasks
             EventQueueItem = item;
         }
 
-        public static async Task Go(APContext context, EventQueueItem item, IServiceProvider provider)
+        public static async Task Go(DbConnection connection, EventQueueItem item, IServiceProvider provider)
         {
             var type = Type.GetType("Kroeg.Server.BackgroundTasks." + item.Action);
 
@@ -23,17 +27,24 @@ namespace Kroeg.Server.BackgroundTasks
 
             try
             {
-                await resolved.Go();
-                context.EventQueue.Remove(item);
+                await connection.OpenAsync();
+                using (var trans = connection.BeginTransaction())
+                {
+                    await resolved.Go();
+
+                    trans.Commit();
+                }
+
+                await connection.ExecuteAsync("DELETE from \"EventQueue\" where \"Id\" = @Id", new { Id = item.Id });
             }
             catch(Exception)
             {
                 // failed
                 item.AttemptCount++;
                 item.NextAttempt = resolved.NextTry(item.AttemptCount);
-            }
 
-            await context.SaveChangesAsync();
+                await connection.ExecuteAsync("UPDATE \"EventQueue\" set \"AttemptCount\"=@AttemptCount, \"NextAttempt\"=@NextAttempt where \"Id\" = @Id", new { Attemptcount = item.AttemptCount, NextAttempt = item.NextAttempt, Id = item.Id });
+            }
         }
 
         public virtual DateTime NextTry(int fails)
@@ -48,18 +59,18 @@ namespace Kroeg.Server.BackgroundTasks
     {
         protected T Data;
 
-        public static EventQueueItem Make(T data)
+        public static async Task Make(T data, DbConnection connection, DateTime? nextAttempt = null)
         {
             var type = typeof(TR).FullName.Replace("Kroeg.Server.BackgroundTasks.", "");
 
-            return new EventQueueItem
-            {
-                Action = type,
-                Added = DateTime.Now,
-                AttemptCount = 0,
-                Data = JsonConvert.SerializeObject(data),
-                NextAttempt = DateTime.Now
-            };
+            await connection.ExecuteAsync("insert into \"EventQueue\" (\"Action\", \"Added\", \"Data\", \"NextAttempt\") values (@Action, @Added, @Data, @NextAttempt)",
+                new EventQueueItem
+                {
+                    Action = type,
+                    Added = DateTime.Now,
+                    Data = JsonConvert.SerializeObject(data),
+                    NextAttempt = nextAttempt ?? DateTime.Now
+                });
         }
 
         protected BaseTask(EventQueueItem item)

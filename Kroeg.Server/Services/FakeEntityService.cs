@@ -10,12 +10,12 @@ namespace Kroeg.Server.Services
 {
     public class FakeEntityService
     {
-        private readonly APContext _context;
         private readonly EntityData _configuration;
+        private readonly KeyService _keyService;
 
-        public FakeEntityService(APContext context, EntityData configuration)
+        public FakeEntityService(KeyService keyService, EntityData configuration)
         {
-            _context = context;
+            _keyService = keyService;
             _configuration = configuration;
         }
 
@@ -25,7 +25,7 @@ namespace Kroeg.Server.Services
 
             if (fragment == "key")
             {
-                var key = await _context.GetKey(entity.Id);
+                var key = await _keyService.GetKey(entity.Id);
                 var salm = new MagicKey(key.PrivateKey);
                 var pemData = salm.AsPEM;
 

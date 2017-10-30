@@ -13,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Kroeg.Server.Services;
 
 namespace Kroeg.Server.Middleware.Renderers
 {
@@ -41,10 +42,10 @@ namespace Kroeg.Server.Middleware.Renderers
 
             private AtomEntryParser _entryParser;
             private AtomEntryGenerator _entryGenerator;
-            private APContext _context;
+            private KeyService _keyService;
             internal string _targetUser;
 
-            public SalmonConverter(IEntityStore entityStore, EntityFlattener flattener, AtomEntryParser parser, AtomEntryGenerator generator, SalmonConverterFactory factory, APContext context)
+            public SalmonConverter(IEntityStore entityStore, EntityFlattener flattener, AtomEntryParser parser, AtomEntryGenerator generator, SalmonConverterFactory factory, KeyService keyService)
             {
                 _entityStore = entityStore;
                 _flattener = flattener;
@@ -52,7 +53,7 @@ namespace Kroeg.Server.Middleware.Renderers
 
                 _entryParser = parser;
                 _entryGenerator = generator;
-                _context = context;
+                _keyService = keyService;
             }
 
             public async Task<ASObject> Parse(Stream request)
@@ -73,7 +74,7 @@ namespace Kroeg.Server.Middleware.Renderers
                 response.ContentType = "application/atom+xml";
 
                 var user = await _entityStore.GetEntity(toRender["actor"].Single().Id, false);
-                var key = await _context.GetKey(user.Id);
+                var key = await _keyService.GetKey(user.Id);
                 var magicKey = key != null ? new MagicKey(key.PrivateKey) : MagicKey.Generate();
 
                 var doc = await _entryGenerator.Build(toRender);

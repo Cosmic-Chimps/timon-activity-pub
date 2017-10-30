@@ -11,7 +11,6 @@ namespace Kroeg.Server.Services
 {
     public class ActivityService
     {
-        private readonly APContext _context;
         private readonly TripleEntityStore _entityStore;
 
         private class OriginatingCreateJson
@@ -23,9 +22,8 @@ namespace Kroeg.Server.Services
             public string Object { get; set; }
         }
 
-        public ActivityService(APContext context, TripleEntityStore entityStore)
+        public ActivityService(TripleEntityStore entityStore)
         {
-            _context = context;
             _entityStore = entityStore;
         }
 
@@ -44,15 +42,17 @@ namespace Kroeg.Server.Services
             var objectId = await _entityStore.ReverseAttribute(id, false);
             if (objectId == null) return null;
 
-            var firstResult = await _context.TripleEntities.FirstOrDefaultAsync(a =>
-                a.Triples.Any(b => b.SubjectId == a.IdId && b.PredicateId == rdfType.Value && b.AttributeId == type.Value) &&
-                a.Triples.Any(b => b.SubjectId == a.IdId && b.PredicateId == objectType.Value && b.AttributeId == objectId.Value)
-                );
+            throw new NotImplementedException("oh nooo");
+
+//            var firstResult = await _context.TripleEntities.FirstOrDefaultAsync(a =>
+//                a.Triples.Any(b => b.SubjectId == a.IdId && b.PredicateId == rdfType.Value && b.AttributeId == type.Value) &&
+//                a.Triples.Any(b => b.SubjectId == a.IdId && b.PredicateId == objectType.Value && b.AttributeId == objectId.Value)
+//                );
             
-            if (firstResult == null)
-                return null;
+//            if (firstResult == null)
+//                return null;
             
-            return await _entityStore.GetEntity(firstResult.EntityId);
+//            return await _entityStore.GetEntity(firstResult.EntityId);
         }
     }
 }
