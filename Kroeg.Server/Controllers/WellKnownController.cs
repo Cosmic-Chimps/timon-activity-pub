@@ -95,7 +95,7 @@ namespace Kroeg.Server.Controllers
             if (await result.Content.ReadAsStringAsync() != challenge)
                 return;
 
-            WebsubSubscription subscription = await _connection.QueryFirstOrDefaultAsync<WebsubSubscription>("select * from \"WebsubSubscriptions\" \"Callback\" = @Callback", new { Callback = callback });
+            WebsubSubscription subscription = await _connection.QueryFirstOrDefaultAsync<WebsubSubscription>("select * from \"WebsubSubscriptions\" where \"Callback\" = @Callback", new { Callback = callback });
 
             if (subscription != null)
             {
