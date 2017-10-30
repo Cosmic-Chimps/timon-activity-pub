@@ -11,7 +11,7 @@ namespace Kroeg.Server.Services
 {
     public class ActivityService
     {
-        private readonly TripleEntityStore _entityStore;
+        private readonly RelevantEntitiesService _relevantEntities;
 
         private class OriginatingCreateJson
         {
@@ -22,37 +22,15 @@ namespace Kroeg.Server.Services
             public string Object { get; set; }
         }
 
-        public ActivityService(TripleEntityStore entityStore)
+        public ActivityService(RelevantEntitiesService relevantEntities)
         {
-            _entityStore = entityStore;
+            _relevantEntities = relevantEntities;
         }
 
         public async Task<APEntity>
             DetermineOriginatingCreate(string id)
         {
-            var type = await _entityStore.ReverseAttribute("https://www.w3.org/ns/activitystreams#Create", false);
-            if (type == null) return null;
-            
-            var objectType = await _entityStore.ReverseAttribute("https://www.w3.org/ns/activitystreams#object", false);
-            if (type == null) return null;
-
-            var rdfType = await _entityStore.ReverseAttribute("rdf:type", false);
-            if (type == null) return null;
-
-            var objectId = await _entityStore.ReverseAttribute(id, false);
-            if (objectId == null) return null;
-
-            throw new NotImplementedException("oh nooo");
-
-//            var firstResult = await _context.TripleEntities.FirstOrDefaultAsync(a =>
-//                a.Triples.Any(b => b.SubjectId == a.IdId && b.PredicateId == rdfType.Value && b.AttributeId == type.Value) &&
-//                a.Triples.Any(b => b.SubjectId == a.IdId && b.PredicateId == objectType.Value && b.AttributeId == objectId.Value)
-//                );
-            
-//            if (firstResult == null)
-//                return null;
-            
-//            return await _entityStore.GetEntity(firstResult.EntityId);
+            return (await _relevantEntities.FindRelevantObject("https://www.w3.org/ns/activitystreams#Create", id)).FirstOrDefault();
         }
     }
 }

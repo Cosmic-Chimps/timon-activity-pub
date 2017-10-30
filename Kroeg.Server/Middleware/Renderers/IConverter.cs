@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Kroeg.Server.Models;
 
 namespace Kroeg.Server.Middleware.Renderers
 {
@@ -26,7 +27,7 @@ namespace Kroeg.Server.Middleware.Renderers
     public interface IConverter
     {
         Task<ASObject> Parse(Stream data);
-        Task Render(HttpRequest request, HttpResponse response, ASObject toRender);
+        Task Render(HttpRequest request, HttpResponse response, APEntity toRender);
     }
 
     public static class ConverterHelpers

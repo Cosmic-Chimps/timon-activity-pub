@@ -40,16 +40,18 @@ namespace Kroeg.Server.Tools
             return flattened[mainEntity.Id];
         }
 
-        public async Task<ASObject> Unflatten(IEntityStore store, APEntity entity, int depth = 3, Dictionary<string, APEntity> mapped = null)
+        public async Task<ASObject> Unflatten(IEntityStore store, APEntity entity, int depth = 3, Dictionary<string, APEntity> mapped = null, bool? isOwner = null)
         {
             if (mapped == null)
                 mapped = new Dictionary<string, APEntity>();
 
-            if (entity.Id != null)
+            if (isOwner == null && entity.Id != null)
             {
                 var e = await store.GetEntity(entity.Id, false);
                 if (e?.IsOwner == true) entity.IsOwner = true;
             }
+            else if (isOwner != null)
+                entity.IsOwner = isOwner.Value;
 
             var unflattened = await _unflatten(store, entity, depth, mapped, _configuration.UnflattenRemotely);
 

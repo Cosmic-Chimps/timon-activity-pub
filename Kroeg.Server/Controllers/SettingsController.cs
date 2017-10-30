@@ -198,34 +198,23 @@ namespace Kroeg.Server.Controllers
 
             mainObj.Replace("url", ASTerm.MakePrimitive(uploadUri + fileName));
 
-            if (obj.Type.Contains("https://www.w3.org/ns/activitystreams#Create"))
+            var entity = await _entityStore.GetEntity((string) HttpContext.Items["fullPath"], false);
+            try
             {
-                try
-                {
-                    obj = await handler.Post(HttpContext, (string)HttpContext.Items["fullPath"], obj);
-                }
-                catch (UnauthorizedAccessException e)
-                {
-                    return StatusCode(403, e);
-                }
-                catch (InvalidOperationException e)
-                {
-                    return StatusCode(401, e);
-                }
-
-                if (obj == null)
+                var entOut = await handler.Post(HttpContext, (string)HttpContext.Items["fullPath"], entity, obj);
+                if (entOut == null)
                     return NotFound();
+                obj = await _flattener.Unflatten(_entityStore, entOut);
+                return Content(obj.Serialize().ToString(), "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"");
             }
-            else
+            catch (UnauthorizedAccessException e)
             {
-                obj.Id = null;
-                obj.Replace("attributedTo", ASTerm.MakeId(User.FindFirstValue(JwtTokenSettings.ActorClaim)));
-                obj = (await _flattener.FlattenAndStore(_entityStore, obj)).Data;
+                return StatusCode(403, e);
             }
-
-            obj = await _flattener.Unflatten(_entityStore, APEntity.From(obj, true));
-
-            return Content(obj.Serialize().ToString(), "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"");
+            catch (InvalidOperationException e)
+            {
+                return StatusCode(401, e);
+            }
        }
 
         public class RelevantObjectsModel {

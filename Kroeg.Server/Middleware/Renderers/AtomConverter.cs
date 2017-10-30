@@ -68,11 +68,11 @@ namespace Kroeg.Server.Middleware.Renderers
                 return await _entryParser.Parse(XDocument.Parse(data), _factory._isPost, _targetUser);
             }
 
-            public async Task Render(HttpRequest request, HttpResponse response, ASObject toRender)
+            public async Task Render(HttpRequest request, HttpResponse response, APEntity toRender)
             {
                 response.ContentType = ConverterHelpers.GetBestMatch(_factory.MimeTypes, request.Headers["Accept"]);
 
-                var doc = await _entryGenerator.Build(toRender);
+                var doc = await _entryGenerator.Build(toRender.Data);
                 await response.WriteAsync(doc.ToString());
             }
         }

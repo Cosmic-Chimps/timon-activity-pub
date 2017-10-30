@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Kroeg.Server.Services.EntityStore;
 using System.Data;
 using System.Data.Common;
+using Dapper;
 
 namespace Kroeg.Server.Services
 {
@@ -59,19 +60,14 @@ namespace Kroeg.Server.Services
                 attributeMapping[reverseId.Value] = reverseVal.Value;
             }
 
-/*
-            IQueryable<APTripleEntity> query = _context.TripleEntities;
-            foreach (var item in attributeMapping)
-            {
-                query = query.Where(a => a.Triples.Any(b => b.SubjectId == a.IdId && b.PredicateId == item.Key && b.AttributeId == item.Value));
-            }
+            var miniTables = string.Join(", ", attributeMapping.Select(a => $"attribute_{a.Key} as (SELECT \"SubjectId\" as subj, \"SubjectEntityId\" as subje from \"Triples\" where \"PredicateId\" = {a.Key} and \"AttributeId\" = {a.Value})"));
+
+            var start = $"select a.* from \"TripleEntities\" a where " + string.Join(" and ", attributeMapping.Select(a => $"exists(select 1 from attribute_{a.Key} where subj = a.\"IdId\" and subje = a.\"EntityId\")"));
 
             if (isOwner.HasValue)
-                query = query.Where(a => a.IsOwner == isOwner.Value);
+                start += " and a.\"IsOwner\" = " + (isOwner.Value ? "TRUE" : "FALSE");
 
-            return await _entityStore.GetEntities(await query.Select(a => a.EntityId).ToListAsync());
-            */
-            throw new NotImplementedException("AAAA");
+            return await _entityStore.GetEntities((await _connection.QueryAsync<APTripleEntity>(start)).Select(a => a.EntityId).ToList());
         }
 
         public async Task<List<APEntity>> FindRelevantObject(string authorId, string objectType, string objectId)
@@ -80,6 +76,14 @@ namespace Kroeg.Server.Services
                 ["rdf:type"] = objectType,
                 ["https://www.w3.org/ns/activitystreams#object"] = objectType,
                 ["https://www.w3.org/ns/activitystreams#actor"] = authorId
+            });
+        }
+
+        public async Task<List<APEntity>> FindRelevantObject(string objectType, string objectId)
+        {
+            return await _search(new Dictionary<string, string> {
+                ["rdf:type"] = objectType,
+                ["https://www.w3.org/ns/activitystreams#object"] = objectType
             });
         }
 

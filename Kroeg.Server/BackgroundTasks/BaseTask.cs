@@ -63,7 +63,7 @@ namespace Kroeg.Server.BackgroundTasks
         {
             var type = typeof(TR).FullName.Replace("Kroeg.Server.BackgroundTasks.", "");
 
-            await connection.ExecuteAsync("insert into \"EventQueue\" (\"Action\", \"Added\", \"Data\", \"NextAttempt\") values (@Action, @Added, @Data, @NextAttempt)",
+            await connection.ExecuteAsync("insert into \"EventQueue\" (\"Action\", \"Added\", \"Data\", \"NextAttempt\", \"AttemptCount\") values (@Action, @Added, @Data, @NextAttempt, 0)",
                 new EventQueueItem
                 {
                     Action = type,

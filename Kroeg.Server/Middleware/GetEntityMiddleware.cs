@@ -177,19 +177,20 @@ namespace Kroeg.Server.Middleware
             }
 
             var arguments = context.Request.Query;
-            
+            APEntity entOut = null;
+
             try
             {
                 if (context.Request.Method == "GET" || context.Request.Method == "HEAD" || context.Request.Method == "OPTIONS")
                 {
-                    data = await handler.Get(fullpath, arguments, context);
+                    entOut = await handler.Get(fullpath, arguments, context, targetEntity);
                 }
                 else if (context.Request.Method == "POST" && data != null)
                 {
                     await handler._connection.OpenAsync();
                     using (var transaction = handler._connection.BeginTransaction())
                     {
-                        data = await handler.Post(context, fullpath, data);
+                        entOut = await handler.Post(context, fullpath, targetEntity, data);
                         transaction.Commit();
                     }
                 }
@@ -210,7 +211,7 @@ namespace Kroeg.Server.Middleware
             if (context.Response.HasStarted)
                 return;
 
-            if (data != null)
+            if (entOut != null)
             {
 
                 if (context.Request.Method == "HEAD")
@@ -220,7 +221,7 @@ namespace Kroeg.Server.Middleware
                 }
 
                 if (writeConverter != null)
-                    await writeConverter.Render(context.Request, context.Response, data);
+                    await writeConverter.Render(context.Request, context.Response, entOut);
                 else if (context.Request.ContentType == "application/magic-envelope+xml")
                 {
                     context.Response.StatusCode = 202;
@@ -230,7 +231,7 @@ namespace Kroeg.Server.Middleware
                 {
                     context.Request.Method = "GET";
                     context.Request.Path = "/render";
-                    context.Items["object"] = APEntity.From(data);
+                    context.Items["object"] = entOut;
                     await _next(context);
                 }
                 return;
@@ -275,15 +276,15 @@ namespace Kroeg.Server.Middleware
                 _verifier = verifier;
             }
 
-            internal async Task<ASObject> Get(string url, IQueryCollection arguments, HttpContext context)
+            internal async Task<APEntity> Get(string url, IQueryCollection arguments, HttpContext context, APEntity existing)
             {
                 var userId = _user.FindFirstValue(JwtTokenSettings.ActorClaim);
-                var entity = await _mainStore.GetEntity(url, false);
+                var entity = existing ?? await _mainStore.GetEntity(url, false);
                 if (entity == null) return null;
                 if (entity.Type == "_blocks" && !entity.Data["attributedTo"].Any(a => a.Id == userId)) throw new UnauthorizedAccessException("Blocks are private!");
                 if (entity.Type == "_blocked") throw new UnauthorizedAccessException("This collection is only used internally for optimization reasons");
-                if (entity.Type == "OrderedCollection" || entity.Type == "Collection" || entity.Type.StartsWith("_")) return await _getCollection(entity, arguments);
-                if (entity.IsOwner && _entityData.IsActor(entity.Data)) return entity.Data;
+                if (entity.Type == "OrderedCollection" || entity.Type == "Collection" || entity.Type.StartsWith("_")) return APEntity.From(await _getCollection(entity, arguments), true);
+                if (entity.IsOwner && _entityData.IsActor(entity.Data)) return entity;
                 var audience = DeliveryService.GetAudienceIds(entity.Data);
 
                 if (userId == null && !audience.Contains("https://www.w3.org/ns/activitystreams#Public"))
@@ -296,7 +297,7 @@ namespace Kroeg.Server.Middleware
                     throw new UnauthorizedAccessException("No access");
                 }
 
-                return entity.Data;
+                return entity;
             }
 
             public async Task EventStream(HttpContext context, string fullpath)
@@ -521,10 +522,9 @@ namespace Kroeg.Server.Middleware
                 }
             }
 
-            internal async Task<ASObject> Post(HttpContext context, string fullpath, ASObject @object)
+            internal async Task<APEntity> Post(HttpContext context, string fullpath, APEntity original, ASObject @object)
             {
-                var original = await _mainStore.GetEntity(fullpath, false);
-                 if (!original.IsOwner) return null;
+                if (!original.IsOwner) return null;
 
                 switch (original.Type)
                 {
@@ -556,7 +556,7 @@ namespace Kroeg.Server.Middleware
 
             private static Semaphore _serverToServerMutex = new Semaphore(1, 1);
 
-            public async Task<ASObject> ServerToServer(APEntity inbox, ASObject activity, string subject = null)
+            public async Task<APEntity> ServerToServer(APEntity inbox, ASObject activity, string subject = null)
             {
                 var stagingStore = new StagingEntityStore(_mainStore);
                 var userId = inbox.Data["attributedTo"].Single().Id;
@@ -589,7 +589,7 @@ namespace Kroeg.Server.Middleware
                 }
 
                 if (await _collectionTools.Contains(inbox, id))
-                    return flattened.Data;
+                    return flattened;
 
                 await stagingStore.CommitChanges();
 
@@ -606,7 +606,7 @@ namespace Kroeg.Server.Middleware
                         if (!handled) break;
                     }
 
-                    return flattened.Data;
+                    return flattened;
                 }
                 finally
                 {
@@ -633,7 +633,7 @@ namespace Kroeg.Server.Middleware
                 typeof(WebSubHandler)
             };
 
-            public async Task<ASObject> ClientToServer(APEntity outbox, ASObject activity)
+            public async Task<APEntity> ClientToServer(APEntity outbox, ASObject activity)
             {
                 var stagingStore = new StagingEntityStore(_mainStore);
                 var userId =  outbox.Data["attributedTo"].Single().Id;
@@ -681,7 +681,7 @@ namespace Kroeg.Server.Middleware
                         store = _mainStore;
                 }
 
-                return flattened.Data;
+                return flattened;
             }
         }
     }

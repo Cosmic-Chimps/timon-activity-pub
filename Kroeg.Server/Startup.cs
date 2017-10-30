@@ -26,6 +26,7 @@ using Microsoft.AspNetCore.Identity;
 using Npgsql;
 using System.Data;
 using System.Data.Common;
+using Npgsql.Logging;
 
 namespace Kroeg.Server
 {
@@ -49,7 +50,10 @@ namespace Kroeg.Server
             // Add framework services.
             services.AddMvc();
 
-            services.AddTransient<DbConnection>((svc) => new NpgsqlConnection(Configuration.GetConnectionString("Default")));
+            NpgsqlLogManager.Provider = new ConsoleLoggingProvider(NpgsqlLogLevel.Debug);
+            NpgsqlLogManager.IsParameterLoggingEnabled = true;
+
+            services.AddScoped<DbConnection>((svc) => new NpgsqlConnection(Configuration.GetConnectionString("Default")));
 
             services.AddTransient<IUserStore<APUser>, KroegUserStore>();
             services.AddTransient<IUserPasswordStore<APUser>, KroegUserStore>();

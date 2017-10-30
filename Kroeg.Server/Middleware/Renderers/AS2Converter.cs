@@ -51,7 +51,7 @@ namespace Kroeg.Server.Middleware.Renderers
                 return ASObject.Parse(data, true);
             }
 
-            public async Task Render(HttpRequest request, HttpResponse response, ASObject toRender)
+            public async Task Render(HttpRequest request, HttpResponse response, APEntity toRender)
             {
                 response.ContentType = ConverterHelpers.GetBestMatch(_factory.MimeTypes, request.Headers["Accept"]);
                 if (toRender.Type.Contains("Tombstone"))
@@ -66,7 +66,7 @@ namespace Kroeg.Server.Middleware.Renderers
                 response.Headers.Add("Access-Control-Allow-Origin", "*");
 
                 var depth = Math.Min(int.Parse(request.Query["depth"].FirstOrDefault() ?? "3"), 5);
-                var unflattened = await _flattener.Unflatten(_entityStore, APEntity.From(toRender), depth);
+                var unflattened = await _flattener.Unflatten(_entityStore, toRender, depth, isOwner: toRender.IsOwner);
 
                 await response.WriteAsync(unflattened.Serialize(true).ToString());
             }

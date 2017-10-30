@@ -56,33 +56,33 @@ namespace Kroeg.Server.Services
             "https://www.w3.org/ns/activitystreams#actor"
         };
 
-        private async Task<IQueryable<CollectionItem>> _filterAudience(string user, bool isOwner, IQueryable<CollectionItem> entities, int count)
+        private async Task<IEnumerable<CollectionItem>> _filterAudience(string user, bool isOwner, int dbId, int count, int under = int.MaxValue)
         {
-            throw new NotImplementedException();
+            var postfix = "order by \"CollectionItemId\" " + (count > 0 ? $"limit {count}" : "");
             if (isOwner)
-                if (count > 0)
-                    return entities.Take(count);
-                else
-                    return entities;
-            var ids = new List<int>();
-            foreach (var audienceId in _audienceIds)
-            {
-                var id = await _entityStore.ReverseAttribute(audienceId, false);
-                if (id.HasValue)
-                    ids.Add(id.Value);
-            }
+                return await _connection.QueryAsync<CollectionItem>("select * from \"CollectionItems\" WHERE \"CollectionItemId\" < @Under and \"CollectionId\" = @DbId " + postfix, new { Under = under, DbId = dbId });
 
             int? userId = null;
             if (user!= null) userId = await _entityStore.ReverseAttribute(user, false);
-            var res = entities;
             if (userId == null)
-                res = entities.Where(a => a.IsPublic);
-            else
-                res = entities.Where(a => a.IsPublic || a.Element.Triples.Any(b => ids.Contains(b.PredicateId) && b.SubjectId == a.Element.IdId && b.AttributeId == userId));
+                return await _connection.QueryAsync<CollectionItem>("select * from \"CollectionItems\" WHERE \"CollectionItemId\" < @Under and \"IsPublic\" = TRUE and \"CollectionId\" = @DbId ", new { Under = under, DbId = dbId });
 
-            if (count > 0)
-                return res.Take(count);
-            return res;
+             var ids = new List<int>();
+             foreach (var audienceId in _audienceIds)
+             {
+                 var id = await _entityStore.ReverseAttribute(audienceId, false);
+                 if (id.HasValue)
+                     ids.Add(id.Value);
+             }
+
+
+// select c.* from "CollectionItems" c, "TripleEntities" e WHERE e."EntityId" = c."ElementId" and "CollectionItemId" < @Under and exists(select 1 from "Triples" where "PredicateId" = any(@Ids) and "AttributeId" = @UserId and "SubjectId" = e."IdId" and "SubjectEntityId" = e."EntityId" limit 1)
+            return await _connection.QueryAsync<CollectionItem>(
+                "select c.* from \"CollectionItems\" c, \"TripleEntities\" e WHERE e.\"EntityId\" = c.\"ElementId\" and \"CollectionItemId\" < @Under and \"CollectionId\" = @DbId"
+                + " and exists(select 1 from \"Triples\" where \"PredicateId\" = any(@Ids) and \"AttributeId\" = @UserId and \"SubjectId\" = e.\"IdId\" and \"SubjectEntityId\" = e.\"EntityId\" limit 1) "
+                 + "order by c.\"CollectionItemId\" " + (count > 0 ? $"limit {count}" : ""),
+                 new { Under = under, Ids = ids, UserId = userId.Value, DbId = dbId }
+            );
         }
 
         public class EntityCollectionItem {
@@ -98,12 +98,8 @@ namespace Kroeg.Server.Services
             if (entity != null && entity.Data["attributedTo"].Any(a => a.Id == user)) isOwner = true;
 
 
-            throw new NotImplementedException();
-//            IQueryable<CollectionItem> data = _context.CollectionItems.Where(a => a.CollectionId == entity.DbId && a.CollectionItemId < fromId).OrderByDescending(a => a.CollectionItemId);
-//            data = await _filterAudience(user, isOwner, data, count);
-
-//            var collectionItems = await data.ToListAsync();
-//            return (await _entityStore.GetEntities(collectionItems.Select(a => a.ElementId).ToList())).Zip(collectionItems, (a, b) => new EntityCollectionItem { CollectionItemId = b.CollectionItemId, Entity = a}).ToList();
+            var entities = await _filterAudience(user, isOwner, entity.DbId, count, fromId);
+            return (await _entityStore.GetEntities(entities.Select(a => a.ElementId).ToList())).Zip(entities, (a, b) => new EntityCollectionItem { CollectionItemId = b.CollectionItemId, Entity = a }).ToList();
         }
 
         public async Task<List<EntityCollectionItem>> GetAll(string id)
@@ -112,13 +108,8 @@ namespace Kroeg.Server.Services
             var user = _getUser();
             var isOwner = entity != null && entity.Data["attributedTo"].Any(a => a.Id == user);
 
-            throw new NotImplementedException(); /*
-            IQueryable<CollectionItem> list = _context.CollectionItems.Where(a => a.CollectionId == entity.DbId).OrderByDescending(a => a.CollectionItemId);
-            list = await _filterAudience(user, isOwner, list, -1);
-
-            var collectionItems = await list.ToListAsync();
-            return (await _entityStore.GetEntities(collectionItems.Select(a => a.ElementId).ToList())).Zip(collectionItems, (a, b) => new EntityCollectionItem { CollectionItemId = b.CollectionItemId, Entity = a}).ToList();
-            */
+            var entities = await _filterAudience(user, isOwner, entity.DbId, -1);
+            return (await _entityStore.GetEntities(entities.Select(a => a.ElementId).ToList())).Zip(entities, (a, b) => new EntityCollectionItem { CollectionItemId = b.CollectionItemId, Entity = a }).ToList();
         }
 
         public async Task<List<APEntity>> CollectionsContaining(string containId, string type = null)

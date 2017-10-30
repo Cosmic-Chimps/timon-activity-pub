@@ -39,6 +39,8 @@ namespace Kroeg.Server.Services
                 ""Uri"" text not null
             );");
 
+            _connection.Execute(@"create index on ""Attributes""(""Uri"")");
+
             _connection.Execute(@"create table ""TripleEntities"" (
                 ""EntityId"" serial primary key,
                 ""IdId"" int references ""Attributes""(""AttributeId""),
@@ -46,6 +48,8 @@ namespace Kroeg.Server.Services
                 ""Updated"" timestamp,
                 ""IsOwner"" boolean
             )");
+
+            _connection.Execute(@"create index on ""TripleEntities""(""IdId"")");
 
             _connection.Execute(@"create table ""Triples"" (
                 ""TripleId"" serial primary key,
@@ -57,12 +61,17 @@ namespace Kroeg.Server.Services
                 ""Object"" text
             );");
 
+            _connection.Execute(@"create index on ""Triples""(""SubjectEntityId"")");
+
             _connection.Execute(@"create table ""CollectionItems"" (
                 ""CollectionItemId"" serial primary key,
                 ""CollectionId"" int not null references ""TripleEntities""(""EntityId""),
                 ""ElementId"" int not null references ""TripleEntities""(""EntityId""),
                 ""IsPublic"" boolean
             );");
+
+            _connection.Execute(@"create index on ""CollectionItems""(""CollectionId"")");
+            _connection.Execute(@"create index on ""CollectionItems""(""ElementId"")");
 
             _connection.Execute(@"create table ""UserActorPermissions"" (
                 ""UserActorPermissionId"" serial primary key,
@@ -85,6 +94,8 @@ namespace Kroeg.Server.Services
                 ""EntityId"" int not null references ""TripleEntities""(""EntityId""),
                 ""PrivateKey"" text not null
             );");
+
+            _connection.Execute(@"create index on ""SalmonKeys""(""EntityId"")");
 
             _connection.Execute(@"create table ""WebsubSubscriptions"" (
                 ""Id"" serial primary key,

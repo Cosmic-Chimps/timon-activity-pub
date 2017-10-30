@@ -69,15 +69,15 @@ namespace Kroeg.Server.Middleware.Renderers
                 return entry;
             }
 
-            public async Task Render(HttpRequest request, HttpResponse response, ASObject toRender)
+            public async Task Render(HttpRequest request, HttpResponse response, APEntity toRender)
             {
                 response.ContentType = "application/atom+xml";
 
-                var user = await _entityStore.GetEntity(toRender["actor"].Single().Id, false);
+                var user = await _entityStore.GetEntity(toRender.Data["actor"].Single().Id, false);
                 var key = await _keyService.GetKey(user.Id);
                 var magicKey = key != null ? new MagicKey(key.PrivateKey) : MagicKey.Generate();
 
-                var doc = await _entryGenerator.Build(toRender);
+                var doc = await _entryGenerator.Build(toRender.Data);
                 var enveloped = new MagicEnvelope(doc.ToString(), "application/atom+xml", magicKey);
                 await response.WriteAsync(enveloped.Build().ToString());
             }
