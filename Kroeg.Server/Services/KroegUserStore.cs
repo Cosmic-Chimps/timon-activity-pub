@@ -19,7 +19,7 @@ namespace Kroeg.Server.Services
 
         public async Task<IdentityResult> CreateAsync(APUser user, CancellationToken cancellationToken)
         {
-            await _connection.ExecuteAsync("insert into \"Users\" (\"Id\", \"Username\", \"Email\", \"PasswordHash\") values (@Id, @UserName, @Email, @PasswordHash)", user);
+            await _connection.ExecuteAsync("insert into \"Users\" (\"Id\", \"Username\", \"Email\", \"PasswordHash\", \"NormalisedUsername\") values (@Id, @Username, @Email, @PasswordHash, @NormalisedUsername)", user);
 
             return IdentityResult.Success;
         }
@@ -29,7 +29,7 @@ namespace Kroeg.Server.Services
             await _connection.ExecuteAsync("delete from \"Users\" where \"Id\" = @Id", new { Id = user.Id });
             return IdentityResult.Success;
         }
-
+ 
         public async Task<APUser> FindByIdAsync(string userId, CancellationToken cancellationToken)
         {
             return await _connection.QuerySingleOrDefaultAsync<APUser>("select * from \"Users\" where \"Id\" = @Id limit 1", new  { Id = userId });
