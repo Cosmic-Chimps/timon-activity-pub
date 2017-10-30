@@ -3,7 +3,6 @@ using Newtonsoft.Json.Linq;
 namespace Kroeg.Server {
     public class JsonLDConfig {
         public static JArray Context => new JArray(
-            "https://www.w3.org/ns/activitystreams-history/v1.8",
             "https://w3id.org/security/v1",
             new JObject { // stuff Mastodon defines:
                 // AS2 extensions

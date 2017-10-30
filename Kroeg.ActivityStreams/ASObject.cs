@@ -66,7 +66,7 @@ namespace Kroeg.ActivityStreams
             var ser = new JsonTextReader(new StringReader(obj));
             ser.DateParseHandling = DateParseHandling.None;
             var jobj = JObject.Load(ser);
-            if (impliedContext && jobj["@context"] == null) jobj["@context"] = _context;
+            if (impliedContext && jobj["@context"] == null) jobj["@context"] = new JArray("https://www.w3.org/ns/activitystreams", _context);
             return Parse(_api.Expand(jobj).Result);
         }
 
@@ -123,7 +123,7 @@ namespace Kroeg.ActivityStreams
             if (compact)
             {
                 newObject = (JObject) _api.CompactExpanded(_ldContext, newObject);
-                if (addContext) newObject["@context"] = _contextUrl;
+                if (addContext) newObject["@context"] = new JArray("https://www.w3.org/ns/activitystreams", _contextUrl);
             }
 
             return newObject;
