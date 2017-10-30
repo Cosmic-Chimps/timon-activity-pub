@@ -183,7 +183,7 @@ namespace Kroeg.Server
             app.ApplicationServices.GetRequiredService<BackgroundTaskQueuer>(); // kickstart background tasks!
 
             var sevc = app.ApplicationServices.GetRequiredService<EntityData>();
-            await ActivityStreams.ASObject.SetContext(JsonLDConfig.Context, sevc.BaseUri + "render/context");
+            await ActivityStreams.ASObject.SetContext(JsonLDConfig.GetContext(true), sevc.BaseUri + "render/context");
         }
     }
 }

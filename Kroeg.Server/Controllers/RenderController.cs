@@ -26,7 +26,7 @@ namespace Kroeg.Server.Controllers
         [HttpGet("context")]
         public IActionResult GetContext()
         {
-            return Content(new JObject { ["@context"] = JsonLDConfig.Context }.ToString(), "application/ld+json");
+            return Content(new JObject { ["@context"] = JsonLDConfig.GetContext(false) }.ToString(), "application/ld+json");
         }
 
         [HttpGet("remote")]
