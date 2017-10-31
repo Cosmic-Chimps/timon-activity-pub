@@ -583,7 +583,7 @@ namespace Kroeg.Server.Middleware
                 if (user.Data["blocks"].Any())
                 {
                     var blocks = await _mainStore.GetEntity(user.Data["blocks"].First().Id, false);
-                    var blocked = await _mainStore.GetEntity(blocks.Data["_blocked"].First().Id, false);
+                    var blocked = await _mainStore.GetEntity(blocks.Data["blocked"].First().Id, false);
                     if (await _collectionTools.Contains(blocked, sentBy))
                         throw new UnauthorizedAccessException("You are blocked.");
                 }

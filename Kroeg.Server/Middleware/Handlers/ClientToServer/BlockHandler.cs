@@ -30,7 +30,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             var blockscollection = await EntityStore.GetEntity(Actor.Data["blocks"].First().Id, false);
             await _collection.AddToCollection(blockscollection, MainObject);
 
-            var blockedcollection = await EntityStore.GetEntity(blockscollection.Data["_blocked"].First().Id, false);
+            var blockedcollection = await EntityStore.GetEntity(blockscollection.Data["blocked"].First().Id, false);
             await _collection.AddToCollection(blockedcollection, entity);
 
             return true;

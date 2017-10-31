@@ -29,7 +29,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             _connection = connection;
         }
 
-        private async Task<APEntity> AddCollection(ASObject entity, string obj, string parent)
+        private async Task<APEntity> AddCollection(ASObject entity, string obj, string parent, string store = null)
         {
             var collection = await _collection.NewCollection(EntityStore, null, "_" + obj, parent);
             var data = collection.Data;
@@ -38,7 +38,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
 
             await EntityStore.StoreEntity(collection);
 
-            entity.Replace(obj, ASTerm.MakeId(collection.Id));
+            entity.Replace(store ?? obj, ASTerm.MakeId(collection.Id));
             return collection;
         }
 
@@ -67,10 +67,10 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             await AddCollection(objectData, "liked", id);
 
             var blocks = await AddCollection(objectData, "blocks", id);
-            var blocked = await _collection.NewCollection(EntityStore, null, "_blocked", blocks.Id);
+            var blocked = await _collection.NewCollection(EntityStore, null, "blocked", blocks.Id);
 
             var blocksData = blocks.Data;
-            blocksData["kroeg:_blocked"].Add(ASTerm.MakeId(blocked.Id));
+            blocksData["blocked"].Add(ASTerm.MakeId(blocked.Id));
             blocks.Data = blocksData;
 
             if (!objectData["manuallyApprovesFollowers"].Any())
