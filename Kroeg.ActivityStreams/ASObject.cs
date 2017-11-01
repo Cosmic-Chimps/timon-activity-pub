@@ -34,6 +34,7 @@ namespace Kroeg.ActivityStreams
         private static async Task<JObject> _resolve(string uri)
         {
             if (_objectStore.ContainsKey(uri)) return _objectStore[uri];
+            if (uri == _contextUrl) return new JObject { ["@context"] = _context };
 
             var hc = new HttpClient();
             hc.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/ld+json"));
@@ -66,7 +67,7 @@ namespace Kroeg.ActivityStreams
             var ser = new JsonTextReader(new StringReader(obj));
             ser.DateParseHandling = DateParseHandling.None;
             var jobj = JObject.Load(ser);
-            if (impliedContext && jobj["@context"] == null) jobj["@context"] = new JArray("https://www.w3.org/ns/activitystreams", _context);
+            if (impliedContext && jobj["@context"] == null) jobj["@context"] = new JArray("https://www.w3.org/ns/activitystreams", _contextUrl);
             return Parse(_api.Expand(jobj).Result);
         }
 
