@@ -74,7 +74,7 @@ namespace Kroeg.Server.Tools
             "https://www.w3.org/ns/activitystreams#following", "https://www.w3.org/ns/activitystreams#followers",
             "https://www.w3.org/ns/activitystreams#partOf", "https://www.w3.org/ns/activitystreams#jwks",
             "https://www.w3.org/ns/activitystreams#uploadMedia", "https://puckipedia.com/kroeg/ns#settingsEndpoint",
-            "https://puckipedia.com/kroeg/ns#relevantObjects",
+            "https://puckipedia.com/kroeg/ns#relevantObjects"
         };
 
         private static readonly HashSet<string> UnflattenIfOwner = new HashSet<string>
@@ -136,8 +136,7 @@ namespace Kroeg.Server.Tools
 
         private static HashSet<string> _avoidFlatteningTypes = new HashSet<string> {
             "https://www.w3.org/ns/activitystreams#OrderedCollection", "https://www.w3.org/ns/activitystreams#Collection",
-            "OrderedCollection", "Collection",
-            "_replies", "_likes", "_shares", "_:LazyLoad"
+            "OrderedCollection", "Collection"
         };
 
         private async Task<ASObject> _unflatten(IEntityStore store, APEntity entity, int depth, IDictionary<string, APEntity> alreadyMapped, bool remote)
@@ -168,7 +167,7 @@ namespace Kroeg.Server.Tools
                     if (alreadyMapped.ContainsKey(id)) continue;
 
                     var obj = await store.GetEntity(id, false);
-                    if (obj == null || _avoidFlatteningTypes.Contains(obj.Type) || (!remote && !obj.IsOwner)) continue;
+                    if (obj == null || _avoidFlatteningTypes.Contains(obj.Type) || obj.Type.StartsWith("_") || (!remote && !obj.IsOwner)) continue;
                     value.Primitive = null;
                     value.Id = null;
                     value.SubObject = await _unflatten(store, obj, depth - 1, alreadyMapped, remote);
