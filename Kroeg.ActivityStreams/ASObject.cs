@@ -68,16 +68,7 @@ namespace Kroeg.ActivityStreams
             var jobj = JObject.Load(ser);
             if (impliedContext && jobj["@context"] == null)
             {
-                if (_context.Type != JTokenType.Array)
-                    jobj["@context"] = new JArray("https://www.w3.org/ns/activitystreams", _context);
-                else
-                {
-                    var narr = new JArray("https://www.w3.org/ns/activitystreams");
-                    foreach (var item in (JArray) _context)
-                        narr.Add(item);
-
-                    jobj["@context"] = narr;
-                }
+                jobj["@context"] = _context;
             }
             return Parse(_api.Expand(jobj).Result);
         }

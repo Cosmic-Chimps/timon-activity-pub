@@ -81,10 +81,36 @@ export class EntityStore {
         handler.items = {};
     }
 
+    private static _equals(a: ASObject, b: ASObject) {
+        let prevKeys = Object.getOwnPropertyNames(a);
+        let newKeys = Object.getOwnPropertyNames(b);
+        if (prevKeys.length != newKeys.length)
+            return false;
+
+        for (let key of prevKeys) {
+            if (newKeys.indexOf(key) == -1) return false;
+            if (Array.isArray(a[key]) != Array.isArray(b[key])) return false;
+            if (Array.isArray(a[key])) {
+                if (a[key].length != b[key].length) return false;
+
+                for (let i = 0; i < a[key].length; i++) {
+                    if (a[key][i] != b[key][i]) return false;
+                }
+            } else {
+                if (a[key] != b[key]) return false;
+            }
+        }
+
+        return true;
+    }
+
     private _addToCache(id: string, obj: ASObject) {
         let prev: ASObject = undefined
         if (id in this._cache)
             prev = this._cache[id];
+
+        if (prev !== undefined && EntityStore._equals(prev, obj))
+            return;
 
         this._cache[id] = obj;
 
@@ -123,6 +149,7 @@ export class EntityStore {
         let data = await this.session.getObject(id);
         let context = {"@context": ["https://www.w3.org/ns/activitystreams", window.location.origin + "/render/context"] };
         let flattened = await processor.flatten(data, context as any, { documentLoader: loadDocument }) as any;
+        console.log(flattened);
 
         for (let item of flattened["@graph"]) {
             this._addToCache(item["id"], item);

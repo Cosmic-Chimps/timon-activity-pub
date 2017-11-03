@@ -3,6 +3,7 @@ import { TemplateService, TemplateRenderer } from "./TemplateService";
 import { EntityStore } from "./EntityStore";
 import { RenderHost } from "./RenderHost";
 import { SessionObjects } from "./SessionObjects";
+import { SubRenderhost } from "./Components/SubRenderhost";
 
 let statusUpdate: HTMLSpanElement = document.getElementById("navbar-js-error");
 document.addEventListener("error", (e) => {
@@ -96,7 +97,7 @@ export class Kroeg {
         if (target == null) return;
 
         let link = target as HTMLAnchorElement;
-        if (link.href.length == 0 || link.href.startsWith("javascript:") || "nav" in link.dataset) return;
+        if (link.href.length == 0 || link.href.startsWith("javascript:") || link.dataset["open"] == "ext") return;
 
         e.preventDefault();
         e.stopPropagation();
@@ -104,8 +105,19 @@ export class Kroeg {
         if (this._isRemote(href)) {
             href = window.location.toString().split('#')[0] + "#id=" + link.href;
         }
-        window.history.pushState({id: link.href}, document.title, href);
-        this._update(link.href);
+        let elem = link.parentElement;
+        if (link.dataset["open"] == "renderhost")
+            while (elem != null && !SubRenderhost.RenderhostMap.has(elem)) {
+                elem = elem.parentElement;
+            }
+
+        console.log(elem);
+        if (elem == null || link.dataset["open"] != "renderhost") {
+            window.history.pushState({id: link.href}, document.title, href);
+            this._update(link.href);
+        } else {
+            SubRenderhost.RenderhostMap.get(elem).navigate(link.href);
+        }
     }
 
 

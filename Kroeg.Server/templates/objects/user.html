@@ -1,3 +1,4 @@
 <div>
-    <div x-render="collection/full" x-render-id="AS.get('outbox')[0]"></div>
+    <div x-render="objects/sub/user_info"></div>
+    <div data-component="renderhost" data-template="collection/full" data-id="{{AS.get('outbox')[0]}}"></div>
 </div>

@@ -6,6 +6,7 @@ import { IComponent, IComponentType } from "./IComponent";
 import * as UserPicker from "./Components/UserPicker";
 import * as Wysiwyg from "./Components/Wysiwyg";
 import * as Form from "./Components/Form";
+import * as SubRenderhost from "./Components/SubRenderhost";
 
 export class RenderHost {
     private _lastResult: RenderResult;
@@ -20,7 +21,8 @@ export class RenderHost {
     private static _components: {[type: string]: IComponentType } = {
         userpicker: UserPicker.UserPicker,
         wysiwyg: Wysiwyg.Wysiwyg,
-        form: Form.Form
+        form: Form.Form,
+        renderhost: SubRenderhost.SubRenderhost
     };
 
     public static registerComponent(name: string, type: IComponentType) {
@@ -33,7 +35,7 @@ export class RenderHost {
     public get template(): string { return this._template; }
     public set template(value: string) { this._template = value; this.render(); }
 
-    constructor(private renderer: TemplateRenderer, private store: EntityStore, id: string, template: string, dom?: HTMLElement, private _parent?: RenderHost) {
+    constructor(public renderer: TemplateRenderer, private store: EntityStore, id: string, template: string, dom?: HTMLElement, private _parent?: RenderHost) {
         this._dom = dom != null ? dom : document.createElement("div");
         this._id = id;
         this._template = template;

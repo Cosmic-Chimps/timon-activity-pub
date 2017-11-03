@@ -219,6 +219,32 @@ namespace Kroeg.Server.Services.Template
                 if (objData != null)
                     return await _parseTemplate(template, entityStore, objData, regs, doc);
             }
+            
+            if (item.Arguments.ContainsKey("data-component") && item.Arguments["data-component"][0].Data == "renderhost" && parse)
+            {
+                var template = item.Arguments["data-template"][0].Data;
+                string id = null;
+                ASObject objData = null;
+
+                var res = _parse(item.Arguments["data-id"][0].Data, data, regs);
+                if (res is ASObject) objData = (ASObject) res;
+                else id = (string) res;
+
+                if (objData == null && data.Id == id)
+                    objData = data;
+                else if (objData == null)
+                {
+                    APEntity obj = await entityStore.GetEntity(id, true);
+                    if (obj != null)
+                    {
+                        regs.UsedEntities[id] = obj;
+                        objData = obj.Data;
+                    }
+                }
+
+                if (objData != null)
+                    return await _parseTemplate(template, entityStore, objData, regs, doc);
+            }
 
             var content = new StringBuilder();
 

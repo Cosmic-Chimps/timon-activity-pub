@@ -1,6 +1,7 @@
 import { EntityStore } from "./EntityStore";
 import * as AS from "./AS";
 import { Session } from './Session';
+import * as twemoji from "twemoji";
 
 export enum TemplateItemType {
     Element = 0,
@@ -108,6 +109,7 @@ class RendererInfo {
         let doc = document.createElement("div");
         doc.insertAdjacentHTML('beforeend', data);
         this._clean(doc);
+        twemoji.parse(doc);
         return doc.innerHTML;
     }
 }
@@ -202,6 +204,7 @@ export class TemplateRenderer {
         if (!render) return element;
 
         if ("data-component" in item.arguments) {
+            console.log(element, item.arguments["data-component"]);
             renderResult.componentHandles.push(element);
         }
 

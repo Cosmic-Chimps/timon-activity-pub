@@ -1,13 +1,9 @@
-<div>
-    <div x-render="objects/sub/user_info" x-render-id="AS.take('attributedTo')" x-if="AS.has('attributedTo')"></div>
-
-    <div class="list-group">
-        <div class="list-group-item" x-for-in="AS.get('orderedItems')">
-            <div x-render="objects/activities/activity" x-render-id="item"></div>
-        </div>
-        <div class="list-group-item" x-if="AS.has('next') || AS.has('prev')">
-            <a class="btn btn-default" href="{{AS.take('prev')}}">&laquo; Previous</a>
-            <a class="btn btn-default" href="{{AS.take('next')}}">Next &raquo;</a>
-        </div>
+<div class="list-group">
+    <div class="list-group-item" x-for-in="AS.get('orderedItems')">
+        <div x-render="objects/activities/activity" x-render-id="item"></div>
+    </div>
+    <div class="list-group-item" x-if="AS.has('next') || AS.has('prev')">
+        <a class="btn btn-default" href="{{AS.take('prev')}}" data-open="renderhost">&laquo; Previous</a>
+        <a class="btn btn-default" href="{{AS.take('next')}}" data-open="renderhost">Next &raquo;</a>
     </div>
 </div>
