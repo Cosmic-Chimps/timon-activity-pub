@@ -85,11 +85,12 @@ namespace Kroeg.ActivityStreams
                 else
                 {
                     if (((JArray)kv.Value).Count == 1) {
-                        var ar = (JObject) ((JArray) kv.Value)[0];
-                        if (ar["@list"] != null) {
-                            a._terms.Add(kv.Key, (ar["@list"]).Select(b => ASTerm.Parse((JObject) b)).ToList());
+                        var ar = ((JArray) kv.Value)[0];
+                        if (ar.Type == JTokenType.Object && ((JObject)ar)["@list"] != null) {
+                            a._terms.Add(kv.Key, (((JObject)ar)["@list"]).Select(b => ASTerm.Parse((JObject) b)).ToList());
                             continue;
-                        }
+                        } else if (ar.Type == JTokenType.Null)
+                            continue;
                     }
                     a._terms.Add(kv.Key, kv.Value.Select(b => ASTerm.Parse((JObject) b)).ToList());
                 }

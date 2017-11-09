@@ -145,6 +145,7 @@ namespace Kroeg.Server.Services.EntityStore
             stopwatch.Start();
             var subjects = triples.GroupBy(a => a.SubjectId).ToDictionary(a => a.Key, a => a);
             Dictionary<int, ASObject> objects = subjects.ToDictionary(a => a.Key, a => new ASObject { Id = _attributeMapping[a.Key] });
+            var listItems = new HashSet<int>();
 
             foreach (var obj in objects)
             {
@@ -161,15 +162,22 @@ namespace Kroeg.Server.Services.EntityStore
                     var term = new ASTerm();
                     var predicateUrl = _attributeMapping[triple.PredicateId];
 
-                    if (triple.TypeId.HasValue)
-                        term.Type = _attributeMapping[triple.TypeId.Value];
+                    if (triple.AttributeId.HasValue && objects.ContainsKey(triple.AttributeId.Value))
+                        term.SubObject = objects[triple.AttributeId.Value];
+                    else {
+                        if (triple.TypeId.HasValue)
+                            term.Type = _attributeMapping[triple.TypeId.Value];
 
-                    if (triple.AttributeId.HasValue)
-                        term.Id = _attributeMapping[triple.AttributeId.Value];
+                        if (triple.AttributeId.HasValue)
+                            term.Id = _attributeMapping[triple.AttributeId.Value];
 
-                    term.Primitive = _tripleToJson(triple.Object, term.Type);
-                    if (_defaultTypes.Contains(term.Type))
-                        term.Type = null;
+                        term.Primitive = _tripleToJson(triple.Object, term.Type);
+                        if (_defaultTypes.Contains(term.Type))
+                            term.Type = null;
+
+                        if (term.Id != null && predicateUrl == "rdf:rest")
+                            listItems.Add(triple.SubjectId);
+                    }
 
 
                     result[predicateUrl].Add(term);

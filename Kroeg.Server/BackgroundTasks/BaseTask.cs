@@ -27,7 +27,6 @@ namespace Kroeg.Server.BackgroundTasks
 
             try
             {
-                await connection.OpenAsync();
                 using (var trans = connection.BeginTransaction())
                 {
                     await resolved.Go();
@@ -37,8 +36,9 @@ namespace Kroeg.Server.BackgroundTasks
 
                 await connection.ExecuteAsync("DELETE from \"EventQueue\" where \"Id\" = @Id", new { Id = item.Id });
             }
-            catch(Exception)
+            catch(Exception e)
             {
+                Console.WriteLine(e);
                 // failed
                 item.AttemptCount++;
                 item.NextAttempt = resolved.NextTry(item.AttemptCount);

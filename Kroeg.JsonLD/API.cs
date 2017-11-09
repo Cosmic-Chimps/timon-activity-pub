@@ -767,7 +767,7 @@ namespace Kroeg.JsonLD
                     }
                     else
                     {
-                        list.Add(reference);
+                        ((JArray)list["@list"]).Add(reference);
                     }
                 }
 
@@ -928,6 +928,7 @@ namespace Kroeg.JsonLD
                 var rdfObject = _objectToRdf(item);
                 if (rdfObject != null) listTriples.Add(new Triple { Subject = subject, Predicate = "rdf:first", Object = rdfObject.Object });
                 var rest = (i < list.Count - 1) ? bnodes[i + 1] : "rdf:nil";
+                i++;
                 listTriples.Add(new Triple { Subject = subject, Predicate = "rdf:rest", Object = new Triple.TripleObject { LexicalForm = rest } });
             }
 

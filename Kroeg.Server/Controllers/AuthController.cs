@@ -152,7 +152,7 @@ namespace Kroeg.Server.Controllers
             if (entity == null) return NotFound();
 
             var unflattened = await _entityFlattener.Unflatten(_entityStore, entity);
-            return Content(unflattened.Serialize().ToString(), "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"");
+            return Content(unflattened.Serialize(true).ToString(), "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"");
         }
 
         [HttpPost("login"), ValidateAntiForgeryToken]
