@@ -48,10 +48,19 @@ export interface ExpandOptions {
   documentLoader?: DocumentLoader;
 }
 
+export interface IIdentifierIssuer {
+  clone(): this;
+  getId(old?: string): string;
+  hasId(id: string): boolean;
+}
+
+export const IdentifierIssuer: new (prefix: string) => IIdentifierIssuer;
+
 export interface FlattenOptions {
   base?: string;
   expandContext?: any;
   documentLoader?: DocumentLoader;
+  issuer?: IIdentifierIssuer;
 }
 
 export interface FrameOptions {

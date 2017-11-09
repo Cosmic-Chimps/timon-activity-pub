@@ -148,7 +148,7 @@ export class EntityStore {
         
         let data = await this.session.getObject(id);
         let context = {"@context": ["https://www.w3.org/ns/activitystreams", window.location.origin + "/render/context"] };
-        let flattened = await processor.flatten(data, context as any, { documentLoader: loadDocument }) as any;
+        let flattened = await processor.flatten(data, context as any, { documentLoader: loadDocument, issuer: new jsonld.IdentifierIssuer("_:" + id + ":b") }) as any;
         console.log(flattened);
 
         for (let item of flattened["@graph"]) {
