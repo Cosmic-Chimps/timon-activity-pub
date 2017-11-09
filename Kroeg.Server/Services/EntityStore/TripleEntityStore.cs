@@ -94,10 +94,11 @@ namespace Kroeg.Server.Services.EntityStore
                                 .Concat(allTriples.Select(a => a.PredicateId))));
 
             var rdfType = await ReverseAttribute("rdf:type", true);
+            var rdfEnd = await ReverseAttribute("rdf:rest", true);
 
             foreach (var mold in allEntities)
             {
-                results.Add(_buildRaw(mold, allTriples.Where(a => a.SubjectEntityId == mold.EntityId), rdfType.Value));
+                results.Add(_buildRaw(mold, allTriples.Where(a => a.SubjectEntityId == mold.EntityId), rdfType.Value, rdfEnd.Value));
             }
 
             return results;
@@ -139,13 +140,15 @@ namespace Kroeg.Server.Services.EntityStore
             return b;
         }
 
-        private APEntity _buildRaw(APTripleEntity mold, IEnumerable<Triple> triples, int rdfType)
+        private APEntity _buildRaw(APTripleEntity mold, IEnumerable<Triple> triples, int rdfType, int rdfEnd)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
             var subjects = triples.GroupBy(a => a.SubjectId).ToDictionary(a => a.Key, a => a);
             Dictionary<int, ASObject> objects = subjects.ToDictionary(a => a.Key, a => new ASObject { Id = _attributeMapping[a.Key] });
-            var listItems = new HashSet<int>();
+            var listEnds = new HashSet<int>();
+            var blankNodes = new Dictionary<int, Tuple<ASObject, string>>();
+            var listParts = triples.Where(a => a.PredicateId == rdfEnd).ToDictionary(a => a.AttributeId.Value, a => a.SubjectId);
 
             foreach (var obj in objects)
             {
@@ -162,7 +165,7 @@ namespace Kroeg.Server.Services.EntityStore
                     var term = new ASTerm();
                     var predicateUrl = _attributeMapping[triple.PredicateId];
 
-                    if (triple.AttributeId.HasValue && objects.ContainsKey(triple.AttributeId.Value))
+                    if (triple.AttributeId.HasValue && !listParts.ContainsValue(triple.AttributeId.Value) && objects.ContainsKey(triple.AttributeId.Value))
                         term.SubObject = objects[triple.AttributeId.Value];
                     else {
                         if (triple.TypeId.HasValue)
@@ -175,12 +178,43 @@ namespace Kroeg.Server.Services.EntityStore
                         if (_defaultTypes.Contains(term.Type))
                             term.Type = null;
 
-                        if (term.Id != null && predicateUrl == "rdf:rest")
-                            listItems.Add(triple.SubjectId);
+                        if (predicateUrl == "rdf:rest")
+                        {
+                            if (term.Id == "rdf:nil")
+                                listEnds.Add(triple.SubjectId);
+                            listParts[triple.AttributeId.Value] = triple.SubjectId;
+                        }
+
+                        if (term.Id?.StartsWith("_:") == true)
+                        {
+                            blankNodes[triple.AttributeId.Value] = new Tuple<ASObject, string>(result, predicateUrl);
+                        }
                     }
 
 
                     result[predicateUrl].Add(term);
+                }
+            }
+
+            foreach (var listEnd in listEnds)
+            {
+                var listId = listEnd;
+                var list = new List<ASTerm>();
+                list.Add(objects[listId]["rdf:first"].First());
+                while (listParts.ContainsKey(listId))
+                {
+                    listId = listParts[listId];
+                    list.Add(objects[listId]["rdf:first"].First());
+                }
+
+                if (blankNodes.ContainsKey(listId))
+                {
+                    blankNodes[listId].Deconstruct(out var obj, out var name);
+
+                    list.Reverse();
+
+                    obj[name].Clear();
+                    obj[name].AddRange(list);
                 }
             }
 
@@ -200,8 +234,9 @@ namespace Kroeg.Server.Services.EntityStore
                                 .Concat(triples.Where(a => a.AttributeId.HasValue).Select(a => a.AttributeId.Value)
                                 .Concat(triples.Select(a => a.PredicateId))));
             var rdfType = await ReverseAttribute("rdf:type", true);
+            var rdfEnd = await ReverseAttribute("rdf:rest", true);
 
-            var result = _buildRaw(mold, triples, rdfType.Value);
+            var result = _buildRaw(mold, triples, rdfType.Value, rdfEnd.Value);
 
             return result;
         }
