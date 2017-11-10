@@ -25,6 +25,10 @@
   content: '\2026';
 }
 
+.kroeg-username {
+  display: inline-block;
+}
+
 /* Emoji by Twemoji - https://github.com/twitter/twemoji */
 img.emoji {
     height: 1em;

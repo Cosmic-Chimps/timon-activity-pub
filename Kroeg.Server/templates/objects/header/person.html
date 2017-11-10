@@ -4,9 +4,18 @@
             <span>
                 <a href="{{AS.take('id')}}">
                     <img src="//via.placeholder.com/48x48" width="48" height="48" style="margin-left: -58px; border-radius: 100%; position: absolute;" x-render="objects/sub/user_profile" x-render-id="{{AS.take('icon')}}" x-render-if="AS.has('icon')" />
-                    {{AS.take('name').length > 0 ? AS.take('name') : AS.take('preferredUsername', AS.take('id'))}}
+                    <span class="kroeg-username">{{Renderer.sanitize(AS.take('name').length > 0 ? AS.take('name') : AS.take('preferredUsername'))}}</span> <small>{{AS.take('id')}}</small>
                 </a>
             </span>
+            <div x-if="Renderer.loggedInAs != null && Renderer.loggedInAs.id != AS.take('id')">
+                <form data-endpoint="{{Renderer.loggedInAs.outbox}}" data-component="form">
+                  <input type="hidden" name="type" value="Follow" />
+                  <input type="hidden" name="actor" value="{{Renderer.loggedInAs.id}}" />
+                  <input type="hidden" name="object" value="{{AS.take('id')}}" />
+                  <input type="hidden" name="to" value="{{AS.take('id')}}" />
+                  <input type="submit" class="btn btn-primary" value="Follow" />
+                </form>
+            </div>
         </div>
     </div>
     <div class="col-md-12 kroeg-content">

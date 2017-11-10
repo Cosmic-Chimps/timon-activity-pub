@@ -1,5 +1,5 @@
 ﻿<div class="col-md-12 nopad">
-	<a href="{{AS.take('id')}}"><h1>{{AS.take('name')}}</h1></a>
+	<a href="{{AS.take('id')}}"><h1>{{Renderer.sanitize(AS.take('name'))}}</h1></a>
 	{{Renderer.sanitize(AS.take('summary'))}}
 	<b x-if="AS.take('sensitive', false)">(Warning: marked as sensitive)</b>
 </div>
