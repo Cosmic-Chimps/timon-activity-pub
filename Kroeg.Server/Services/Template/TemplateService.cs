@@ -109,7 +109,7 @@ namespace Kroeg.Server.Services.Template
                     if (node.Attributes.Contains("class"))
                     foreach (var cl in node.Attributes["class"].Value.Split(' '))
                     {
-                        if (!_allowed_classes.IsMatch(cl)) node.RemoveClass(cl);
+                        if (cl.Length > 0 && !_allowed_classes.IsMatch(cl)) node.RemoveClass(cl);
                     }
                 }
 
@@ -120,6 +120,8 @@ namespace Kroeg.Server.Services.Template
 
             public string clean(string data)
             {
+                if (string.IsNullOrWhiteSpace(data)) return "";
+
                 var doc = new HtmlDocument();
                 doc.LoadHtml(data);
                 _clean(doc.DocumentNode);
@@ -189,6 +191,8 @@ namespace Kroeg.Server.Services.Template
 
             if (item.Arguments.ContainsKey("x-render-if"))
                 parse = (bool) _parse(item.Arguments["x-render-if"][0].Data, data, regs);
+
+            string err = "";
             
             if (item.Arguments.ContainsKey("x-render") && parse)
             {
@@ -206,13 +210,17 @@ namespace Kroeg.Server.Services.Template
 
                 if (objData == null && data.Id == id)
                     objData = data;
-                else if (objData == null)
+                else if (objData == null && id != null)
                 {
-                    APEntity obj = await entityStore.GetEntity(id, true);
-                    if (obj != null)
-                    {
-                        regs.UsedEntities[id] = obj;
-                        objData = obj.Data;
+                    try {
+                        APEntity obj = await entityStore.GetEntity(id, true);
+                        if (obj != null)
+                        {
+                            regs.UsedEntities[id] = obj;
+                            objData = obj.Data;
+                        }
+                    } catch (InvalidOperationException e) {
+                        err = $"<!-- {id} welp -->";
                     }
                 }
 
@@ -271,7 +279,7 @@ namespace Kroeg.Server.Services.Template
                 }
             }
 
-            result.InnerHtml = content.ToString();
+            result.InnerHtml = content.ToString() + err;
 
             return result.OuterHtml;
         }

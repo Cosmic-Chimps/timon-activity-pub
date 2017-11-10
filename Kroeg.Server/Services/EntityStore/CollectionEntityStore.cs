@@ -66,7 +66,7 @@ namespace Kroeg.Server.Services.EntityStore
 
             APEntity original;
             var entity = original = await Bypass.GetEntity(id, false);
-            if (entity == null) entity = await Bypass.GetEntity(parsedId, false);
+            if (entity == null && parsedId != null) entity = await Bypass.GetEntity(parsedId, false);
             if (entity == null || !entity.IsOwner) return doRemote ? await Bypass.GetEntity(id, true) : original;
             if (!entity.Type.StartsWith("_") && entity.Type != "OrderedCollection") return doRemote ? await Bypass.GetEntity(id, true) : original;
 

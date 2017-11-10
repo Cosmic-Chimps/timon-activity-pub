@@ -82,7 +82,7 @@ class RendererInfo {
     private static _disallowed_nodes = /^(script|object|embed)$/;
 
     public sanitize(data: string) {
-        return data.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return twemoji.parse(data.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'));
     }
 
     private _clean(data: HTMLElement) {
