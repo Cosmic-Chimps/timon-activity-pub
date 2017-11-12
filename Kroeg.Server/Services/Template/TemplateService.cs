@@ -31,6 +31,7 @@ namespace Kroeg.Server.Services.Template
             public ASHandler Handler { get; set; }
             public RendererData Renderer { get; set; }
             public Dictionary<string, APEntity> UsedEntities { get; set; } = new Dictionary<string, APEntity>();
+            public int EntityCount { get; set; }
         }
 
         public class ASHandler
@@ -213,12 +214,20 @@ namespace Kroeg.Server.Services.Template
                 else if (objData == null && id != null)
                 {
                     try {
-                        APEntity obj = await entityStore.GetEntity(id, true);
+
+                        APEntity obj;
+                        if (regs.UsedEntities.ContainsKey(id))
+                            obj = regs.UsedEntities[id];
+                        else
+                            obj = await entityStore.GetEntity(id, true);
+
                         if (obj != null)
                         {
                             regs.UsedEntities[id] = obj;
                             objData = obj.Data;
                         }
+
+                        regs.EntityCount++;
                     } catch (InvalidOperationException) {
                         err = $"<!-- {id} welp -->";
                     }
@@ -242,12 +251,19 @@ namespace Kroeg.Server.Services.Template
                     objData = data;
                 else if (objData == null)
                 {
-                    APEntity obj = await entityStore.GetEntity(id, true);
+                    APEntity obj;
+                    if (regs.UsedEntities.ContainsKey(id))
+                        obj = regs.UsedEntities[id];
+                    else
+                        obj = await entityStore.GetEntity(id, true);
+
                     if (obj != null)
                     {
                         regs.UsedEntities[id] = obj;
                         objData = obj.Data;
                     }
+
+                    regs.EntityCount++;
                 }
 
                 if (objData != null)
@@ -305,7 +321,9 @@ namespace Kroeg.Server.Services.Template
 
             regs.UsedEntities[entity.Id] = entity;
 
-            return await _parseTemplate(template, entityStore, entity.Data, regs, doc);
+            var data = await _parseTemplate(template, entityStore, entity.Data, regs, doc);
+            Console.WriteLine($"{regs.EntityCount} entities gotten in total, {regs.UsedEntities.Count} separate");
+            return data;
         }
     }
 }

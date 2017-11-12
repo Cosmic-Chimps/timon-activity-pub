@@ -11,12 +11,15 @@ using System.Data;
 using Dapper;
 using System.Data.Common;
 using System.Diagnostics;
+using Npgsql;
 
 namespace Kroeg.Server.Services.EntityStore
 {
     public class TripleEntityStore : IEntityStore
     {
         private readonly DbConnection _connection;
+        private readonly NpgsqlConnection _attributeConnection;
+
         private readonly ILogger _logger;
 
         private static Dictionary<int, string> _attributeMapping = new Dictionary<int, string>();
@@ -27,9 +30,10 @@ namespace Kroeg.Server.Services.EntityStore
 
         private static JsonLD.API _api = new JsonLD.API(null);
 
-        public TripleEntityStore(DbConnection connection, ILogger<TripleEntityStore> logger)
+        public TripleEntityStore(DbConnection connection, NpgsqlConnection attributeConnection, ILogger<TripleEntityStore> logger)
         {
             _connection = connection;
+            _attributeConnection = attributeConnection;
             _logger = logger;
         }
 
@@ -40,7 +44,7 @@ namespace Kroeg.Server.Services.EntityStore
             var idset = ids.Where(a => !_attributeMapping.ContainsKey(a)).ToList();
             if (idset.Count > 0)
             {
-                var dbs = await _connection.QueryAsync<TripleAttribute>("select * from \"Attributes\" where \"AttributeId\" = any(@Ids)", new { Ids = idset });
+                var dbs = await _attributeConnection.QueryAsync<TripleAttribute>("select * from \"Attributes\" where \"AttributeId\" = any(@Ids)", new { Ids = idset });
                 foreach (var item in dbs)
                 {
                     _attributeMapping[item.AttributeId] = item.Uri;
@@ -63,7 +67,7 @@ namespace Kroeg.Server.Services.EntityStore
                 return _inverseAttributeMapping[uri];
             }
 
-            var item = await _connection.QueryFirstOrDefaultAsync<TripleAttribute>("select * from \"Attributes\" where \"Uri\" = @Uri", new { Uri = uri });
+            var item = await _attributeConnection.QueryFirstOrDefaultAsync<TripleAttribute>("select * from \"Attributes\" where \"Uri\" = @Uri", new { Uri = uri });
 
             if (item == null)
             {
@@ -73,7 +77,7 @@ namespace Kroeg.Server.Services.EntityStore
                 }
 
                 item = new TripleAttribute { Uri = uri };
-                item.AttributeId = await _connection.ExecuteScalarAsync<int>("insert into \"Attributes\" (\"Uri\") values (@Uri) returning \"AttributeId\"", item);
+                item.AttributeId = await _attributeConnection.ExecuteScalarAsync<int>("insert into \"Attributes\" (\"Uri\") values (@Uri) on conflict (\"Uri\") do update set \"Uri\" = @Uri returning \"AttributeId\"", item);
             }
 
             _inverseAttributeMapping[uri] = item.AttributeId;

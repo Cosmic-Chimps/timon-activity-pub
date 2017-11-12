@@ -65,8 +65,10 @@ namespace Kroeg.Server.BackgroundTasks
                             _cancellationTokenSource.CancelAfter(sleepTime);
                         await _connection.WaitAsync(_cancellationTokenSource.Token);
                     }
-                    catch (TaskCanceledException) { }
+                    catch (OperationCanceledException) { }
                 }
+                _connection.Close(); // workaround for npgsql issue??
+                await _connection.OpenAsync();
                 var transaction = _connection.BeginTransaction();
                 var nextAction = await _connection.QuerySingleOrDefaultAsync<EventQueueItem>("SELECT * FROM \"EventQueue\" WHERE \"NextAttempt\" > @time order by \"NextAttempt\" limit 1 for update skip locked", new { time = after });
                 _logger.LogDebug($"Next action: {nextAction?.Action ?? "nothing"}");

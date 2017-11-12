@@ -549,8 +549,6 @@ namespace Kroeg.Server.Middleware
                 typeof(DeliveryHandler)
             };
 
-            private static Semaphore _serverToServerMutex = new Semaphore(1, 1);
-
             public async Task<APEntity> ServerToServer(APEntity inbox, ASObject activity, string subject = null)
             {
                 var stagingStore = new StagingEntityStore(_mainStore);
@@ -588,25 +586,16 @@ namespace Kroeg.Server.Middleware
 
                 await stagingStore.CommitChanges();
 
-                _serverToServerMutex.WaitOne();
-
-                try
+                foreach (var type in _serverToServerHandlers)
                 {
-                    foreach (var type in _serverToServerHandlers)
-                    {
-                        var handler = (BaseHandler)ActivatorUtilities.CreateInstance(_serviceProvider, type,
-                            _mainStore, flattened, user, inbox, _user);
-                        var handled = await handler.Handle();
-                        flattened = handler.MainObject;
-                        if (!handled) break;
-                    }
+                    var handler = (BaseHandler)ActivatorUtilities.CreateInstance(_serviceProvider, type,
+                        _mainStore, flattened, user, inbox, _user);
+                    var handled = await handler.Handle();
+                    flattened = handler.MainObject;
+                    if (!handled) break;
+                }
 
-                    return flattened;
-                }
-                finally
-                {
-                    _serverToServerMutex.Release();
-                }
+                return flattened;
             }
 
             private readonly List<Type> _clientToServerHandlers = new List<Type>
