@@ -36,7 +36,7 @@ namespace Kroeg.Server.Services
         {
             _connection.Execute(@"create table ""Attributes"" (
                 ""AttributeId"" serial primary key,
-                ""Uri"" text not null
+                ""Uri"" text not null unique
             );");
 
             _connection.Execute(@"create index on ""Attributes""(""Uri"")");

@@ -19,7 +19,6 @@
     <PackageReference Include="Dapper" Version="*" />
     <PackageReference Include="Dapper.Contrib" Version="*" />
     <PackageReference Include="Npgsql" Version="*" />
-    <PackageReference Include="StackExchange.Redis" Version="*" />
     <PackageReference Include="HtmlAgilityPack" Version="*" />
     <PackageReference Include="Jint" Version="*" />
   </ItemGroup>
