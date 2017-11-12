@@ -19,7 +19,7 @@ namespace Kroeg.Server.BackgroundTasks
             EventQueueItem = item;
         }
 
-        public static async Task Go(DbConnection connection, EventQueueItem item, IServiceProvider provider)
+        public static async Task Go(DbConnection connection, EventQueueItem item, IServiceProvider provider, DbTransaction transaction)
         {
             var type = Type.GetType("Kroeg.Server.BackgroundTasks." + item.Action);
 
@@ -27,14 +27,10 @@ namespace Kroeg.Server.BackgroundTasks
 
             try
             {
-                using (var trans = connection.BeginTransaction())
-                {
-                    await resolved.Go();
-
-                    trans.Commit();
-                }
-
+                await resolved.Go();
                 await connection.ExecuteAsync("DELETE from \"EventQueue\" where \"Id\" = @Id", new { Id = item.Id });
+
+                transaction.Commit();
             }
             catch(Exception e)
             {
@@ -43,8 +39,11 @@ namespace Kroeg.Server.BackgroundTasks
                 item.AttemptCount++;
                 item.NextAttempt = resolved.NextTry(item.AttemptCount);
 
+                transaction.Rollback();
                 await connection.ExecuteAsync("UPDATE \"EventQueue\" set \"AttemptCount\"=@AttemptCount, \"NextAttempt\"=@NextAttempt where \"Id\" = @Id", new { Attemptcount = item.AttemptCount, NextAttempt = item.NextAttempt, Id = item.Id });
             }
+
+            transaction.Dispose();
         }
 
         public virtual DateTime NextTry(int fails)

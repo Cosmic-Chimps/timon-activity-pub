@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -36,6 +36,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using System.Data;
 using System.Transactions;
 using System.Data.Common;
+using Kroeg.Server.BackgroundTasks;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -680,6 +681,8 @@ namespace Kroeg.Server.Middleware
                     if (type == typeof(CommitChangesHandler))
                         store = _mainStore;
                 }
+
+                await _notifier.Notify(BackgroundTaskQueuer.BackgroundTaskPath, "ye");
 
                 return flattened;
             }

@@ -71,19 +71,12 @@ namespace Kroeg.Server.BackgroundTasks
                     }
                     catch (TaskCanceledException) { }
                 }
-                var nextAction = await _connection.QuerySingleOrDefaultAsync<EventQueueItem>("SELECT * FROM \"EventQueue\" WHERE \"NextAttempt\" > @time order by \"NextAttempt\" limit 1", new { time = after });
+                var nextAction = await _connection.QuerySingleOrDefaultAsync<EventQueueItem>("SELECT * FROM \"EventQueue\" WHERE \"NextAttempt\" > @time order by \"NextAttempt\" limit 1 for update skip locked", new { time = after });
                 _logger.LogDebug($"Next action: {nextAction?.Action ?? "nothing"}");
                 if (nextAction == null) continue;
 
-                if (await _notifier.Synchronize(BackgroundTaskPath + ":" + nextAction.Id + nextAction.NextAttempt.ToString()))
-                {
-                    // we won!
-                    await BaseTask.Go(_connection, nextAction, _serviceProvider);
-                }
-                else
-                {
-                    after = nextAction.NextAttempt;
-                }
+                var transaction = _connection.BeginTransaction();
+                await BaseTask.Go(_connection, nextAction, _serviceProvider, transaction);
             }
         }
     }
