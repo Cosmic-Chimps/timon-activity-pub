@@ -219,7 +219,7 @@ namespace Kroeg.Server.Services.Template
                             regs.UsedEntities[id] = obj;
                             objData = obj.Data;
                         }
-                    } catch (InvalidOperationException e) {
+                    } catch (InvalidOperationException) {
                         err = $"<!-- {id} welp -->";
                     }
                 }

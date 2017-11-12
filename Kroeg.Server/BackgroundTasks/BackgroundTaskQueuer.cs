@@ -10,37 +10,31 @@ using System.Data;
 using Dapper;
 using Dapper.Contrib.Extensions;
 using System.Data.Common;
+using Npgsql;
 
 namespace Kroeg.Server.BackgroundTasks
 {
     public class BackgroundTaskQueuer
     {
         private CancellationTokenSource _cancellationTokenSource;
-        private readonly DbConnection _connection;
+        private readonly NpgsqlConnection _connection;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<BackgroundTaskQueuer> _logger;
         private readonly INotifier _notifier;
 
         public static string BackgroundTaskPath = "backgroundtask:new";
 
-        public BackgroundTaskQueuer(DbConnection connection, IServiceProvider serviceProvider, ILogger<BackgroundTaskQueuer> logger, INotifier notifier)
+        public BackgroundTaskQueuer(NpgsqlConnection connection, IServiceProvider serviceProvider, ILogger<BackgroundTaskQueuer> logger, INotifier notifier)
         {
             _connection = connection;
             _serviceProvider = serviceProvider;
             _logger = logger;
             _notifier = notifier;
 
+            _connection.Open();
             _notifier.Subscribe(BackgroundTaskPath, (a) => _cancellationTokenSource?.Cancel());
 
-            _connection.Open();
             _do();
-        }
-
-        private Task _whenCanceled()
-        {
-            var tcs = new TaskCompletionSource<bool>();
-            _cancellationTokenSource.Token.Register(s => ((TaskCompletionSource<bool>)s).SetResult(true), tcs);
-            return tcs.Task;
         }
 
         private async Task<int> _getSleepTime(DateTime? after = null)
@@ -67,15 +61,23 @@ namespace Kroeg.Server.BackgroundTasks
                 {
                     try
                     {
-                        await Task.Delay(sleepTime, _cancellationTokenSource.Token);
+                        if (sleepTime > 0)
+                            _cancellationTokenSource.CancelAfter(sleepTime);
+                        await _connection.WaitAsync(_cancellationTokenSource.Token);
                     }
                     catch (TaskCanceledException) { }
                 }
+                var transaction = _connection.BeginTransaction();
                 var nextAction = await _connection.QuerySingleOrDefaultAsync<EventQueueItem>("SELECT * FROM \"EventQueue\" WHERE \"NextAttempt\" > @time order by \"NextAttempt\" limit 1 for update skip locked", new { time = after });
                 _logger.LogDebug($"Next action: {nextAction?.Action ?? "nothing"}");
-                if (nextAction == null) continue;
 
-                var transaction = _connection.BeginTransaction();
+                if (nextAction == null)
+                {
+                    transaction.Rollback();
+                    transaction.Dispose();
+                    continue;
+                }
+
                 await BaseTask.Go(_connection, nextAction, _serviceProvider, transaction);
             }
         }

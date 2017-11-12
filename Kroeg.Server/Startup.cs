@@ -16,7 +16,6 @@ using Kroeg.Server.OStatusCompat;
 using Kroeg.Server.Services;
 using Kroeg.Server.Services.EntityStore;
 using Kroeg.Server.Tools;
-using Kroeg.Server.Services.Notifiers.Redis;
 using Kroeg.Server.Services.Notifiers;
 using Microsoft.AspNetCore.Http;
 using Kroeg.Server.Services.Template;
@@ -53,7 +52,8 @@ namespace Kroeg.Server
             NpgsqlLogManager.Provider = new ConsoleLoggingProvider(NpgsqlLogLevel.Debug);
             NpgsqlLogManager.IsParameterLoggingEnabled = true;
 
-            services.AddScoped<DbConnection>((svc) => new NpgsqlConnection(Configuration.GetConnectionString("Default")));
+            services.AddScoped<DbConnection, NpgsqlConnection>((svc) => new NpgsqlConnection(Configuration.GetConnectionString("Default")));
+            services.AddScoped<NpgsqlConnection>((svc) => new NpgsqlConnection(Configuration.GetConnectionString("Default")));
 
             services.AddTransient<IUserStore<APUser>, KroegUserStore>();
             services.AddTransient<IUserPasswordStore<APUser>, KroegUserStore>();
@@ -106,16 +106,7 @@ namespace Kroeg.Server
                 EntityNames = Configuration.GetSection("EntityNames")
             });
 
-            var redis = Configuration.GetSection("Kroeg").GetValue<string>("Redis", null);
-            if (!string.IsNullOrEmpty(redis))
-            {
-                services.AddSingleton(new RedisNotifierBase(redis));
-                services.AddTransient<INotifier>((a) => ActivatorUtilities.CreateInstance<RedisNotifier>(a));
-            }
-            else
-            {
-                services.AddSingleton<INotifier>(new LocalNotifier());
-            }
+            services.AddScoped<INotifier, LocalNotifier>();
 
             services.AddSingleton<BackgroundTaskQueuer>();
             services.AddSingleton(Configuration);

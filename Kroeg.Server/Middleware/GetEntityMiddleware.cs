@@ -37,6 +37,7 @@ using System.Data;
 using System.Transactions;
 using System.Data.Common;
 using Kroeg.Server.BackgroundTasks;
+using Npgsql;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -374,7 +375,7 @@ namespace Kroeg.Server.Middleware
                     }
                     try
                     {
-                        await Task.Delay(15000, tokenSource.Token);
+                        await ((NpgsqlConnection)_connection).WaitAsync(tokenSource.Token);
                     }
                     catch (TaskCanceledException)
                     {
@@ -450,7 +451,8 @@ namespace Kroeg.Server.Middleware
                 {
                     try
                     {
-                        await Task.Delay(30000, tokenSource.Token);
+                        tokenSource.CancelAfter(30000);
+                        await ((NpgsqlConnection)_connection).WaitAsync(tokenSource.Token);
                         var b = new ArraySegment<byte>(new byte[] { });
                         await socket.SendAsync(b, WebSocketMessageType.Text, false, CancellationToken.None);
                     } catch (TaskCanceledException) { }
@@ -463,14 +465,6 @@ namespace Kroeg.Server.Middleware
                         if (success)
                         {
                             var stored = await _mainStore.GetEntity(item, false);
-                            if (stored == null)
-                            for (int i = 0; i < 10 && stored == null; i++)
-                            {
-                                // oh god race conditions
-                                await Task.Delay(1000);
-                                stored = await _mainStore.GetEntity(item, false);
-
-                            }
 
                             var unflattened = await _flattener.Unflatten(_mainStore, stored);
                             var serialized = Encoding.UTF8.GetBytes(unflattened.Serialize().ToString(Formatting.None));

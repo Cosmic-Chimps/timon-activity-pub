@@ -22,13 +22,15 @@ namespace Kroeg.Server.Services
         private readonly EntityData _configuration;
         private readonly IHttpContextAccessor _contextAccessor;
         private readonly DbConnection _connection;
+        private readonly INotifier _notifier;
 
-        public CollectionTools(TripleEntityStore entityStore, EntityData configuration, IServiceProvider serviceProvider, DbConnection connection)
+        public CollectionTools(TripleEntityStore entityStore, EntityData configuration, IServiceProvider serviceProvider, DbConnection connection, INotifier notifier)
         {
             _entityStore = entityStore;
             _configuration = configuration;
             _contextAccessor = (IHttpContextAccessor)serviceProvider.GetService(typeof(IHttpContextAccessor));
             _connection = connection;
+            _notifier = notifier;
         }
 
         public async Task<int> Count(string id)
@@ -137,6 +139,7 @@ namespace Kroeg.Server.Services
 
 
             await _connection.ExecuteAsync("insert into \"CollectionItems\" (\"CollectionId\", \"ElementId\", \"IsPublic\") values (@CollectionId, @ElementId, @IsPublic)", ci);
+            await _notifier.Notify($"collection/{collection.Id}", entity.Id);
 
             return ci;
         }
