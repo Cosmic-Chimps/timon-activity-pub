@@ -164,8 +164,9 @@ namespace Kroeg.Server.Services
                 {
                     if (entity.Item3)
                     {
-                        if (data["sharedInbox"].Any())
-                            targets.Add(data["inbox"].First().Id);
+                        var endpoints = data["endpoints"].First().SubObject ?? (await _store.GetEntity(data["endpoints"].First().Id, false)).Data;
+                        if (endpoints["sharedInbox"].Any())
+                            targets.Add(endpoints["sharedInbox"].First().Id);
                         continue;
                     }
 
