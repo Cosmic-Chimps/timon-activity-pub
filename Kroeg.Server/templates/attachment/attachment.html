@@ -1,6 +1,6 @@
 <div>
-    <div x-if="AS.take('mediaType', '').startsWith('image/') || AS.contains('type', 'Image')" x-render="attachment/image"></div>
-    <div x-if="!AS.take('mediaType', '').startsWith('image/') && !AS.contains('type', 'Image')">
+    <div x-if="(typeof AS.take('mediaType', '') == 'string' && AS.take('mediaType', '').startsWith('image/')) || AS.contains('type', 'Image')" x-render="attachment/image"></div>
+    <div x-if="(typeof AS.take('mediaType', '') != 'string' || !AS.take('mediaType', '').startsWith('image/')) && !AS.contains('type', 'Image')">
         {{AS.take('type')}} <a href="{{AS.take('url', AS.take('href'))}}">{{AS.take('url', AS.take('href'))}}</a>
     </div>
 </div>
