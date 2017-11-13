@@ -82,7 +82,7 @@ namespace Kroeg.Server.Services
         {
             return await _search(new Dictionary<string, string> {
                 ["rdf:type"] = objectType,
-                ["https://www.w3.org/ns/activitystreams#object"] = objectType
+                ["https://www.w3.org/ns/activitystreams#object"] = objectId
             });
         }
 
