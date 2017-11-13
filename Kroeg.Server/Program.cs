@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Linq;
 
 namespace Kroeg.Server
 {
@@ -9,6 +10,12 @@ namespace Kroeg.Server
     {
         public static void Main(string[] args)
         {
+            if (args.Contains("console"))
+            {
+                ConsoleSystem.ConsoleManager.Do();
+                return;
+            }
+
             var config = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json")
