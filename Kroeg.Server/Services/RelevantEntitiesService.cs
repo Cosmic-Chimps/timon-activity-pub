@@ -60,9 +60,8 @@ namespace Kroeg.Server.Services
                 attributeMapping[reverseId.Value] = reverseVal.Value;
             }
 
-            var miniTables = string.Join(", ", attributeMapping.Select(a => $"attribute_{a.Key} as (SELECT \"SubjectId\" as subj, \"SubjectEntityId\" as subje from \"Triples\" where \"PredicateId\" = {a.Key} and \"AttributeId\" = {a.Value})"));
-
-            var start = $"select a.* from \"TripleEntities\" a where " + string.Join(" and ", attributeMapping.Select(a => $"exists(select 1 from attribute_{a.Key} where subj = a.\"IdId\" and subje = a.\"EntityId\")"));
+            var start = $"select a.* from \"TripleEntities\" a where ";
+            start += string.Join(" and ", attributeMapping.Select(a => $"exists(select 1 from \"Triples\" where \"PredicateId\" = {a.Key} and \"AttributeId\" = {a.Value} and \"SubjectId\" = a.\"IdId\" and \"SubjectEntityId\" = a.\"EntityId\")"));
 
             if (isOwner.HasValue)
                 start += " and a.\"IsOwner\" = " + (isOwner.Value ? "TRUE" : "FALSE");

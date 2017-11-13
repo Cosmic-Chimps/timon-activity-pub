@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Kroeg.ActivityStreams;
 
 namespace Kroeg.Server.Middleware.Handlers.ServerToServer
 {
@@ -24,7 +25,18 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
         {
             if (MainObject.Type != "https://www.w3.org/ns/activitystreams#Accept") return true;
             var followObject = await EntityStore.GetEntity(MainObject.Data["object"].Single().Id, false);
-            if (followObject.Type != "https://www.w3.org/ns/activitystreams#Follow") return true;
+            if (followObject == null)
+            {
+                followObject = (await _relevantEntities.FindRelevantObject("https://www.w3.org/ns/activitystreams#Follow", Actor.Id)).FirstOrDefault();
+                if (followObject != null)
+                {
+                    MainObject.Data.Replace("object", ASTerm.MakeId(followObject.Id));
+                    await EntityStore.StoreEntity(MainObject);
+                }
+            }
+
+            if (followObject == null || followObject.Type != "https://www.w3.org/ns/activitystreams#Follow") return true;
+
             if (followObject.Data["object"].First().Id != MainObject.Data["actor"].First().Id) throw new InvalidOperationException("I won't let you do that, Starfox!");
             var followUser = followObject.Data["object"].First().Id;
 

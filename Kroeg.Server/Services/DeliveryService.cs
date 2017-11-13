@@ -44,9 +44,6 @@ namespace Kroeg.Server.Services
 
             targetIds.AddRange(@object["to"].Select(a => a.Id));
             targetIds.AddRange(@object["bto"].Select(a => a.Id));
-            targetIds.AddRange(@object["cc"].Select(a => a.Id));
-            targetIds.AddRange(@object["bcc"].Select(a => a.Id));
-            targetIds.AddRange(@object["audience"].Select(a => a.Id));
 
             return targetIds.Contains("https://www.w3.org/ns/activitystreams#Public");
         }
@@ -79,7 +76,7 @@ namespace Kroeg.Server.Services
                 {
                     followers = new List<APEntity> { await _store.GetEntity((string)data.Data["attributedTo"].Single().Primitive, false) };
                 }
-                else if (data == null || !data.IsOwner)
+                else if (data != null && !data.IsOwner)
                 {
                     followers = await _relevantEntities.FindEntitiesWithFollowerId(data.Id);
                 }
