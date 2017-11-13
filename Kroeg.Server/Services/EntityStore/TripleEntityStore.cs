@@ -336,16 +336,14 @@ namespace Kroeg.Server.Services.EntityStore
                     }
                     else
                     {
-                        var removed = triples[key].Where(a => !compare[key].Any(b => b.Object == a.Object && b.TypeId == a.TypeId && b.SubjectId == a.SubjectId)).ToList();
-                        var added = compare[key].Where(a => !triples[key].Any(b => b.Object == a.Object && b.TypeId == a.TypeId && b.SubjectId == a.SubjectId)).ToList();
+                        await _connection.ExecuteAsync("delete from \"Triples\" where \"TripleId\" = any(@Ids)", new { Ids = triples[key].Select(a => a.TripleId).ToList() });
 
-                        await _connection.ExecuteAsync("delete from \"Triples\" where \"TripleId\" = any(@Ids)", new { Ids = removed.Select(a => a.TripleId).ToList() });
-                        foreach (var triple in added)
+                        foreach (var triple in compare[key])
                         {
                             triple.SubjectEntityId = exists.EntityId;
                         }
 
-                        await _connection.ExecuteAsync("insert into \"Triples\" (\"SubjectId\", \"SubjectEntityId\", \"PredicateId\", \"AttributeId\", \"TypeId\", \"Object\") values (@SubjectId, @SubjectEntityId, @PredicateId, @AttributeId, @TypeId, @Object)", added);
+                        await _connection.ExecuteAsync("insert into \"Triples\" (\"SubjectId\", \"SubjectEntityId\", \"PredicateId\", \"AttributeId\", \"TypeId\", \"Object\") values (@SubjectId, @SubjectEntityId, @PredicateId, @AttributeId, @TypeId, @Object)", compare);
                     }
                 }
             }

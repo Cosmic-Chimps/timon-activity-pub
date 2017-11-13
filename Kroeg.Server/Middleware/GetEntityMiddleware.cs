@@ -557,10 +557,14 @@ namespace Kroeg.Server.Middleware
 
                 APEntity flattened;
 
-                var subjectUri = new Uri(subject);
-                var prefix = $"{subjectUri.Scheme}://{subjectUri.Host}";
-                if (!subjectUri.IsDefaultPort) prefix += $":{subjectUri.Port}";
-                prefix += "/";
+                string prefix = "";
+                if (subject != null)
+                {
+                    var subjectUri = new Uri(subject);
+                    prefix = $"{subjectUri.Scheme}://{subjectUri.Host}";
+                    if (!subjectUri.IsDefaultPort) prefix += $":{subjectUri.Port}";
+                    prefix += "/";
+                }
 
                 var id = activity.Id;
                 flattened = await _mainStore.GetEntity(id, false);
