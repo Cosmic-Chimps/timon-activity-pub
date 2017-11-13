@@ -116,14 +116,14 @@ namespace Kroeg.Server.Services
 
         public async Task<List<APEntity>> CollectionsContaining(string containId, string type = null)
         {
-            var idString = await _entityStore.ReverseAttribute(containId, false);
-            if (idString == null) return new List<APEntity> {};
+            var element = await _entityStore.GetEntity(containId, false);
+            if (element == null) return new List<APEntity>();
 
             IEnumerable<CollectionItem> collectionItems;
             if (type == null)
-                collectionItems = await _connection.QueryAsync<CollectionItem>("select * from \"CollectionItems\" where \"ElementId\" = @Id", new { Id = idString.Value });
+                collectionItems = await _connection.QueryAsync<CollectionItem>("select * from \"CollectionItems\" where \"ElementId\" = @Id", new { Id = element.DbId });
             else
-                collectionItems = await _connection.QueryAsync<CollectionItem>("select a.* from \"CollectionItems\" a where a.\"ElementId\" = @Id and exists(select 1 from \"TripleEntities\" ent where a.\"CollectionId\" = ent.\"EntityId\" and ent.\"Type\" = @Type)", new { Id = idString.Value, Type = type });
+                collectionItems = await _connection.QueryAsync<CollectionItem>("select a.* from \"CollectionItems\" a where a.\"ElementId\" = @Id and exists(select 1 from \"TripleEntities\" ent where a.\"CollectionId\" = ent.\"EntityId\" and ent.\"Type\" = @Type)", new { Id = element.DbId, Type = type });
 
             return await _entityStore.GetEntities(collectionItems.Select(a => a.CollectionId).ToList());
         }

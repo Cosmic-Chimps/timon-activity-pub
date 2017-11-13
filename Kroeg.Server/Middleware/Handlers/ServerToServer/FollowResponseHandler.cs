@@ -40,17 +40,17 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
             if (followObject.Data["object"].First().Id != MainObject.Data["actor"].First().Id) throw new InvalidOperationException("I won't let you do that, Starfox!");
             var followUser = followObject.Data["object"].First().Id;
 
-            if (Actor.Id != followObject.Data["object"].First().Id) return true; // doesn't involve us, so meh
+            if (Actor.Id != followObject.Data["actor"].First().Id) return true; // doesn't involve us, so meh
 
             if (!followObject.IsOwner) throw new InvalidOperationException("Follow isn't made on this server?");
 
             var relevant = await _relevantEntities.FindRelevantObject(followUser, "Reject", followObject.Id);
-            if (relevant != null) throw new InvalidOperationException("Follow has already been Rejected before!");
+            if (relevant.Count != 0) throw new InvalidOperationException("Follow has already been Rejected before!");
 
             if (MainObject.Type == "https://www.w3.org/ns/activitystreams#Accept")
             {
                 relevant = await _relevantEntities.FindRelevantObject(followUser, "Accept", followObject.Id);
-                if (relevant != null) throw new InvalidOperationException("Follow has already been Accepted before!");
+                if (relevant.Count > 0) throw new InvalidOperationException("Follow has already been Accepted before!");
             }
 
             var following = await EntityStore.GetEntity(Actor.Data["following"].Single().Id, false);

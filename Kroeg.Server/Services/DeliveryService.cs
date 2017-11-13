@@ -76,9 +76,9 @@ namespace Kroeg.Server.Services
                 {
                     followers = new List<APEntity> { await _store.GetEntity((string)data.Data["attributedTo"].Single().Primitive, false) };
                 }
-                else if (data != null && !data.IsOwner)
+                else if (data == null || !data.IsOwner)
                 {
-                    followers = await _relevantEntities.FindEntitiesWithFollowerId(data.Id);
+                    followers = await _relevantEntities.FindEntitiesWithFollowerId(entity);
                 }
 
                 if (followers == null || followers.Count == 0) continue; // apparently not a follower list? giving up.
@@ -88,7 +88,7 @@ namespace Kroeg.Server.Services
                     var following = await _collectionTools.CollectionsContaining(f.Id, "_following");
                     foreach (var item in following)
                     {
-                        result.Add((string)item.Data["attributedTo"].Single().Primitive);
+                        result.Add((string)item.Data["attributedTo"].Single().Id);
                     }
                 }
             }
