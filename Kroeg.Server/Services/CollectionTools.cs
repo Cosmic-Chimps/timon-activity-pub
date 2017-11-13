@@ -123,7 +123,7 @@ namespace Kroeg.Server.Services
             if (type == null)
                 collectionItems = await _connection.QueryAsync<CollectionItem>("select * from \"CollectionItems\" where \"ElementId\" = @Id", new { Id = idString.Value });
             else
-                collectionItems = await _connection.QueryAsync<CollectionItem>("select * from \"CollectionItems\" where \"ElementId\" = @Id and \"Type\" = @Type", new { Id = idString.Value, Type = type });
+                collectionItems = await _connection.QueryAsync<CollectionItem>("select a.* from \"CollectionItems\" a where a.\"ElementId\" = @Id and exists(select 1 from \"TripleEntities\" ent where a.\"CollectionId\" = ent.\"EntityId\" and ent.\"Type\" = @Type)", new { Id = idString.Value, Type = type });
 
             return await _entityStore.GetEntities(collectionItems.Select(a => a.CollectionId).ToList());
         }
