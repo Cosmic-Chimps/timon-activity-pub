@@ -25,7 +25,7 @@ namespace Kroeg.Server.ConsoleSystem.Commands
                     continue;
                 }
 
-                Console.WriteLine($"--- IsOwner: {data.IsOwner}, LastUpdate: {data.Updated}, Type: {data.Type}");
+                Console.WriteLine($"--- IsOwner: {data.IsOwner}, LastUpdate: {data.Updated}, Type: {data.Type}, DbId {data.DbId}");
                 Console.WriteLine(data.Data.Serialize(true).ToString());
                 Console.WriteLine("--- ---");
             }

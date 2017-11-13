@@ -213,10 +213,12 @@ namespace Kroeg.Server.Controllers
             }
             catch (UnauthorizedAccessException e)
             {
+                Console.WriteLine(e);
                 return StatusCode(403, e);
             }
             catch (InvalidOperationException e)
             {
+                Console.WriteLine(e);
                 return StatusCode(401, e);
             }
        }
