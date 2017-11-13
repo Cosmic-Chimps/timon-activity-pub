@@ -12,13 +12,14 @@ using Dapper;
 using System.Data.Common;
 using System.Diagnostics;
 using Npgsql;
+using Microsoft.Extensions.Configuration;
 
 namespace Kroeg.Server.Services.EntityStore
 {
     public class TripleEntityStore : IEntityStore
     {
         private readonly DbConnection _connection;
-        private readonly NpgsqlConnection _attributeConnection;
+        private readonly DbConnection _attributeConnection;
 
         private readonly ILogger _logger;
 
@@ -30,10 +31,10 @@ namespace Kroeg.Server.Services.EntityStore
 
         private static JsonLD.API _api = new JsonLD.API(null);
 
-        public TripleEntityStore(DbConnection connection, NpgsqlConnection attributeConnection, ILogger<TripleEntityStore> logger)
+        public TripleEntityStore(DbConnection connection, ILogger<TripleEntityStore> logger, ConfigurationRoot configuration)
         {
             _connection = connection;
-            _attributeConnection = attributeConnection;
+            _attributeConnection = new NpgsqlConnection(configuration.GetConnectionString("Default"));
             _logger = logger;
         }
 
