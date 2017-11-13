@@ -291,8 +291,9 @@ namespace Kroeg.Server.Services.EntityStore
 
         public async Task<APEntity> StoreEntity(APEntity entity)
         {
-            var exists = await _connection.QueryFirstOrDefaultAsync<APTripleEntity>("select * from \"TripleEntities\" where \"EntityId\" = @Id limit 1", new { Id = entity.DbId });
-            
+            var idid = await ReverseAttribute(entity.Id, false);
+            var exists = await _connection.QueryFirstOrDefaultAsync<APTripleEntity>("select * from \"TripleEntities\" where \"EntityId\" = @Id or \"IdId\" = @IdId limit 1", new { Id = entity.DbId, IdId = idid });
+
             if (exists == null)
             {
                 entity.Updated = DateTime.Now;

@@ -418,7 +418,7 @@ jsonld.flatten = function(input, ctx, options, callback) {
     var flattened;
     try {
       // do flattening
-      flattened = new Processor().flatten(_input, options.flattener);
+      flattened = new Processor().flatten(_input, options.issuer);
     } catch(ex) {
       return callback(ex);
     }

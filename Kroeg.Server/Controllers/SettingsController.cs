@@ -201,11 +201,15 @@ namespace Kroeg.Server.Controllers
             var entity = await _entityStore.GetEntity((string) HttpContext.Items["fullPath"], false);
             try
             {
-                var entOut = await handler.Post(HttpContext, (string)HttpContext.Items["fullPath"], entity, obj);
-                if (entOut == null)
-                    return NotFound();
-                obj = await _flattener.Unflatten(_entityStore, entOut);
-                return Content(obj.Serialize().ToString(), "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"");
+                using (var transaction = _connection.BeginTransaction())
+                {
+                    var entOut = await handler.Post(HttpContext, (string)HttpContext.Items["fullPath"], entity, obj);
+                    if (entOut == null)
+                        return NotFound();
+                    obj = await _flattener.Unflatten(_entityStore, entOut);
+                    transaction.Commit();
+                    return Content(obj.Serialize().ToString(), "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"");
+                }
             }
             catch (UnauthorizedAccessException e)
             {
