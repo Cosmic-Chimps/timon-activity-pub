@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 
 namespace Kroeg.ActivityStreams
@@ -71,7 +73,7 @@ namespace Kroeg.ActivityStreams
 
         public static ASTerm Parse(JObject obj)
         {
-            if (obj["@type"] != null && obj["@value"] == null)
+            if (obj.Properties().Any(a => !a.Name.StartsWith("@")))
                 return new ASTerm { SubObject = ASObject.Parse(obj) };
             else if (obj["@id"] != null)
                 return new ASTerm { Id = obj["@id"].ToObject<string>() };
