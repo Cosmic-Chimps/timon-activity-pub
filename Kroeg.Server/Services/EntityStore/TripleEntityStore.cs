@@ -31,7 +31,7 @@ namespace Kroeg.Server.Services.EntityStore
 
         private static JsonLD.API _api = new JsonLD.API(null);
 
-        public TripleEntityStore(DbConnection connection, ILogger<TripleEntityStore> logger, ConfigurationRoot configuration)
+        public TripleEntityStore(DbConnection connection, ILogger<TripleEntityStore> logger, IConfigurationRoot configuration)
         {
             _connection = connection;
             _attributeConnection = new NpgsqlConnection(configuration.GetConnectionString("Default"));
