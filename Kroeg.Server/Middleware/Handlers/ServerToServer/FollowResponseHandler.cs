@@ -27,7 +27,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
             var followObject = await EntityStore.GetEntity(MainObject.Data["object"].Single().Id, false);
             if (followObject == null)
             {
-                followObject = (await _relevantEntities.FindRelevantObject(TargetBox.Data["attributedTo"].First().Id, "https://www.w3.org/ns/activitystreams#Follow", Actor.Id)).FirstOrDefault();
+                followObject = (await _relevantEntities.FindRelevantObject(Actor.Id, "https://www.w3.org/ns/activitystreams#Follow", MainObject.Data["actor"].First().Id)).FirstOrDefault();
                 if (followObject != null)
                 {
                     MainObject.Data.Replace("object", ASTerm.MakeId(followObject.Id));
