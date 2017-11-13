@@ -19,14 +19,13 @@ namespace Kroeg.ActivityStreams
         private static JToken _context = "https://www.w3.org/ns/activitystreams";
 
         private static Dictionary<string, JObject> _objectStore = new Dictionary<string, JObject>();
-        private static JsonLD.API _api = new JsonLD.API(_resolve);
+        private static JsonLD.API _api => new JsonLD.API(_resolve);
         private static string _contextUrl;
 
         public List<string> CompactedTypes => Type.Select(_ldContext.CompactIRI).ToList();
         public static async Task SetContext(JToken context, string contextUrl)
         {
             _context = context;
-            _api = new JsonLD.API(_resolve);
             _ldContext = await _api.BuildContext(context);
             _contextUrl = contextUrl;
         }
