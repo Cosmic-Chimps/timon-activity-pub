@@ -119,7 +119,7 @@ namespace Kroeg.ActivityStreams
                 if (kv.Value.Count == 0)
                     continue;
                 else if (_ldContext.TermDefinitions.Any(a => a.Value.IriMapping == kv.Key && a.Value.ContainerMapping == "@list"))
-                    newObject[kv.Key] = new JArray(new JObject { ["@list"] = new JArray(kv.Value.Select(a => a.Serialize(false)).ToArray()) });
+                    newObject[kv.Key] = new JArray(new JObject { ["@list"] = new JArray(kv.Value.Select(a => a?.Serialize(false)).ToArray()) });
                 else
                     newObject[kv.Key] = new JArray(kv.Value.Select(a => a.Serialize(false)).ToArray());
 

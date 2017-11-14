@@ -344,7 +344,7 @@ namespace Kroeg.Server.Services.EntityStore
                             triple.SubjectEntityId = exists.EntityId;
                         }
 
-                        await _connection.ExecuteAsync("insert into \"Triples\" (\"SubjectId\", \"SubjectEntityId\", \"PredicateId\", \"AttributeId\", \"TypeId\", \"Object\") values (@SubjectId, @SubjectEntityId, @PredicateId, @AttributeId, @TypeId, @Object)", compare);
+                        await _connection.ExecuteAsync("insert into \"Triples\" (\"SubjectId\", \"SubjectEntityId\", \"PredicateId\", \"AttributeId\", \"TypeId\", \"Object\") values (@SubjectId, @SubjectEntityId, @PredicateId, @AttributeId, @TypeId, @Object)", compare[key]);
                     }
                 }
             }

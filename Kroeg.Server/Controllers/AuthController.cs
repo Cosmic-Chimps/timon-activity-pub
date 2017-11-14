@@ -261,15 +261,24 @@ namespace Kroeg.Server.Controllers
             var data = ASObject.Parse(await reader.ReadToEndAsync());
 
             if (!_entityConfiguration.IsActivity(data)) return StatusCode(403, "Not an activity?");
-            if (!data["actor"].Any((a) => a.Id == userId)) return StatusCode(403, "Invalid signature!");
 
             await _connection.OpenAsync();
+
             using (var transaction = _connection.BeginTransaction())
             {
-                var temporaryStore = new StagingEntityStore(_entityStore);
-                var resultEntity = await _entityFlattener.FlattenAndStore(temporaryStore, data, false);
-                temporaryStore.TrimDown((new Uri(new Uri(userId), "/")).ToString());
-                await temporaryStore.CommitChanges();
+                APEntity resultEntity;
+                if (data["actor"].Any((a) => a.Id == userId))
+                {
+                    var temporaryStore = new StagingEntityStore(_entityStore);
+                    resultEntity = await _entityFlattener.FlattenAndStore(temporaryStore, data, false);
+                    temporaryStore.TrimDown((new Uri(new Uri(userId), "/")).ToString());
+                    await temporaryStore.CommitChanges();
+                }
+                else
+                {
+                    resultEntity = await _entityStore.GetEntity(data.Id, true);
+                    data = resultEntity.Data;
+                }
 
                 var users = await _deliveryService.GetUsersForSharedInbox(data);
 
