@@ -113,9 +113,10 @@ export class Kroeg {
 
         e.preventDefault();
         e.stopPropagation();
-        let href = link.href;
+        let href = link.href.split('#')[0];
+        let hash = link.href.split('#')[1];
         if (this._isRemote(href)) {
-            href = window.location.toString().split('#')[0] + "#id=" + link.href;
+            href = window.location.toString().split('#')[0] + "#id=" + href + (hash ? ('&' + hash) : '');
         }
         let elem = link.parentElement;
         if (link.dataset["open"] == "renderhost")
@@ -125,8 +126,8 @@ export class Kroeg {
 
         console.log(elem);
         if (elem == null || link.dataset["open"] != "renderhost") {
-            window.history.pushState({id: link.href}, document.title, href);
-            this._update(link.href);
+            window.history.pushState({id: link.href.split('#')[0]}, document.title, href);
+            this._update(link.href.split('#')[0]);
         } else {
             SubRenderhost.RenderhostMap.get(elem).navigate(link.href);
         }

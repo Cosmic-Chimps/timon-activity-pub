@@ -8,6 +8,9 @@
 		<div class="col-md-12 kroeg-content">
 			<div>
 				{{Renderer.clean(AS.take('content'))}}
+				<div x-if="Renderer.loggedInAs != null">
+					<a class="btn btn-sm btn-primary" href="kroeg:newnote#reply={{AS.take('id')}}">reply</a>
+				</div>
 			</div>
 			<div class="kroeg-attachments">
 				<div x-render="attachment/attachment" x-render-id="item" x-for-in="{{AS.get('attachment')}}"></div>

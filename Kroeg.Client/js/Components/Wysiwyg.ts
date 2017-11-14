@@ -19,6 +19,9 @@ export class Wysiwyg implements IComponent {
     private mentionItems: HTMLDivElement;
 
     constructor(public host: RenderHost, private entityStore: EntityStore, public element: HTMLElement) {
+        let currentContent: Node[] = [];
+        while (element.firstChild)
+            currentContent.unshift(element.removeChild(element.firstChild));
         this.contentEditable = document.createElement("div");
         this.contentEditable.contentEditable = "true";
         this.contentEditable.innerHTML = "";
@@ -33,6 +36,9 @@ export class Wysiwyg implements IComponent {
         element.appendChild(this.contentEditable);
         element.appendChild(this.resultField);
         element.appendChild(this.mentionItems);
+
+        for (let item of currentContent)
+            this.contentEditable.appendChild(item);
 
         this.contentEditable.addEventListener("blur", () => this.dismiss());
         this.contentEditable.addEventListener("input", (ev) => this.onInput(ev));

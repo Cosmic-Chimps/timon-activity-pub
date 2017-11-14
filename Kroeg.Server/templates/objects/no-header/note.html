@@ -2,5 +2,8 @@
         <div x-if="AS.has('inReplyTo')" x-render="objects/sub/in_reply_to" x-render-id="AS.take('inReplyTo')"></div>
 	<div class="col-md-12 nopad kroeg-content">
 		{{Renderer.clean(AS.take('content'))}}
+		<div x-if="Renderer.loggedInAs != null">
+			<a class="btn btn-sm btn-primary" href="kroeg:newnote#reply={{AS.take('id')}}">reply</a>
+		</div>
 	</div>
 </div>

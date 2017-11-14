@@ -1,5 +1,5 @@
 <div>
-    <h1>New note</h1>
+    <h1>New <span x-if="Data.reply">reply</span><span x-if="!Data.reply">note</span></h1>
 
     <form data-component="form" data-endpoint="{{Renderer.loggedInAs.outbox}}">
         <input type="hidden" name="type" value="Note" />
@@ -10,7 +10,16 @@
         </div>
         <div class="form-group">
             <label for="_content">Content:</label>
-            <div class="form-control" data-component="wysiwyg" data-tags="to" data-placeholder="Enter your content here" data-name="content" id="_content">
+            <div x-if="!Data.reply" class="form-control" data-component="wysiwyg" data-tags="to" data-placeholder="Enter your content here" data-name="content" id="_content">
+            </div>
+            <div x-if="Data.reply" x-render-id="Data.reply">
+            <div x-render-id="AS.take('attributedTo')">
+                <div class="form-control" data-component="wysiwyg" data-tags="to" data-placeholder="Enter your content here" data-name="content" id="_content">
+                    <p>
+                        <a class="mention" href="{{AS.take('id')}}">@{{AS.take('preferredUsername')}}</a> (reply here)
+                    </p>
+                </div>
+            </div>
             </div>
         </div>
         <div class="form-group">
