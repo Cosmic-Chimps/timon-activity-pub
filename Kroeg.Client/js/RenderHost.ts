@@ -1,4 +1,4 @@
-import { TemplateRenderer, TemplateService, RenderResult } from "./TemplateService";
+import { TemplateRenderer, TemplateService, RenderResult, TemplateItem } from "./TemplateService";
 import { EntityStore, StoreActivityToken } from "./EntityStore";
 import { ASObject } from "./AS";
 import { IComponent, IComponentType } from "./IComponent";
@@ -12,7 +12,7 @@ export class RenderHost {
     private _lastResult: RenderResult;
     private _object: ASObject;
     private _id: string;
-    private _template: string;
+    private _template: string|TemplateItem;
     private _dom: HTMLElement;
     private _storeActivityToken: StoreActivityToken;
     private _subrender: RenderHost[] = [];
@@ -32,10 +32,13 @@ export class RenderHost {
     public get id(): string { return this._id; }
     public set id(value: string) { this._id = value; this.update(true); }
 
-    public get template(): string { return this._template; }
-    public set template(value: string) { this._template = value; this.render(); }
+    public get data(): {[name: string]: string} { return this._renderData; }
+    public set data(value: {[name: string]: string}) { this._renderData = value; }
 
-    constructor(public renderer: TemplateRenderer, private store: EntityStore, id: string, template: string, dom?: HTMLElement, private _parent?: RenderHost, private _renderData?: {[name: string]: string}) {
+    public get template(): string|TemplateItem { return this._template; }
+    public set template(value: string|TemplateItem) { this._template = value; this.render(); }
+
+    constructor(public renderer: TemplateRenderer, private store: EntityStore, id: string, template: string|TemplateItem, dom?: HTMLElement, private _parent?: RenderHost, private _renderData?: {[name: string]: string}, private _parentAS?: ASObject) {
         this._dom = dom != null ? dom : document.createElement("div");
         this._id = id;
         this._template = template;
@@ -81,7 +84,7 @@ export class RenderHost {
             data.unbind();
         this._subrender.splice(0);
 
-        const result = await this.renderer.render(this._template, this._object, this._dom, this._renderData);
+        const result = await this.renderer.render(this._template, this._object, this._dom, this._renderData, this._parentAS);
 
         for (let old of this._subrender)
             old.deregister();
@@ -90,7 +93,7 @@ export class RenderHost {
         this._components = [];
 
         for (let item of result.subRender) {
-            let host = new RenderHost(this.renderer, this.store, item.id, item.template, item.into, this, item.data);
+            let host = new RenderHost(this.renderer, this.store, item.id, item.template, item.into, this, item.data, item.parent);
             this._subrender.push(host);
         }
 

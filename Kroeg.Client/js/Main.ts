@@ -19,6 +19,16 @@ export class Kroeg {
     private _templateRenderer: TemplateRenderer;
     private _sessionObjects: SessionObjects;
 
+    private _parseHash(): {[name: string]: string} {
+        let split = window.location.hash.substring(1).split('&');
+        let kvp: {[a: string]: string} = {};
+        for (let item of split) {
+            let splitItem = item.split('=');
+            kvp[splitItem[0]] = decodeURIComponent(splitItem[1]);
+        }
+        return kvp;
+    }
+
     private _log(msg: string) {
         statusUpdate.innerText = msg;
     }
@@ -36,8 +46,8 @@ export class Kroeg {
     }
 
     private _getLocation(): string {
-        if (window.location.hash.startsWith("#id="))
-            return window.location.hash.substring(4);
+        if ("id" in this._parseHash())
+            return this._parseHash()["id"];
         return window.location.toString().split('#')[0];
     }
 
@@ -64,7 +74,7 @@ export class Kroeg {
         await this._templateRenderer.prepare();
 
         let container = document.getElementsByClassName("container")[0] as HTMLElement;
-        this._container = new RenderHost(this._templateRenderer, this._entityStore, this._getLocation(), "body", container);
+        this._container = new RenderHost(this._templateRenderer, this._entityStore, this._getLocation(), "body", container, null, this._parseHash());
 
         let navbar = document.getElementsByClassName("navbar")[0] as HTMLElement;
         this._navbar = new RenderHost(this._templateRenderer, this._entityStore, this._sessionObjects.navbar, "navbar/bar", navbar);
@@ -88,6 +98,7 @@ export class Kroeg {
     }
 
     private _update(id: string) {
+        this._container.data = this._parseHash();
         this._container.id = id;
     }
 

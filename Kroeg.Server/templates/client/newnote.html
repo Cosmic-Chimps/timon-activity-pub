@@ -3,6 +3,7 @@
 
     <form data-component="form" data-endpoint="{{Renderer.loggedInAs.outbox}}">
         <input type="hidden" name="type" value="Note" />
+        <div x-if="Data.reply" x-render="objects/header/object" x-render-id="Data.reply"></div>
         <div class="form-group">
             <label for="_name">Name:</label>
             <input type="text" class="form-control" name="name" id="_name" />
@@ -14,7 +15,10 @@
         </div>
         <div class="form-group">
             <label for="_taggyTo">Send to:</label>
-            <div class="kroeg-taggy form-control" data-default="{{Renderer.loggedInAs.followers}}" data-component="userpicker" data-name="to"><span class="kroeg-taggy-tags"></span><div class="kroeg-taggy-input"><input type="text" id="_taggyTo" value="" /></div></div>
+            <div x-if="!Data.reply" class="kroeg-taggy form-control" data-default="{{Renderer.loggedInAs.followers}}" data-component="userpicker" data-name="to"><span class="kroeg-taggy-tags"></span><div class="kroeg-taggy-input"><input type="text" id="_taggyTo" value="" /></div></div>
+            <div x-if="Data.reply" x-render-id="Data.reply">
+                <div class="kroeg-taggy form-control" data-default="{{Renderer.loggedInAs.followers}} {{AS.take('attributedTo')}}" data-component="userpicker" data-name="to"><span class="kroeg-taggy-tags"></span><div class="kroeg-taggy-input"><input type="text" id="_taggyTo" value="" /></div></div>
+            </div>
             <label class="form-check-label">
                 <input type="checkbox" class="form-check-input" name="to" value="https://www.w3.org/ns/activitystreams#Public">
                 Also send publicly

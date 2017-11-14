@@ -136,7 +136,8 @@ export class UserPicker implements IComponent {
         UserPicker.formMap.get(this._form)[this.name] = this;
 
         if ("default" in element.dataset) {
-            this.addTag(element.dataset.default);
+            for (let item of element.dataset.default.split(" "))
+                this.addTag(item);
         }
     }
 
