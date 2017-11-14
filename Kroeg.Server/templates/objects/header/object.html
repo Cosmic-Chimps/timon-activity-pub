@@ -1,4 +1,4 @@
-<div class="col-md-12 nopad">
+<div class="col-md-12 nopad {{Data.extraClass||''}}">
 		<div x-render="objects/activities/activity" x-if="AS.has('actor')"></div>
 		<div x-render="objects/header/note" x-if="AS.contains('type', 'Note')"></div>
 		<div x-render="objects/header/pagearticle" x-if="AS.containsAny('type', ['Page', 'Article'])"></div>

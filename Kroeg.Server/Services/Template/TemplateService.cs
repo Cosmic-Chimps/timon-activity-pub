@@ -31,6 +31,7 @@ namespace Kroeg.Server.Services.Template
             public ASHandler Handler { get; set; }
             public RendererData Renderer { get; set; }
             public Dictionary<string, APEntity> UsedEntities { get; set; } = new Dictionary<string, APEntity>();
+            public Dictionary<string, string> Data { get; set; } = new Dictionary<string, string>();
             public int EntityCount { get; set; }
         }
 
@@ -167,9 +168,10 @@ namespace Kroeg.Server.Services.Template
         private async Task<string> _parseElement(HtmlDocument doc, TemplateItem item, IEntityStore entityStore, ASObject data, Registers regs)
         {
             var result = doc.CreateElement(item.Data);
+            var extraRenderData = new Dictionary<string, string>();
             foreach (var argument in item.Arguments)
             {
-                if (!argument.Key.StartsWith("x-"))
+                if (!argument.Key.StartsWith("x-") || argument.Key.StartsWith("x-render-") && argument.Key != "x-render-id")
                 {
                     var resultValue = new StringBuilder();
                     foreach (var subitem in argument.Value)
@@ -177,7 +179,10 @@ namespace Kroeg.Server.Services.Template
                             resultValue.Append(subitem.Data);
                         else
                             resultValue.Append(_parse(subitem.Data, data, regs));
-                    result.Attributes.Add(argument.Key, resultValue.ToString());
+                    if (argument.Key.StartsWith("x-render-"))
+                        extraRenderData[argument.Key.Replace("x-render-", "")] = resultValue.ToString();
+                    else
+                        result.Attributes.Add(argument.Key, resultValue.ToString());
                 }
             }
 
@@ -233,8 +238,12 @@ namespace Kroeg.Server.Services.Template
                     }
                 }
 
-                if (objData != null)
+                if (objData != null) {
+                    var oldData = regs.Data;
+                    regs.Data = extraRenderData;
                     return await _parseTemplate(template, entityStore, objData, regs, doc);
+                    regs.Data = oldData;
+                }
             }
             
             if (item.Arguments.ContainsKey("data-component") && item.Arguments["data-component"][0].Data == "renderhost" && parse)
@@ -316,6 +325,7 @@ namespace Kroeg.Server.Services.Template
             var engine = new Engine();
             engine.SetValue("AS", regs.Handler);
             engine.SetValue("Renderer", regs.Renderer);
+            engine.SetValue("Data", regs.Data);
             regs.Engine = engine;
             var doc = new HtmlDocument();
 

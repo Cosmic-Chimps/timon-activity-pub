@@ -180,10 +180,7 @@ export class TemplateRenderer {
             for (let regi in item.arguments) {
                 if (regi.startsWith("x-render-"))
                 {
-                    let a = "";
-                    for (let regii of item.arguments[regi])
-                        a += this._parse(regii, data, regs, true);
-                    newData[regi.substr(9)] = a;
+                    newData[regi.substr(9)] = this._parseArr(item.arguments[regi], data, regs);
                 }
             }
 

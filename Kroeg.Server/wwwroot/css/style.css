@@ -37,6 +37,10 @@ img.emoji {
     vertical-align: -0.1em;
  }
 
+.kroeg-attachments img {
+    width: 100%;
+}
+
 /** START userpicker **/
 .kroeg-taggy {
     -webkit-appearance: textfield;
