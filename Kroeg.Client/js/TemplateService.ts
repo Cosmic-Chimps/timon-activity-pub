@@ -36,7 +36,7 @@ export class TemplateService {
 
 export class RenderResult {
     public result: HTMLElement;
-    public subRender: {id: string, into: HTMLElement, template: string}[];
+    public subRender: {id: string, into: HTMLElement, template: string, data: {[name: string]: string}}[];
     public componentHandles: HTMLElement[];
 }
 
@@ -119,6 +119,7 @@ class Registers {
     public Renderer: RendererInfo;
     public object: AS.ASObject;
     public item: any;
+    public Data: {[data: string]: string} = {};
 }
 
 export class TemplateRenderer {
@@ -145,7 +146,7 @@ export class TemplateRenderer {
         }
         else if (item.type == TemplateItemType.Script)
         {
-            item.builder = new Function("regs", `let AS = regs.AS; let Renderer = regs.Renderer; let object = regs.object; let item=regs.item; return (${item.data});`) as (regs: Registers) => any;
+            item.builder = new Function("regs", `let AS = regs.AS; let Renderer = regs.Renderer; let object = regs.object; let item=regs.item; let Data=regs.Data; return (${item.data});`) as (regs: Registers) => any;
         }
     }
 
@@ -174,18 +175,35 @@ export class TemplateRenderer {
             let templateName = item.arguments["x-render"][0].data;
             let template = this.templates[templateName];
             let renderId = itemId;
+            let oldData = regs.Data;
+            let newData: {[name: string]: string} = {};
+            for (let regi in item.arguments) {
+                if (regi.startsWith("x-render-"))
+                {
+                    let a = "";
+                    for (let regii of item.arguments[regi])
+                        a += this._parse(regii, data, regs, true);
+                    newData[regi.substr(9)] = a;
+                }
+            }
+
             if ("x-render-id" in item.arguments)
                 renderId = this._parse(item.arguments["x-render-id"][0], data, regs, true) as string;
 
             if (typeof renderId == "object")
-                return this._render(template, renderId as AS.ASObject, regs, renderResult, true);
+            {
+                regs.Data = newData;
+                let result = this._render(template, renderId as AS.ASObject, regs, renderResult, true);
+                regs.Data = oldData;
+                return result;
+            }
 
             if (renderId != itemId)
             {
                 let rendered = this._render(template, null, regs, renderResult, false);
                 rendered.dataset["render"] = templateName;
                 rendered.dataset["id"] = renderId;
-                renderResult.subRender.push({id: renderId, into: rendered, template: templateName});
+                renderResult.subRender.push({id: renderId, into: rendered, template: templateName, data: newData});
                 return rendered;
             }
 
@@ -254,10 +272,11 @@ export class TemplateRenderer {
         return element;
     }
 
-    public render(template: string, data: AS.ASObject, elem?: HTMLElement): RenderResult {
+    public render(template: string, data: AS.ASObject, elem?: HTMLElement, ndata?: {[name: string]: string}): RenderResult {
         let regs = new Registers();
         regs.AS = new _ASHandler(regs);
         regs.Renderer = new RendererInfo(this.entityStore.session);
+        regs.Data = ndata || {};
 
         let renderResult = new RenderResult();
         renderResult.subRender = [];

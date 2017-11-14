@@ -35,7 +35,7 @@ export class RenderHost {
     public get template(): string { return this._template; }
     public set template(value: string) { this._template = value; this.render(); }
 
-    constructor(public renderer: TemplateRenderer, private store: EntityStore, id: string, template: string, dom?: HTMLElement, private _parent?: RenderHost) {
+    constructor(public renderer: TemplateRenderer, private store: EntityStore, id: string, template: string, dom?: HTMLElement, private _parent?: RenderHost, private _renderData?: {[name: string]: string}) {
         this._dom = dom != null ? dom : document.createElement("div");
         this._id = id;
         this._template = template;
@@ -81,7 +81,7 @@ export class RenderHost {
             data.unbind();
         this._subrender.splice(0);
 
-        const result = await this.renderer.render(this._template, this._object, this._dom);
+        const result = await this.renderer.render(this._template, this._object, this._dom, this._renderData);
 
         for (let old of this._subrender)
             old.deregister();
@@ -90,7 +90,7 @@ export class RenderHost {
         this._components = [];
 
         for (let item of result.subRender) {
-            let host = new RenderHost(this.renderer, this.store, item.id, item.template, item.into, this);
+            let host = new RenderHost(this.renderer, this.store, item.id, item.template, item.into, this, item.data);
             this._subrender.push(host);
         }
 
