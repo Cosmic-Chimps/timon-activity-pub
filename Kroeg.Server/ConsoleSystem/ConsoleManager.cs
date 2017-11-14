@@ -35,7 +35,9 @@ namespace Kroeg.Server.ConsoleSystem
             ["attr"] = typeof(Commands.AttributeCommand),
             ["attribute"] = typeof(Commands.AttributeCommand),
             ["t"] = typeof(Commands.TriplesCommand),
-            ["triples"] = typeof(Commands.TriplesCommand)
+            ["triples"] = typeof(Commands.TriplesCommand),
+            ["r"] = typeof(Commands.RefreshCommand),
+            ["refresh"] = typeof(Commands.RefreshCommand)
         };
 
         private class _nullHttpContextAccessor : IHttpContextAccessor
@@ -166,6 +168,7 @@ namespace Kroeg.Server.ConsoleSystem
             _services.AddTransient<Commands.GetCommand>();
             _services.AddTransient<Commands.AttributeCommand>();
             _services.AddTransient<Commands.TriplesCommand>();
+            _services.AddTransient<Commands.RefreshCommand>();
         }
     }
 }
