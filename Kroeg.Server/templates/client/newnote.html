@@ -3,6 +3,8 @@
 
     <form data-component="form" data-endpoint="{{Renderer.loggedInAs.outbox}}">
         <input type="hidden" name="type" value="Note" />
+        <input type="hidden" name="inReplyTo" value="{{Data.reply}}" x-if="Data.reply" />
+
         <div x-if="Data.reply" x-render="objects/header/object" x-render-id="Data.reply"></div>
         <div class="form-group">
             <label for="_name">Name:</label>
@@ -10,15 +12,10 @@
         </div>
         <div class="form-group">
             <label for="_content">Content:</label>
-            <div x-if="!Data.reply" class="form-control" data-component="wysiwyg" data-tags="to" data-placeholder="Enter your content here" data-name="content" id="_content">
-            </div>
+            <div x-if="!Data.reply" class="form-control" data-component="wysiwyg" data-tags="to" data-placeholder="Enter your content here" data-name="content" id="_content"></div>
             <div x-if="Data.reply" x-render-id="Data.reply">
             <div x-render-id="AS.take('attributedTo')">
-                <div class="form-control" data-component="wysiwyg" data-tags="to" data-placeholder="Enter your content here" data-name="content" id="_content">
-                    <p>
-                        <a class="mention" href="{{AS.take('id')}}">@{{AS.take('preferredUsername')}}</a> (reply here)
-                    </p>
-                </div>
+                <div class="form-control" data-component="wysiwyg" data-tags="to" data-placeholder="Enter your content here" data-name="content" id="_content"><p><a class="mention" href="{{AS.take('id')}}">@{{AS.take('preferredUsername')}}</a> (reply here)</p></div>
             </div>
             </div>
         </div>
