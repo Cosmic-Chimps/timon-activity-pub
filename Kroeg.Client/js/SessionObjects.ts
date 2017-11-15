@@ -9,7 +9,7 @@ export class SessionObjects {
         this.regenerate();
     }
 
-    private static _placeholders: string[] = ["newnote", "newarticle", "announce"];
+    private static _placeholders: string[] = ["newnote", "newarticle", "announce", "add", "remove"];
 
     public regenerate() {
         let navbar: {id: string, loggedInAs?: string} = {

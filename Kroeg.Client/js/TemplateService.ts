@@ -184,7 +184,7 @@ export class TemplateRenderer {
             let template = templateName ? this.templates[templateName] : item;
             let renderId = itemId;
             let oldData = regs.Data;
-            let newData: {[name: string]: string} = {};
+            let newData: {[name: string]: string} = Object.assign({}, oldData);
             for (let regi in item.arguments) {
                 if (regi.startsWith("x-render-"))
                 {

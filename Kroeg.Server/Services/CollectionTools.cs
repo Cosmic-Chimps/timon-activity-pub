@@ -144,9 +144,17 @@ namespace Kroeg.Server.Services
             return ci;
         }
 
+        private async Task<int?> _getId(string id)
+        {
+            var otherEntity = await _entityStore.ReverseAttribute(id, false);
+            if (otherEntity == null) return null;
+
+            return await _connection.ExecuteScalarAsync<int>("select \"EntityId\" from \"TripleEntities\" where \"IdId\" = @IdId limit 1", new { IdId = otherEntity.Value });
+        }
+
         public async Task<bool> Contains(APEntity collection, string otherId)
         {
-            var otherEntity = await _entityStore.ReverseAttribute(otherId, false);
+            var otherEntity = await _getId(otherId);
             if (otherEntity == null) return false;
 
             return await _connection.ExecuteScalarAsync<bool>("select exists(select 1 from \"CollectionItems\" where \"CollectionId\" = @CollectionId and \"ElementId\" = @ElementId)", new { CollectionId = collection.DbId, ElementId = otherEntity.Value });
@@ -154,7 +162,7 @@ namespace Kroeg.Server.Services
 
         public async Task RemoveFromCollection(APEntity collection, string id)
         {
-            var otherEntity = await _entityStore.ReverseAttribute(id, false);
+            var otherEntity = await _getId(id);
             if (otherEntity == null) return;
 
             await _connection.ExecuteAsync("delete from \"CollectionItems\" where \"CollectionId\" = @CollectionId and \"ElementId\" = @ElementId", new { CollectionId = collection.DbId, ElementId = otherEntity.Value });
