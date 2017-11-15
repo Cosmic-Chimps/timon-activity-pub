@@ -91,7 +91,7 @@ namespace Kroeg.Server.Services.EntityStore
             var allEntities = (await _connection.QueryAsync<APTripleEntity>("select * from \"TripleEntities\" where \"EntityId\" = any(@Ids)", new { Ids = ids })).OrderBy(a => ids.IndexOf(a.EntityId)).ToList();
             var allTriples = await _connection.QueryAsync<Triple>("select * from \"Triples\" where \"SubjectEntityId\" = any(@Ids)", new { Ids = ids });
 
-            List<APEntity> results = new List<APEntity>();
+            Dictionary<int, APEntity> results = new Dictionary<int, APEntity>();
 
             await _preload(allTriples.Select(a => a.SubjectId)
                                 .Concat(allTriples.Where(a => a.TypeId.HasValue).Select(a => a.TypeId.Value))
@@ -103,10 +103,10 @@ namespace Kroeg.Server.Services.EntityStore
 
             foreach (var mold in allEntities)
             {
-                results.Add(_buildRaw(mold, allTriples.Where(a => a.SubjectEntityId == mold.EntityId), rdfType.Value, rdfEnd.Value));
+                results[mold.EntityId] = _buildRaw(mold, allTriples.Where(a => a.SubjectEntityId == mold.EntityId), rdfType.Value, rdfEnd.Value);
             }
 
-            return results;
+            return ids.Select(a => results[a]).ToList();
         }
 
 

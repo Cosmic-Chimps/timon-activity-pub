@@ -1,7 +1,10 @@
 <div class="col-md-12 nopad {{Data.extraClass||''}}">
+		<div x-if="AS.contains('type', 'Tombstone')">
+			{{Renderer.clean('⚰️')}} - here lies {{AS.take('id')}}
+		</div>
 		<div x-render="objects/activities/activity" x-if="AS.has('actor')"></div>
-		<div x-render="objects/header/note" x-if="AS.contains('type', 'Note')"></div>
+		<div x-render="objects/header/note" x-if="AS.contains('type', 'Note')" x-render-render-attachment="{{Data['render-attachment']}}" x-render-hide-reply="{{Data['hide-reply']}}"></div>
 		<div x-render="objects/header/pagearticle" x-if="AS.containsAny('type', ['Page', 'Article'])"></div>
 		<div x-render="objects/header/person" x-if="AS.contains('type', 'Person')"></div>
-		<span x-if="!AS.containsAny('type', ['Note', 'Person', 'Page', 'Article']) && !AS.has('actor')">{{AS.take('id')}}</span>
+		<span x-if="!AS.containsAny('type', ['Note', 'Person', 'Page', 'Article', 'Tombstone']) && !AS.has('actor')">{{AS.take('id')}}</span>
 </div>

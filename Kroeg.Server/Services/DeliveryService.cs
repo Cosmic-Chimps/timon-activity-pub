@@ -135,7 +135,7 @@ namespace Kroeg.Server.Services
             var salmons = new HashSet<string>();
             foreach (var item in targetIds)
             {
-                var entity = await _store.GetEntity(item, true);
+                var entity = await _store.GetEntity(item, false); if (entity == null) continue;
                 var data = entity.Data;
                 // if it's local collection, or we don't need the forwarding thing
                 var iscollection = data.Type.Contains("https://www.w3.org/ns/activitystreams#Collection") || data.Type.Contains("https://www.w3.org/ns/activitystreams#OrderedCollection");

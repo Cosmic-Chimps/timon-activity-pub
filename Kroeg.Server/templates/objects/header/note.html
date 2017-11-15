@@ -1,19 +1,37 @@
 <div>
-        <div x-if="AS.has('inReplyTo')" x-render="objects/header/object" x-render-id="AS.take('inReplyTo')" x-render-extraClass="inReplyTo"></div>
+        <div x-if="AS.has('inReplyTo') && Data['hide-reply'] != 'true'" x-render="objects/header/object" x-render-id="AS.take('inReplyTo')" x-render-extra-class="inReplyTo" x-render-render-attachment="{{Data['render-attachment']}}"></div>
 	<div class="row" style="padding-left: 58px; position: relative">
 		<div class="col-md-12">
 			<div x-render="objects/sub/user_header" x-render-id="AS.take('attributedTo')"></div>
-			<a href="{{AS.take('id')}}"><small>at {{Renderer.sanitize(AS.take('published'))}}</small></a>
+			<a href="{{AS.take('id')}}"><small>at {{Renderer.date(AS.take('published'))}}</small></a>
 		</div>
 		<div class="col-md-12 kroeg-content">
-			<div>
+		        <div x-if="AS.has('inReplyTo') && Data['hide-reply'] == 'true'" x-render="objects/sub/in_reply_to" x-render-id="AS.take('inReplyTo')"></div>
+			<div x-if="!AS.has('summary')">
 				{{Renderer.clean(AS.take('content'))}}
-				<div x-if="Renderer.loggedInAs != null">
-					<a class="btn btn-sm btn-primary" href="kroeg:newnote#reply={{AS.take('id')}}">reply</a>
-				</div>
 			</div>
-			<div class="kroeg-attachments">
+			<details x-if="AS.has('summary')">
+				<summary>{{Renderer.sanitize(AS.take('summary'))}}</summary>
+				<div>
+					{{Renderer.clean(AS.take('content'))}}
+				</div>
+			</details>
+			<div class="kroeg-attachments" x-if="Data['render-attachment'] == 'true'">
 				<div x-render="attachment/attachment" x-render-id="item" x-for-in="{{AS.get('attachment')}}"></div>
+			</div>
+			<div class="kroeg-attachments" x-if="Data['render-attachment'] != 'true' && AS.get('attachment').length > 0">
+				<small>{{AS.get('attachment').length.toString()}} attachment{{AS.get('attachment').length == 1 ? "" : "s"}}</small>
+			</div>
+			<div x-if="Renderer.loggedInAs != null">
+				<a class="btn btn-sm btn-primary" href="kroeg:newnote#reply={{AS.take('id')}}">reply</a>
+				<a class="btn btn-sm btn-primary" href="kroeg:announce#post={{AS.take('id')}}">announce</a>
+		                <form x-if="Renderer.loggedInAs != null" data-endpoint="{{Renderer.loggedInAs.outbox}}" data-component="form" style="display: inline">
+		                  <input type="hidden" name="type" value="Like" />
+		                  <input type="hidden" name="actor" value="{{Renderer.loggedInAs.id}}" />
+		                  <input type="hidden" name="object" value="{{AS.take('id')}}" />
+		                  <input type="hidden" name="to" value="{{AS.take('attributedTo')}}" />
+		                  <input type="submit" class="btn btn-primary btn-sm" value="Like" />
+				</form>
 			</div>
 		</div>
 	</div>

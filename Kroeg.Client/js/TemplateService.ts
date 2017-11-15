@@ -85,6 +85,10 @@ class RendererInfo {
         return twemoji.parse(data.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'));
     }
 
+    public date(data: string) {
+        return (new Date(data)).toLocaleString();
+    }
+
     private _clean(data: HTMLElement) {
         if (data.nodeType == document.TEXT_NODE) return;
         if (data.nodeType != document.ELEMENT_NODE) return;
@@ -223,7 +227,6 @@ export class TemplateRenderer {
         if (!render) return element;
 
         if ("data-component" in item.arguments) {
-            console.log(element, item.arguments["data-component"]);
             renderResult.componentHandles.push(element);
         }
 
@@ -277,7 +280,6 @@ export class TemplateRenderer {
         let regs = new Registers();
         regs.AS = new _ASHandler(regs);
         regs.Renderer = new RendererInfo(this.entityStore.session);
-        console.log(ndata);
         regs.Data = ndata || {};
         regs.parent = parent;
 

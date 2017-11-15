@@ -86,6 +86,10 @@ namespace Kroeg.Server.Services.Template
             private static Regex _allowed_classes = new Regex("^((h|p|u|dt|e)-.*|mention|hashtag|ellipsis|invisible)$");
             private static Regex _disallowed_nodes = new Regex("^(script|object|embed)$");
 
+            public string date(string data)
+            {
+                return DateTime.Parse(data).ToLocalTime().ToString();
+            }
 
             public string sanitize(string data)
             {
@@ -220,11 +224,13 @@ namespace Kroeg.Server.Services.Template
                 {
                     try {
 
-                        APEntity obj;
+                        APEntity obj = null;
                         if (regs.UsedEntities.ContainsKey(id))
                             obj = regs.UsedEntities[id];
                         else
-                            obj = await entityStore.GetEntity(id, true);
+                            try {
+                                obj = await entityStore.GetEntity(id, true);
+                            } catch (Exception) { /* nom */ }
 
                         if (obj != null)
                         {

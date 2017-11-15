@@ -1,7 +1,7 @@
 <div class="row" style="padding-left: 58px; position: relative">
 	<div class="col-md-12">
 		<div x-render="objects/sub/user_header" x-render-id="AS.take('actor')"></div>
-		<a href="{{AS.take('id')}}"><small>accepted <span x-if="AS.has('published')">at {{Renderer.sanitize(AS.take('published'))}}</span></small></a>
+		<a href="{{AS.take('id')}}"><small>accepted <span x-if="AS.has('published')">at {{Renderer.date(AS.take('published'))}}</span></small></a>
 	</div>
 	<div class="col-md-12">
 		<div x-render="objects/activities/activity" x-render-id="AS.take('object')"></div>

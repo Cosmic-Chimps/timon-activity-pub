@@ -52,8 +52,8 @@ namespace Kroeg.Server
             NpgsqlLogManager.Provider = new ConsoleLoggingProvider(NpgsqlLogLevel.Debug);
             NpgsqlLogManager.IsParameterLoggingEnabled = true;
 
-            services.AddScoped<DbConnection, NpgsqlConnection>((svc) => new NpgsqlConnection(Configuration.GetConnectionString("Default")));
             services.AddScoped<NpgsqlConnection>((svc) => new NpgsqlConnection(Configuration.GetConnectionString("Default")));
+            services.AddScoped<DbConnection, NpgsqlConnection>((svc) => svc.GetService<NpgsqlConnection>());
 
             services.AddTransient<IUserStore<APUser>, KroegUserStore>();
             services.AddTransient<IUserPasswordStore<APUser>, KroegUserStore>();

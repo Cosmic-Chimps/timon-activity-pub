@@ -285,7 +285,7 @@ namespace Kroeg.Server.Middleware
                 if (entity == null) return null;
                 if (entity.Type == "_blocks" && !entity.Data["attributedTo"].Any(a => a.Id == userId)) throw new UnauthorizedAccessException("Blocks are private!");
                 if (entity.Type == "_blocked") throw new UnauthorizedAccessException("This collection is only used internally for optimization reasons");
-                if (entity.Type == "OrderedCollection" || entity.Type == "Collection" || entity.Type.StartsWith("_")) return APEntity.From(await _getCollection(entity, arguments), true);
+                if (entity.Type == "https://www.w3.org/ns/activitystreams#OrderedCollection" || entity.Type == "https://www.w3.org/ns/activitystreams#Collection" || entity.Type.StartsWith("_")) return APEntity.From(await _getCollection(entity, arguments), true);
                 if (entity.IsOwner && _entityData.IsActor(entity.Data)) return entity;
                 var audience = DeliveryService.GetAudienceIds(entity.Data);
 
