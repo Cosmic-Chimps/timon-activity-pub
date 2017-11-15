@@ -330,11 +330,11 @@ namespace Kroeg.Server.Services.Template
             if (item.Arguments.ContainsKey("data-component") && item.Arguments["data-component"][0].Data == "emoji" && parse)
             {
                 foreach (var tagitem in data["tag"]) {
-                    var obj = tagitem.SubObject ?? (await entityStore.GetEntity(tagitem.Id, true))?.Data;
+                    var obj = tagitem.SubObject ?? (regs.UsedEntities[tagitem.Id] = await entityStore.GetEntity(tagitem.Id, true))?.Data;
                     if (obj == null || !obj.Type.Contains("http://joinmastodon.org/ns#Emoji")) continue;
 
                     var emojiName = (string) obj["name"].First().Primitive;
-                    var url = obj["icon"].First().SubObject ?? (await entityStore.GetEntity(obj["icon"].First().Id, true))?.Data;
+                    var url = obj["icon"].First().SubObject ?? (regs.UsedEntities[obj["icon"].First().Id] = await entityStore.GetEntity(obj["icon"].First().Id, true))?.Data;
                     if (url == null) continue;
 
                     regs.Renderer.EmojiContext[emojiName] = url["url"].First().Id;
