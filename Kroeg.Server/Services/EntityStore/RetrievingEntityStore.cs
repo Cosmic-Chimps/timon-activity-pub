@@ -41,7 +41,7 @@ namespace Kroeg.Server.Services.EntityStore
 
                 var ent = APEntity.From(aso);
                 return ent;
-            }
+            } else if ((new Uri(id)).Host == "localhost") return null;
 
             APEntity entity = null;
             if (Bypass != null) entity = await Bypass.GetEntity(id, doRemote);

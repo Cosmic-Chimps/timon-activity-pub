@@ -106,6 +106,8 @@ namespace Kroeg.Server.BackgroundTasks
 
         public override async Task Go()
         {
+            if ((new Uri(Data.TargetInbox)).Host == "localhost") return;
+
             var inbox = await _entityStore.GetEntity(Data.TargetInbox, false);
             if (inbox != null && inbox.IsOwner && inbox.Type == "_inbox")
             {

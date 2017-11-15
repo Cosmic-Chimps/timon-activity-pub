@@ -277,6 +277,7 @@ namespace Kroeg.Server.Controllers
                 else
                 {
                     resultEntity = await _entityStore.GetEntity(data.Id, true);
+                    if (resultEntity == null) return StatusCode(202);
                     data = resultEntity.Data;
                 }
 
