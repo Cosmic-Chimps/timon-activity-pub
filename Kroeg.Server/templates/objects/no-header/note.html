@@ -24,6 +24,8 @@
 		                  <input type="hidden" name="to" value="{{AS.take('attributedTo')}}" />
 		                  <input type="submit" class="btn btn-primary btn-sm" value="Like" />
 			</form>
+			<a class="btn btn-sm btn-primary float-right" href="kroeg:remove#collection={{Data.collection}}&item={{AS.take('id')}}" x-if="Renderer.loggedInAs != null && (Data.collection||'') != ''">remove</a>
+			<a class="btn btn-sm btn-primary float-right" href="kroeg:add#item={{AS.take('id')}}" x-if="Renderer.loggedInAs != null">add</a>
 		</div>
 	</div>
 </div>
