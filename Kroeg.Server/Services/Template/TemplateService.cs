@@ -330,11 +330,32 @@ namespace Kroeg.Server.Services.Template
             if (item.Arguments.ContainsKey("data-component") && item.Arguments["data-component"][0].Data == "emoji" && parse)
             {
                 foreach (var tagitem in data["tag"]) {
-                    var obj = tagitem.SubObject ?? (regs.UsedEntities[tagitem.Id] = await entityStore.GetEntity(tagitem.Id, true))?.Data;
+                    var obj = tagitem.SubObject;
+                    if (obj == null)
+                    {
+                        var entity = await entityStore.GetEntity(tagitem.Id, true);
+                        if (entity != null)
+                        {
+                            regs.UsedEntities[entity.Id] = entity;
+                            obj = entity.Data;
+                        }
+                    }
+
                     if (obj == null || !obj.Type.Contains("http://joinmastodon.org/ns#Emoji")) continue;
 
                     var emojiName = (string) obj["name"].First().Primitive;
-                    var url = obj["icon"].First().SubObject ?? (regs.UsedEntities[obj["icon"].First().Id] = await entityStore.GetEntity(obj["icon"].First().Id, true))?.Data;
+                    var url = obj["icon"].First().SubObject;
+
+                    if (url == null)
+                    {
+                        var entity = await entityStore.GetEntity(obj["icon"].First().Id, true);
+                        if (entity != null)
+                        {
+                            regs.UsedEntities[entity.Id] = entity;
+                            url = entity.Data;
+                        }
+                    }
+
                     if (url == null) continue;
 
                     regs.Renderer.EmojiContext[emojiName] = url["url"].First().Id;

@@ -31,7 +31,7 @@ export class Emoji implements IComponent {
         let emoji = await this.entityStore.get(tag);
         if (!AS.contains(emoji, 'type', 'Emoji')) return;
         let name = AS.take(emoji, 'name');
-        let icon = await this.entityStore.get(AS.take(emoji, 'icon'));
+        let icon = typeof(AS.take(emoji, 'icon')) == "string" ? await this.entityStore.get(AS.take(emoji, 'icon')) : AS.take(emoji, 'icon');
 
         for (let emojo of this._emojis) {
             if (emojo.name == name) {
