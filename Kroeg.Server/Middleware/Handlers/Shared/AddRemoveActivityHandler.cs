@@ -7,7 +7,7 @@ using Kroeg.Server.Models;
 using Kroeg.Server.Services;
 using Kroeg.Server.Services.EntityStore;
 
-namespace Kroeg.Server.Middleware.Handlers.ClientToServer
+namespace Kroeg.Server.Middleware.Handlers.Shared
 {
     public class AddRemoveActivityHandler : BaseHandler
     {
@@ -28,12 +28,13 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
                 throw new InvalidOperationException("Cannot add or remove from a non-existant collection!");
 
             if (!targetEntity.IsOwner)
-                throw new InvalidOperationException("Cannot add or remove from a collection I'm not owner of!");
+                return true;
 
             if (targetEntity.Type != "https://www.w3.org/ns/activitystreams#Collection" && targetEntity.Type != "https://www.w3.org/ns/activitystreams#OrderedCollection")
                 throw new InvalidOperationException("Cannot add or remove from something that isn't a collection!");
 
-            // XXX todo: add authorization on here
+            if (!targetEntity.Data["attributedTo"].Any(a => a.Id == Actor.Id))
+                throw new InvalidOperationException("You can't add/remove to this collection!");
 
             var objectId = activityData["object"].Single().Id;
 

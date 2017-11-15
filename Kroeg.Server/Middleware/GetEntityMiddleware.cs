@@ -545,6 +545,7 @@ namespace Kroeg.Server.Middleware
                 typeof(DeleteHandler),
                 typeof(FollowResponseHandler),
                 typeof(LikeFollowAnnounceHandler),
+                typeof(AddRemoveActivityHandler),
                 typeof(UndoHandler),
                 typeof(DeliveryHandler)
             };
