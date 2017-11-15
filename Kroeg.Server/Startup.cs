@@ -26,6 +26,10 @@ using Npgsql;
 using System.Data;
 using System.Data.Common;
 using Npgsql.Logging;
+using System.Runtime.Loader;
+using System.Collections.Generic;
+using Kroeg.Server.Middleware.Handlers;
+using System.IO;
 
 namespace Kroeg.Server
 {
@@ -151,6 +155,24 @@ namespace Kroeg.Server
                 options.Cookie.Name = "Kroeg.Auth";
                 options.LoginPath = "/auth/login";
             });
+
+            var typeMap = new Dictionary<string, Type>();
+
+            foreach (var module in Configuration.GetSection("Kroeg").GetSection("Modules").GetChildren())
+            {
+                var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(Directory.GetCurrentDirectory(), module.Value));
+                foreach (var type in assembly.GetTypes())
+                {
+                    if (type.IsSubclassOf(typeof(BaseHandler)))
+                        typeMap[type.FullName] = type;
+                }
+            }
+
+            foreach (var extra in Configuration.GetSection("Kroeg").GetSection("Filters").GetChildren())
+            {
+                if (typeMap.ContainsKey(extra.Value))
+                    EntityData.ExtraFilters.Add(typeMap[extra.Value]);
+            }
 
             services.AddScoped<DatabaseManager>();
         }

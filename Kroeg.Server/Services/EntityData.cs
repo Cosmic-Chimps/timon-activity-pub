@@ -28,6 +28,8 @@ namespace Kroeg.Server.Tools
         public bool UnflattenRemotely => _kroegSection.GetValue<bool>("UnflattenRemotely");
         public IConfiguration EntityNames { get; set; }
 
+        public static List<Type> ExtraFilters { get; } = new List<Type>();
+
         private static readonly HashSet<string> Activities = new HashSet<string>
         {
             "https://www.w3.org/ns/activitystreams#Create", "https://www.w3.org/ns/activitystreams#Update",
