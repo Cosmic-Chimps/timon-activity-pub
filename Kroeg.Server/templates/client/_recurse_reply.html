@@ -1,0 +1,4 @@
+<div>
+	<div class="kroeg-taggy form-control" x-if="!AS.has('inReplyTo') || parseInt(Data.depth) == 0" data-default="{{Renderer.loggedInAs.followers}}{{Data.default}} {{AS.take('attributedTo')}}" data-component="userpicker" data-name="to"><span class="a kroeg-taggy-tags"></span><div class="kroeg-taggy-input"><input type="text" id="_taggyTo" value="" /></div></div>
+	<div x-render="client/_recurse_reply" x-render-id="AS.take('inReplyTo')" x-if="AS.has('inReplyTo') && parseInt(Data.depth) > 0" x-render-default="{{Data.default}}{{AS.take('attributedTo')}} " x-render-depth="{{(parseInt(Data.depth)-1).toString()}}"></div>
+</div>

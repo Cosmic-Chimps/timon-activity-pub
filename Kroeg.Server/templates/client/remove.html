@@ -1,0 +1,35 @@
+<div>
+    <h1>Remove object from collection</h1>
+
+    <form data-component="form" data-endpoint="{{Renderer.loggedInAs.outbox}}">
+        <input type="hidden" name="type" value="Remove" />
+        <input type="hidden" name="actor" value="{{Renderer.loggedInAs.id}}" />
+        <input type="hidden" name="object" value="{{Data.item}}" />
+        <input type="hidden" name="target" value="{{Data.collection}}" />
+
+        <div x-render="objects/header/object" x-render-id="Data.item"></div>
+        <div><b>Remove from:</b> {{Data.collection}}</div>
+
+        <div class="form-group">
+            <label for="_taggyTo">Send to:</label>
+            <div x-render-id="Data.item">
+                <div class="kroeg-taggy form-control" data-default="{{Renderer.loggedInAs.followers}} {{AS.take('attributedTo')}}" data-component="userpicker" data-name="to"><span class="kroeg-taggy-tags"></span><div class="kroeg-taggy-input"><input type="text" id="_taggyTo" value="" /></div></div>
+            </div>
+            <label class="form-check-label">
+                <input type="checkbox" checked="checked" class="form-check-input" name="to" value="https://www.w3.org/ns/activitystreams#Public">
+                Also send publicly
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label for="_taggyCC">CC these people:</label>
+            <div class="kroeg-taggy form-control" data-component="userpicker" data-name="cc"><span class="kroeg-taggy-tags"></span><div class="kroeg-taggy-input"><input type="text" id="_taggyCC" value="" /></div></div>
+            <label class="form-check-label">
+                <input type="checkbox" class="form-check-input" name="cc" value="https://www.w3.org/ns/activitystreams#Public">
+                Also CC publicly
+            </label>
+        </div>
+
+        <input type="submit" value="Remove" class="btn btn-primary" />
+    </form>
+</div>
