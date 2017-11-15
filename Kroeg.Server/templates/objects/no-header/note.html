@@ -6,7 +6,7 @@
 		</div>
 		<details x-if="AS.has('summary')">
 			<summary>{{Renderer.sanitize(AS.take('summary'))}}</summary>
-			<div data-component="emoji" data-emoji="{{JSON.stringify(AS.get('tag'))}}">
+			<div data-component="emoji" data-context="{{AS.take('id')}}">
 				{{Renderer.clean(AS.take('content'))}}
 			</div>
 			<div class="kroeg-attachments" x-if="AS.get('attachment').length > 0">

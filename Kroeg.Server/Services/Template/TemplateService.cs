@@ -86,6 +86,8 @@ namespace Kroeg.Server.Services.Template
             private static Regex _allowed_classes = new Regex("^((h|p|u|dt|e)-.*|mention|hashtag|ellipsis|invisible)$");
             private static Regex _disallowed_nodes = new Regex("^(script|object|embed)$");
 
+            public Dictionary<string, string> EmojiContext = new Dictionary<string, string>();
+
             public string date(string data)
             {
                 return DateTime.Parse(data).ToLocalTime().ToString();
@@ -96,8 +98,47 @@ namespace Kroeg.Server.Services.Template
                 return data.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
             }
 
+            private static Regex _emojiRegex = new Regex("([^\\w:]|\n|^):([a-zA-Z0-9_]{2,}):([^\\w:]|$)");
+
             private void _clean(HtmlNode node)
             {
+                if (node.NodeType == HtmlNodeType.Text)
+                {
+                    var tnode = (HtmlTextNode) node;
+                    Match m = Match.Empty;
+                    while ((m = _emojiRegex.Match(tnode.Text)).Success)
+                    {
+                        var first = tnode.Text.Substring(0, m.Index + m.Groups[1].Length);
+                        var name = $":{m.Groups[2].Value}:";
+                        var second = tnode.Text.Substring(m.Groups[3].Index);
+
+                        tnode.Text = first;
+                        if (EmojiContext.ContainsKey(name))
+                        {
+                            var url = EmojiContext[name];
+                            var im = node.OwnerDocument.CreateElement("img");
+                            im.Attributes.Add("src", url);
+                            im.Attributes.Add("alt", name);
+                            im.Attributes.Add("title", name);
+                            im.AddClass("emoji");
+                            tnode.ParentNode.InsertAfter(im, tnode);
+                            
+                            tnode = node.OwnerDocument.CreateTextNode();
+                            tnode.Text = second;
+                            im.ParentNode.InsertAfter(tnode, im);
+                        }
+                        else
+                        {
+                            var im = node.OwnerDocument.CreateElement("span");
+                            im.AppendChild(node.OwnerDocument.CreateTextNode(name));
+                            tnode.ParentNode.InsertAfter(im, tnode);
+                            
+                            tnode = node.OwnerDocument.CreateTextNode();
+                            tnode.Text = second;
+                            im.ParentNode.InsertAfter(tnode, im);
+                        }
+                    }
+                }
                 if (node.NodeType != HtmlNodeType.Element && node.NodeType != HtmlNodeType.Document) return;
                 if (node.NodeType == HtmlNodeType.Element)
                 {
@@ -171,6 +212,7 @@ namespace Kroeg.Server.Services.Template
 
         private async Task<string> _parseElement(HtmlDocument doc, TemplateItem item, IEntityStore entityStore, ASObject data, Registers regs)
         {
+            regs.Renderer.EmojiContext.Clear();
             var result = doc.CreateElement(item.Data);
             var extraRenderData = new Dictionary<string, string>();
             foreach (var argument in item.Arguments)
@@ -283,6 +325,20 @@ namespace Kroeg.Server.Services.Template
 
                 if (objData != null)
                     return await _parseTemplate(template, entityStore, objData, regs, doc);
+            }
+
+            if (item.Arguments.ContainsKey("data-component") && item.Arguments["data-component"][0].Data == "emoji" && parse)
+            {
+                foreach (var tagitem in data["tag"]) {
+                    var obj = tagitem.SubObject ?? (await entityStore.GetEntity(tagitem.Id, true))?.Data;
+                    if (obj == null || !obj.Type.Contains("http://joinmastodon.org/ns#Emoji")) continue;
+
+                    var emojiName = (string) obj["name"].First().Primitive;
+                    var url = obj["icon"].First().SubObject ?? (await entityStore.GetEntity(obj["icon"].First().Id, true))?.Data;
+                    if (url == null) continue;
+
+                    regs.Renderer.EmojiContext[emojiName] = url["url"].First().Id;
+                }
             }
 
             var content = new StringBuilder();

@@ -6,14 +6,13 @@
 			<a href="{{AS.take('id')}}"><small>at {{Renderer.date(AS.take('published'))}}</small></a>
 		</div>
 		<div class="col-md-12 kroeg-content">
-		<span x-render="attachment/emoji" x-render-id="'https://icosahedron.website/emojis/2774'"></span>
 		        <div x-if="AS.has('inReplyTo') && Data['hide-reply'] == 'true'" x-render="objects/sub/in_reply_to" x-render-id="AS.take('inReplyTo')"></div>
-			<div x-if="!AS.has('summary')" data-component="emoji" data-emoji="{{JSON.stringify(AS.get('tag'))}}">
+			<div x-if="!AS.has('summary')" data-component="emoji" data-context="{{AS.take('id')}}">
 				{{Renderer.clean(AS.take('content'))}}
 			</div>
 			<details x-if="AS.has('summary')">
 				<summary>{{Renderer.sanitize(AS.take('summary'))}}</summary>
-				<div data-component="emoji" data-emoji="{{JSON.stringify(AS.get('tag'))}}">
+				<div data-component="emoji" data-context="{{AS.take('id')}}">
 					{{Renderer.clean(AS.take('content'))}}
 				</div>
 			</details>
