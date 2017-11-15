@@ -6,13 +6,14 @@
 		</div>
 		<details x-if="AS.has('summary')">
 			<summary>{{Renderer.sanitize(AS.take('summary'))}}</summary>
-			<div>
+			<div data-component="emoji" data-emoji="{{JSON.stringify(AS.get('tag'))}}">
 				{{Renderer.clean(AS.take('content'))}}
 			</div>
 			<div class="kroeg-attachments" x-if="AS.get('attachment').length > 0">
 				<small>{{AS.get('attachment').length.toString()}} attachment{{AS.get('attachment').length == 1 ? "" : "s"}}</small>
 			</div>
 		</details>
+
 		<div x-if="Renderer.loggedInAs != null">
 			<a class="btn btn-sm btn-primary" href="kroeg:newnote#reply={{AS.take('id')}}">reply</a>
 			<a class="btn btn-sm btn-primary" href="kroeg:announce#post={{AS.take('id')}}">announce</a>
