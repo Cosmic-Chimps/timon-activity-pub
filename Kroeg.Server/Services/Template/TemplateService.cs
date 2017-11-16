@@ -247,9 +247,9 @@ namespace Kroeg.Server.Services.Template
 
             string err = "";
             
-            if (item.Arguments.ContainsKey("x-render") && parse)
+            if ((item.Arguments.ContainsKey("x-render-id") || item.Arguments.ContainsKey("x-render")) && parse)
             {
-                var template = item.Arguments["x-render"][0].Data;
+                var template = item.Arguments.ContainsKey("x-render") ? item.Arguments["x-render"][0].Data : null;
                 string id = null;
                 ASObject objData = null;
                 if (item.Arguments.ContainsKey("x-render-id")) 
@@ -290,7 +290,11 @@ namespace Kroeg.Server.Services.Template
                 if (objData != null) {
                     var oldData = regs.Data;
                     regs.Data = extraRenderData;
-                    var r = await _parseTemplate(template, entityStore, objData, regs, doc);
+                    string r;
+                    if (template != null)
+                        r = await _parseTemplate(template, entityStore, objData, regs, doc);
+                    else
+                        r = await _parseElement(doc, item, entityStore, objData, regs);
                     regs.Data = oldData;
                     return r;
                 }
