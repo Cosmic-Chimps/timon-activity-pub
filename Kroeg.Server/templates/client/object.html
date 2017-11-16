@@ -4,4 +4,7 @@
     <div x-render="client/announce" x-if="{{AS.take('id') == 'kroeg:announce'}}"></div>
     <div x-render="client/add" x-if="{{AS.take('id') == 'kroeg:add'}}"></div>
     <div x-render="client/remove" x-if="{{AS.take('id') == 'kroeg:remove'}}"></div>
+    <div x-if="{{AS.take('id') == 'kroeg:unauthorized'}}">
+        <h1>Unauthorized</h1>
+    </div>
 </div>

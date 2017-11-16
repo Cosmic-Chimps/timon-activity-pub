@@ -186,6 +186,7 @@ namespace Kroeg.Server.Middleware
                 if (context.Request.Method == "GET" || context.Request.Method == "HEAD" || context.Request.Method == "OPTIONS")
                 {
                     entOut = await handler.Get(fullpath, arguments, context, targetEntity);
+                    if (entOut?.Id == "kroeg:unauthorized" && writeConverter != null) throw new UnauthorizedAccessException("no access");
                 }
                 else if (context.Request.Method == "POST" && data != null)
                 {
@@ -296,7 +297,11 @@ namespace Kroeg.Server.Middleware
 
                 if (entity.Data["attributedTo"].Concat(entity.Data["actor"]).All(a => a.Id != userId) && !audience.Contains("https://www.w3.org/ns/activitystreams#Public") && (userId == null || !audience.Contains(userId)))
                 {
-                    throw new UnauthorizedAccessException("No access");
+                    var unauth = new ASObject();
+                    unauth.Id = "kroeg:unauthorized";
+                    unauth.Type.Add("kroeg:Unauthorized");
+
+                    return APEntity.From(unauth);
                 }
 
                 return entity;
