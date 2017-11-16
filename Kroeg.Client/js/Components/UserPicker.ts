@@ -31,6 +31,9 @@ class Tag {
     protected _nameElement: HTMLSpanElement;
     protected _hidden: HTMLInputElement;
     private _ok: boolean = false;
+    private _id: string = null;
+
+    public get id(): string { return this._id; }
 
     constructor(public userPicker: UserPicker, public data: string, public fieldName: string, private entityStore: EntityStore) {
         this.element = document.createElement("span");
@@ -54,7 +57,7 @@ class Tag {
         this._nameElement.innerText = this.data;
 
         try {
-            let id = await this._getId();
+            let id = this._id = await this._getId();
             if (id == null) {
                 this._nameElement.innerText = "error";
                 this.element.classList.add("kroeg-taggy-tag-error");
@@ -161,6 +164,8 @@ export class UserPicker implements IComponent {
 
     public addTag(data: string) {
         let tag: Tag;
+        for (let item of this._tags) { if (item.id == data) return; }
+
         if (data.startsWith("@") || data.startsWith("http")) {
             tag = new Tag(this, data, this.name, this.entityStore);
         } else {

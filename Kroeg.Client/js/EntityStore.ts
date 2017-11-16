@@ -125,6 +125,15 @@ export class EntityStore {
         return "kroeg:" + id;
     }
 
+    public async search(type: "emoji"|"actor", data: string): Promise<ASObject[]> {
+        let response = await this.session.authFetch(`${this.session.search}?type=${type}&data=${encodeURIComponent(data)}`);
+        let json = await response.json();
+        for (let item of json) {
+            this._cache[item.id] = item; // bypass cache because stupid reasons
+        }
+        return json;
+    }
+
     public clear() {
         this._cache = {};
         for (let item in this._handlers) {

@@ -129,6 +129,11 @@ img.emoji {
   padding: 10px;
 }
 
+.kroeg-wysiwyg-picker {
+  color: black;
+  box-shadow: 2px 0 0 black;
+}
+
 [contenteditable=true]:empty:before{
   content: attr(data-placeholder);
   display: block; /* For Firefox */

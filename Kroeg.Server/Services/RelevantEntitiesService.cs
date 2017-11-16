@@ -69,6 +69,33 @@ namespace Kroeg.Server.Services
             return await _entityStore.GetEntities((await _connection.QueryAsync<APTripleEntity>(start)).Select(a => a.EntityId).ToList());
         }
 
+        private async Task<List<APEntity>> _searchLike(Dictionary<string, string> lookFor, string likeId, string likeValue, bool? isOwner = null)
+        {
+            var attributeMapping = new Dictionary<int, int>();
+            foreach (var val in lookFor)
+            {
+                var reverseId = await _entityStore.ReverseAttribute(val.Key, false);
+                if (reverseId == null) return new List<APEntity>();
+
+                var reverseVal = await _entityStore.ReverseAttribute(val.Value, false);
+                if (reverseVal == null) return new List<APEntity>();
+
+                attributeMapping[reverseId.Value] = reverseVal.Value;
+            }
+
+            var likeAttrId = await _entityStore.ReverseAttribute(likeId, false);
+            if (likeAttrId == null) return new List<APEntity>();
+
+            var start = $"select a.* from \"TripleEntities\" a where exists(select 1 from \"Triples\" where \"PredicateId\" = {likeAttrId.Value} and \"Object\" like @Like and \"SubjectId\" = a.\"IdId\" and \"SubjectEntityId\" = a.\"EntityId\") ";
+            if (lookFor.Count > 0) start += "and ";
+            start += string.Join(" and ", attributeMapping.Select(a => $"exists(select 1 from \"Triples\" where \"PredicateId\" = {a.Key} and \"AttributeId\" = {a.Value} and \"SubjectId\" = a.\"IdId\" and \"SubjectEntityId\" = a.\"EntityId\")"));
+
+            if (isOwner.HasValue)
+                start += " and a.\"IsOwner\" = " + (isOwner.Value ? "TRUE" : "FALSE");
+
+            return await _entityStore.GetEntities((await _connection.QueryAsync<APTripleEntity>(start, new { Like = likeValue })).Select(a => a.EntityId).ToList());
+        }
+
         public async Task<List<APEntity>> FindRelevantObject(string authorId, string objectType, string objectId)
         {
             return await _search(new Dictionary<string, string> {
@@ -91,6 +118,18 @@ namespace Kroeg.Server.Services
             return await _search(new Dictionary<string, string> {
                 ["https://www.w3.org/ns/activitystreams#followers"] = followerId
             });
+        }
+
+        public async Task<List<APEntity>> FindEmojiLike(string like)
+        {
+            return await _searchLike(new Dictionary<string, string> {
+                ["rdf:type"] = "http://joinmastodon.org/ns#Emoji"
+            }, "https://www.w3.org/ns/activitystreams#name", like);
+        }
+
+        public async Task<List<APEntity>> FindUsersWithNameLike(string like)
+        {
+            return await _searchLike(new Dictionary<string, string> {}, "https://www.w3.org/ns/activitystreams#preferredUsername", like);
         }
 
         public async Task<List<APEntity>> FindEntitiesWithPreferredUsername(string username)

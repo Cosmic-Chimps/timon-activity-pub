@@ -18,6 +18,8 @@ export class Wysiwyg implements IComponent {
     private currentPopup: Popup;
     private mentionItems: HTMLDivElement;
 
+    private _picker: HTMLDivElement;
+
     constructor(public host: RenderHost, private entityStore: EntityStore, public element: HTMLElement) {
         let currentContent: Node[] = [];
         while (element.firstChild)
@@ -52,39 +54,47 @@ export class Wysiwyg implements IComponent {
         return this._findClassObj(base.parentNode, name);
     }
 
+    private async _commitMention(mention: HTMLElement, ch: string, id?: string) {
+        let selection = window.getSelection();
+        let node = document.createTextNode(ch);
+        if (mention.nextSibling)
+            mention.parentElement.insertBefore(node, mention.nextSibling);
+        else
+            mention.parentElement.appendChild(node);
+        selection.setPosition(node, 1);
+
+        let mentionId = id || mention.innerText.substr(1);
+        try { new URL(mentionId); } catch (e) { mentionId = "@" + mentionId; }
+        let data = await this.entityStore.get(mentionId);
+        let name = "@" + AS.take(data, 'preferredUsername');
+        if (name.length == 1)
+            name = AS.take(data, 'name');
+        if (name.length == 0)
+            name = data.id;
+            
+            
+        let mentionLink = document.createElement("a");
+        mentionLink.href = data.id;
+        mentionLink.classList.add("mention");
+        mentionLink.innerText = name;
+        mention.parentNode.insertBefore(mentionLink, mention);
+        mention.remove();
+
+        this._picker.remove();
+        this._picker = null;
+
+        if ("tags" in this.element.dataset) {
+            UserPicker.formMap.get(this._form)[this.element.dataset.tags].addTag(data.id);
+        }
+    }
+
     private async onKey(ev: KeyboardEvent) {
         let ch = ev.key;
         let selection = window.getSelection();
         let mention = this._findClassObj(selection.anchorNode, "mention");
         
         if ((ch == ' ' || ch == '\n') && mention && mention.tagName == "SPAN") {
-            let node = document.createTextNode(ch);
-            if (mention.nextSibling)
-                mention.parentElement.insertBefore(node, mention.nextSibling);
-            else
-                mention.parentElement.appendChild(node);
-            selection.setPosition(node, 1);
-
-            let mentionId = mention.innerText.substr(1);
-            try { new URL(mentionId); } catch (e) { mentionId = "@" + mentionId; }
-            let data = await this.entityStore.get(mentionId);
-            let name = "@" + AS.take(data, 'preferredUsername');
-            if (name.length == 1)
-                name = AS.take(data, 'name');
-            if (name.length == 0)
-                name = data.id;
-            
-            
-            let mentionLink = document.createElement("a");
-            mentionLink.href = data.id;
-            mentionLink.classList.add("mention");
-            mentionLink.innerText = name;
-            mention.parentNode.insertBefore(mentionLink, mention);
-            mention.remove();
-
-            if ("tags" in this.element.dataset) {
-                UserPicker.formMap.get(this._form)[this.element.dataset.tags].addTag(data.id);
-            }
+            this._commitMention(mention, ch)
         } else if (ch == '@' && !mention) { 
             let link = document.createElement("span")
             link.classList.add("mention");
@@ -102,8 +112,28 @@ export class Wysiwyg implements IComponent {
 
             selection.setPosition(link.childNodes[0], 1);
             ev.preventDefault();
+        } else if (mention && mention.tagName == "SPAN") {
+            let name = mention.textContent.substr(1); console.log(name);
+            if (name.length > 3) this._searchMention(mention, name);
         } else
             this.checkStatus();
+    }
+
+    private async _searchMention(elem: HTMLElement, text: string) {
+        let results = await this.entityStore.search("actor", text + "%");
+        console.log(results.map(a => a.id));
+        if (this._picker != null) this._picker.remove();
+        this._picker = document.createElement("div");
+        this._picker.classList.add("kroeg-wysiwyg-picker");
+        for (let user of results) {
+            let item = document.createElement("div");
+            item.innerText = user.id;
+            item.addEventListener("click", () => {
+                this._commitMention(elem, ' ', user.id);
+            });
+            this._picker.appendChild(item);
+        }
+        elem.appendChild(this._picker);
     }
 
     private onInput(ev: Event) {

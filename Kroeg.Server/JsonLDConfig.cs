@@ -32,6 +32,7 @@ namespace Kroeg.Server {
                     ["kroeg"] = "https://puckipedia.com/kroeg/ns#",
                     ["settingsEndpoint"] = new JObject { ["@id"] = "kroeg:settingsEndpoint", ["@type"] = "@id" },
                     ["relevantObjects"] = new JObject { ["@id"] = "kroeg:relevantObjects", ["@type"] = "@id" },
+                    ["search"] = new JObject { ["@id"] = "kroeg:search", ["@type"] = "@id" },
                     ["blocks"] = new JObject { ["@id"] = "kroeg:blocks", ["@type"] = "@id" },
                     ["blocked"] = new JObject { ["@id"] = "kroeg:blocked", ["@type"] = "@id" }
                 }

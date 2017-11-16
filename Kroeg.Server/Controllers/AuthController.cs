@@ -252,6 +252,22 @@ namespace Kroeg.Server.Controllers
             return builder.ToString();
         }
 
+        [HttpGet("search"), Authorize]
+        public async Task<IActionResult> Search(string type, string data)
+        {
+            List<JObject> result = new List<JObject>();
+            if (type == "emoji")
+            {
+                result.AddRange((await _relevantEntities.FindEmojiLike(data)).Select(a => a.Data.Serialize(true)));
+            }
+            else if (type == "actor")
+            {
+                result.AddRange((await _relevantEntities.FindUsersWithNameLike(data)).Select(a => a.Data.Serialize(true)));
+            }
+
+            return Json(result);
+        }
+
         [HttpPost("sharedInbox")]
         public async Task<IActionResult> SharedInbox()
         {

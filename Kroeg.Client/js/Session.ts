@@ -23,9 +23,11 @@ export class Session {
     private _uploadMedia: string;
     private _outbox: string;
     private _user: ASObject;
+    private _search: string;
 
     public get user() { return this._user; }
     public get outbox() { return this._outbox; }
+    public get search() { return this._search; }
 
     public async set(token: string, user: string): Promise<void> {
         this._token = token;
@@ -39,6 +41,7 @@ export class Session {
             const endpoints = this._user["endpoints"];
             if ("proxyUrl" in endpoints) this._proxyUrl = endpoints["proxyUrl"];
             if ("uploadMedia" in endpoints) this._uploadMedia = endpoints["uploadMedia"];
+            if ("search" in endpoints) this._search = endpoints["search"];
         }
     }
 
