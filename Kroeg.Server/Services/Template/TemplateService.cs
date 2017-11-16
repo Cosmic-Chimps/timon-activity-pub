@@ -212,12 +212,13 @@ namespace Kroeg.Server.Services.Template
 
         private async Task<string> _parseElement(HtmlDocument doc, TemplateItem item, IEntityStore entityStore, ASObject data, Registers regs)
         {
+            regs.Engine.SetValue("Data", regs.Data);
             regs.Renderer.EmojiContext.Clear();
             var result = doc.CreateElement(item.Data);
-            var extraRenderData = new Dictionary<string, string>();
+            var extraRenderData = new Dictionary<string, string>(regs.Data);
             foreach (var argument in item.Arguments)
             {
-                if (!argument.Key.StartsWith("x-") || argument.Key.StartsWith("x-render-") && argument.Key != "x-render-id")
+                if (!argument.Key.StartsWith("x-") || (argument.Key.StartsWith("x-render-") && argument.Key != "x-render-id"))
                 {
                     var resultValue = new StringBuilder();
                     foreach (var subitem in argument.Value)
@@ -289,8 +290,9 @@ namespace Kroeg.Server.Services.Template
                 if (objData != null) {
                     var oldData = regs.Data;
                     regs.Data = extraRenderData;
-                    return await _parseTemplate(template, entityStore, objData, regs, doc);
+                    var r = await _parseTemplate(template, entityStore, objData, regs, doc);
                     regs.Data = oldData;
+                    return r;
                 }
             }
             

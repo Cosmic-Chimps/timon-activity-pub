@@ -37,8 +37,13 @@ img.emoji {
     vertical-align: -0.1em;
  }
 
+.kroeg-attachments {
+    clear: both;
+}
+
 .kroeg-attachments img {
     width: 100%;
+    max-width: 480px;
 }
 
 /** START userpicker **/

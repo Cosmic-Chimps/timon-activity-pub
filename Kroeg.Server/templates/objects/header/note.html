@@ -1,5 +1,5 @@
 <div>
-        <div x-if="AS.has('inReplyTo') && Data['hide-reply'] != 'true'" x-render="objects/header/object" x-render-id="AS.take('inReplyTo')" x-render-extra-class="inReplyTo" x-render-render-attachment="{{Data['render-attachment']}}"></div>
+        <div x-if="AS.has('inReplyTo') && Data['hide-reply'] != 'true'" x-render="objects/header/object" x-render-id="AS.take('inReplyTo')" x-render-extra-class="inReplyTo"></div>
 	<div class="row" style="padding-left: 58px; position: relative">
 		<div class="col-md-12">
 			<div x-render="objects/sub/user_header" x-render-id="AS.take('attributedTo')"></div>
@@ -16,10 +16,10 @@
 					{{Renderer.clean(AS.take('content'))}}
 				</div>
 			</details>
-			<div class="kroeg-attachments" x-if="Data['render-attachment'] == 'true'">
+			<div class="kroeg-attachments" x-if="Data['attachment'] != 'false'">
 				<div x-render="attachment/attachment" x-render-id="item" x-for-in="{{AS.get('attachment')}}"></div>
 			</div>
-			<div class="kroeg-attachments" x-if="Data['render-attachment'] != 'true' && AS.get('attachment').length > 0">
+			<div class="kroeg-attachments" x-if="Data['attachment'] == 'false' && AS.get('attachment').length > 0">
 				<small>{{AS.get('attachment').length.toString()}} attachment{{AS.get('attachment').length == 1 ? "" : "s"}}</small>
 			</div>
 			<div x-if="Renderer.loggedInAs != null">

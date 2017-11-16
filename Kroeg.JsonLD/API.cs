@@ -647,7 +647,8 @@ namespace Kroeg.JsonLD
                         }
                         else
                         {
-                            if ((!compactArrays && (container == "@set" || container == "@list" || expandedProperty == "@list" || expandedProperty == "@graph")) && compactedItem.Type != JTokenType.Array) compactedItem = new JArray(compactedItem);
+                            bool mastodonQuirk = expandedProperty == "https://www.w3.org/ns/activitystreams#tag" || expandedProperty == "https://www.w3.org/ns/activitystreams#attachment";
+                            if (mastodonQuirk || (!compactArrays && (container == "@set" || container == "@list" || expandedProperty == "@list" || expandedProperty == "@graph")) && compactedItem.Type != JTokenType.Array) compactedItem = new JArray(compactedItem);
 
                             if (result[itemActiveProperty] == null) result[itemActiveProperty] = compactedItem;
                             else

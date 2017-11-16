@@ -9,7 +9,7 @@
 
 	<div class="list-group" x-if="AS.take('id').indexOf('kroeg:') != 0 && AS.get('actor').length == 0 && !AS.containsAny('type', ['Person', 'Group'])">
 		<div class="list-group-item">
-			<div x-render="objects/header/object" x-render-render-attachment="true" x-render-hide-reply="false"></div>
+			<div x-render="objects/header/object" x-render-attachment="true" x-render-hide-reply="false"></div>
 		</div>
 	</div>
 </div>

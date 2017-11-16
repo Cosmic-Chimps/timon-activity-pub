@@ -4,6 +4,6 @@
 		<a href="{{AS.take('id')}}"><small>liked </small><small x-if="AS.has('published')">at {{Renderer.date(AS.take('published'))}}</small></a>
 	</div>
 	<div class="col-md-12">
-		<div x-render="objects/header/object" x-render-id="AS.take('object')" x-render-render-attachment="false" x-render-hide-reply="true"></div>
+		<div x-render="objects/header/object" x-render-id="AS.take('object')" x-render-hide-reply="true"></div>
 	</div>
 </div>
