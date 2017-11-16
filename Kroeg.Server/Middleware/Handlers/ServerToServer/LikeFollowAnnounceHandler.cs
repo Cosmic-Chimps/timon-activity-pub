@@ -10,6 +10,8 @@ using Kroeg.Server.Tools;
 using Kroeg.ActivityStreams;
 using Microsoft.Extensions.DependencyInjection;
 using Kroeg.Server.Configuration;
+using System.Data.Common;
+using Kroeg.Server.BackgroundTasks;
 
 namespace Kroeg.Server.Middleware.Handlers.ServerToServer
 {
@@ -19,13 +21,15 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
         private readonly EntityData _data;
         private readonly RelevantEntitiesService _relevantEntities;
         private readonly IServiceProvider _serviceProvider;
+        private readonly DbConnection _connection;
 
-        public LikeFollowAnnounceHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection, EntityData data, RelevantEntitiesService relevantEntities, IServiceProvider serviceProvider) : base(entityStore, mainObject, actor, targetBox, user)
+        public LikeFollowAnnounceHandler(IEntityStore entityStore, APEntity mainObject, APEntity actor, APEntity targetBox, ClaimsPrincipal user, CollectionTools collection, EntityData data, RelevantEntitiesService relevantEntities, IServiceProvider serviceProvider, DbConnection connection) : base(entityStore, mainObject, actor, targetBox, user)
         {
             _collection = collection;
             _data = data;
             _relevantEntities = relevantEntities;
             _serviceProvider = serviceProvider;
+            _connection = connection;
         }
 
         public override async Task<bool> Handle()
@@ -56,7 +60,11 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
             if (MainObject.Type != "https://www.w3.org/ns/activitystreams#Like" && MainObject.Type != "https://www.w3.org/ns/activitystreams#Announce") return true;
 
             var toFollowOrLike = await EntityStore.GetEntity(MainObject.Data["object"].Single().Id, false);
-            if (toFollowOrLike == null || !toFollowOrLike.IsOwner) return true; // not going to update side effects now.
+            if (toFollowOrLike == null)
+            {
+                await GetEntityTask.Make(MainObject.Data["object"].Single().Id, _connection);
+                return true;
+            }
 
             // sent to not the owner, so not updating!
             if (toFollowOrLike.Data["attributedTo"].Single().Id != Actor.Id) return true;

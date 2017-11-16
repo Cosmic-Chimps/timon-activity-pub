@@ -151,7 +151,7 @@ namespace Kroeg.Server.Services
                 var data = entity.Item2.Data;
                 var iscollection = data.Type.Contains("https://www.w3.org/ns/activitystreams#Collection") || data.Type.Contains("https://www.w3.org/ns/activitystreams#OrderedCollection");
                 var shouldForward = entity.Item2.IsOwner && (forward == null || data["attributedTo"].Any(a => a.Id == forward));
-                var useSharedInbox = (entity.Item2.IsOwner && entity.Item2.Type == "_following");
+                var useSharedInbox = (entity.Item2.IsOwner && entity.Item2.Type == "_followers");
                 if ((iscollection && shouldForward) && entity.Item1 < depth)
                 {
                     foreach (var item in await _collectionTools.GetAll(entity.Item2.Id))
