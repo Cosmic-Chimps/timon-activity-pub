@@ -70,7 +70,7 @@ namespace Kroeg.Server.BackgroundTasks
                 _connection.Close(); // workaround for npgsql issue??
                 await _connection.OpenAsync();
                 var transaction = _connection.BeginTransaction();
-                var nextAction = await _connection.QuerySingleOrDefaultAsync<EventQueueItem>("SELECT * FROM \"EventQueue\" WHERE \"NextAttempt\" > @time order by \"NextAttempt\" limit 1 for update skip locked", new { time = after });
+                var nextAction = await _connection.QuerySingleOrDefaultAsync<EventQueueItem>("SELECT * FROM \"EventQueue\" WHERE \"NextAttempt\" < @time order by \"NextAttempt\" limit 1 for update skip locked", new { time = DateTime.Now.AddMinutes(1) });
                 _logger.LogDebug($"Next action: {nextAction?.Action ?? "nothing"}");
 
                 if (nextAction == null)
