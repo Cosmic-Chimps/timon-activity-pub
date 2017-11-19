@@ -53,8 +53,6 @@ namespace Kroeg.Server
             // Add framework services.
             services.AddMvc();
 
-            NpgsqlLogManager.Provider = new ConsoleLoggingProvider(NpgsqlLogLevel.Debug);
-            NpgsqlLogManager.IsParameterLoggingEnabled = true;
 
             services.AddScoped<NpgsqlConnection>((svc) => new NpgsqlConnection(Configuration.GetConnectionString("Default")));
             services.AddScoped<DbConnection, NpgsqlConnection>((svc) => svc.GetService<NpgsqlConnection>());
