@@ -136,7 +136,7 @@ namespace Kroeg.Server
                 var retrieving = new RetrievingEntityStore(triple, flattener, provider, httpAccessor);
                 return new FakeEntityStore(fakeEntityService, retrieving);
             });
-            services.AddTransient<TemplateService>();
+            services.AddSingleton<TemplateService>();
             services.AddTransient<SignatureVerifier>();
 
             services.AddAuthentication(o => {
