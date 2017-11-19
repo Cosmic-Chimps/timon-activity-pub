@@ -121,7 +121,6 @@ namespace Kroeg.Server.Services.EntityStore
             APTripleEntity tripleEntity = null;
             if (attr != null)
                 tripleEntity = await _connection.QueryFirstOrDefaultAsync<APTripleEntity>("select * from \"TripleEntities\" where \"IdId\" = @IdId limit 1", new { IdId = attr.Value });
-            if (tripleEntity == null || (!tripleEntity.IsOwner && doRemote && id.StartsWith("http") && (DateTime.Now - tripleEntity.Updated).TotalDays > 7)) return null; // mini-cache
             if (tripleEntity == null) return null;
 
             var b = await _build(tripleEntity);
@@ -170,7 +169,7 @@ namespace Kroeg.Server.Services.EntityStore
                     var term = new ASTerm();
                     var predicateUrl = _attributeMapping[triple.PredicateId];
 
-                    if (triple.AttributeId.HasValue && !listParts.ContainsValue(triple.AttributeId.Value) && objects.ContainsKey(triple.AttributeId.Value))
+                    if (triple.AttributeId.HasValue && !listParts.ContainsValue(triple.AttributeId.Value) && objects.ContainsKey(triple.AttributeId.Value) && _attributeMapping[triple.AttributeId.Value].StartsWith("_:"))
                         term.SubObject = objects[triple.AttributeId.Value];
                     else {
                         if (triple.TypeId.HasValue)

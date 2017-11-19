@@ -1,5 +1,5 @@
-<div>
-    <h1><span class="kroeg-username">{{Renderer.sanitize(AS.take('name', AS.take('preferredUsername')))}}</span> <small>{{AS.take('id')}}</small></h1>
+<div class="h-card">
+    <h1><span class="kroeg-username p-name">{{Renderer.sanitize(AS.take('name', AS.take('preferredUsername')))}}</span> <small>{{AS.take('id')}}</small></h1>
     <div x-if="Renderer.loggedInAs != null && Renderer.loggedInAs.id != AS.take('id')">
         <form data-endpoint="{{Renderer.loggedInAs.outbox}}" data-component="form">
            <input type="hidden" name="type" value="Follow" />
@@ -14,6 +14,10 @@
         <p>My old content can be found <a href="/index2.html" data-open="ext">here.</a></p>
         <p>Want to follow me on Mastodon etc? just enter <code>@puckipedia@puckipedia.com</code> into the search bar!</p>
     </div>
+    <ul>
+        <li x-render-id="AS.take('following')">following <b>{{AS.take('totalItems', 'unknown')+''}}</b> peeps</li>
+        <li x-render-id="AS.take('followers')">and <b>{{AS.take('totalItems', 'unknown')+''}}</b> accounts follow them</li>
+    </ul>
     <div class="kroeg-content">
         {{Renderer.clean(AS.take('summary'))}}
     </div>
