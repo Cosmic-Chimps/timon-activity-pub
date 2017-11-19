@@ -61,7 +61,8 @@ namespace Kroeg.Server.BackgroundTasks
                     {
                         if (sleepTime > 0)
                             _cancellationTokenSource.CancelAfter(sleepTime);
-                        _notifier.Subscribe(BackgroundTaskPath, (a) => _cancellationTokenSource?.Cancel());
+
+                        await _notifier.Subscribe(BackgroundTaskPath, (a) => _cancellationTokenSource?.Cancel());
                         await _connection.WaitAsync(_cancellationTokenSource.Token);
                     }
                     catch (OperationCanceledException) { }
