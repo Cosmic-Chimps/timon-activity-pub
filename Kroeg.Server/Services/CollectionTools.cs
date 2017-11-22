@@ -41,7 +41,11 @@ namespace Kroeg.Server.Services
 
             var data = entity.Data;
             if (data["totalItems"].Any())
-                return (int) data["totalItems"].Single().Primitive;
+            {
+                var prim = data["totalItems"].Single().Primitive;
+                if (prim is string) return int.Parse((string) prim);
+                return (int) prim;
+            }
 
             return -1;
         }

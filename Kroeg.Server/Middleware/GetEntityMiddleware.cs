@@ -544,17 +544,6 @@ namespace Kroeg.Server.Middleware
                 return null;
             }
 
-            private readonly List<Type> _serverToServerHandlers = new List<Type>
-            {
-                typeof(VerifyOwnershipHandler),
-                typeof(DeleteHandler),
-                typeof(FollowResponseHandler),
-                typeof(LikeFollowAnnounceHandler),
-                typeof(AddRemoveActivityHandler),
-                typeof(UndoHandler),
-                typeof(DeliveryHandler)
-            };
-
             public async Task<APEntity> ServerToServer(APEntity inbox, ASObject activity, string subject = null)
             {
                 var stagingStore = new StagingEntityStore(_mainStore);
@@ -596,7 +585,7 @@ namespace Kroeg.Server.Middleware
 
                 await stagingStore.CommitChanges();
 
-                foreach (var type in EntityData.ExtraFilters.Concat(_serverToServerHandlers))
+                foreach (var type in EntityData.ExtraFilters.Concat(EntityData.ServerToServerHandlers))
                 {
                     var handler = (BaseHandler)ActivatorUtilities.CreateInstance(_serviceProvider, type,
                         _mainStore, flattened, user, inbox, _user);
@@ -607,25 +596,6 @@ namespace Kroeg.Server.Middleware
 
                 return flattened;
             }
-
-            private readonly List<Type> _clientToServerHandlers = new List<Type>
-            {
-                typeof(ObjectWrapperHandler),
-                typeof(ActivityMissingFieldsHandler),
-                typeof(CreateActivityHandler),
-
-                // commit changes before modifying collections
-                typeof(UpdateDeleteActivityHandler),
-                typeof(CommitChangesHandler),
-                typeof(AcceptRejectFollowHandler),
-                typeof(FollowLikeHandler),
-                typeof(AddRemoveActivityHandler),
-                typeof(UndoActivityHandler),
-                typeof(BlockHandler),
-                typeof(CreateActorHandler),
-                typeof(DeliveryHandler),
-                typeof(WebSubHandler)
-            };
 
             public async Task<APEntity> ClientToServer(APEntity outbox, ASObject activity)
             {
@@ -664,7 +634,7 @@ namespace Kroeg.Server.Middleware
                 var flattened = await _flattener.FlattenAndStore(stagingStore, activity);
                 IEntityStore store = stagingStore;
 
-                foreach (var type in EntityData.ExtraFilters.Concat(_clientToServerHandlers))
+                foreach (var type in EntityData.ExtraFilters.Concat(EntityData.ClientToServerHandlers))
                 {
                     var handler = (BaseHandler)ActivatorUtilities.CreateInstance(_serviceProvider, type,
                         store, flattened, user, outbox, _user);
