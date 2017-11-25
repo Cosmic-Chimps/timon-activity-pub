@@ -39,6 +39,7 @@ class Tag {
         this.element = document.createElement("span");
         this.element.addEventListener("click", () => this.click());
         this._startResolve();
+        this._id = data;
     }
 
     protected click() {

@@ -53,8 +53,6 @@ namespace Kroeg.Server
             // Add framework services.
             services.AddMvc();
 
-            NpgsqlLogManager.Provider = new ConsoleLoggingProvider(NpgsqlLogLevel.Debug);
-            NpgsqlLogManager.IsParameterLoggingEnabled = true;
 
             services.AddScoped<NpgsqlConnection>((svc) => new NpgsqlConnection(Configuration.GetConnectionString("Default")));
             services.AddScoped<DbConnection, NpgsqlConnection>((svc) => svc.GetService<NpgsqlConnection>());
@@ -137,7 +135,7 @@ namespace Kroeg.Server
                 var retrieving = new RetrievingEntityStore(triple, flattener, provider, httpAccessor);
                 return new FakeEntityStore(fakeEntityService, retrieving);
             });
-            services.AddTransient<TemplateService>();
+            services.AddSingleton<TemplateService>();
             services.AddTransient<SignatureVerifier>();
 
             services.AddAuthentication(o => {

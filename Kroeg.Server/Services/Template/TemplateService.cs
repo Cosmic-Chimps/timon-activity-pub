@@ -22,7 +22,7 @@ namespace Kroeg.Server.Services.Template
         public Dictionary<string, TemplateItem> Templates { get; } = new Dictionary<string, TemplateItem>();
 
         private string _base = "templates/";
-        private EntityData _entityData;
+        private string _baseOverride = "template_override/";
 
         public string PageTemplate { get; private set; }
 
@@ -181,10 +181,16 @@ namespace Kroeg.Server.Services.Template
             public bool client => false;
         }
 
-        public TemplateService(EntityData entityData)
+        public TemplateService()
         {
-            _entityData = entityData;
+            Parse();
+        }
+
+        public void Parse()
+        {
+            Templates.Clear();
             _parse(_base);
+            _parse(_baseOverride);
         }
 
         private void _parse(string dir)
@@ -198,9 +204,11 @@ namespace Kroeg.Server.Services.Template
 
         private void _parseFile(string path)
         {
+            if (path == "template_override/.keep") return;
+
             var data = File.ReadAllText(path);
             if (path == "templates/page.html") PageTemplate = data;
-            var templateName = path.Substring(_base.Length, path.Length - _base.Length - 5).Replace('\\', '/');
+            var templateName = path.Substring(path.IndexOf("/") + 1, path.Length - path.IndexOf("/") - 6).Replace('\\', '/');
             Templates[templateName] = TemplateParser.Parse(data);
         }
 

@@ -1,6 +1,6 @@
 <div class="list-group">
     <div class="list-group-item" x-for-in="AS.get('orderedItems')">
-        <div x-render="objects/header/object" x-render-id="item" x-render-collection="{{AS.take('partOf')}}"></div>
+        <div x-render="objects/header/object" x-render-id="item" x-render-collection="{{AS.take('partOf')}}" x-render-hide-reply="true"></div>
     </div>
     <div class="list-group-item" x-if="AS.has('next') || AS.has('prev')">
         <a class="btn btn-default" href="{{AS.take('prev')}}" data-open="renderhost">&laquo; Previous</a>

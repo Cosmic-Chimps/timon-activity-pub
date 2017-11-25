@@ -2,6 +2,7 @@
 using Kroeg.Server.Models;
 using Kroeg.Server.Services.EntityStore;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Kroeg.Server.Services.Template;
 using System.Linq;
 using System;
@@ -21,6 +22,13 @@ namespace Kroeg.Server.Controllers
         {
             _entityStore = new CollectionEntityStore(collectionTools, entityStore);
             _templateService = templateService;
+        }
+
+        [Authorize("pass"), HttpGet("refresh")]
+        public IActionResult Refresh()
+        {
+            _templateService.Parse();
+            return Ok("done");
         }
 
         [HttpGet("context")]

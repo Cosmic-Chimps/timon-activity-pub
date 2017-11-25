@@ -59,6 +59,7 @@ namespace Kroeg.Server.Tools
             typeof(LikeFollowAnnounceHandler),
             typeof(AddRemoveActivityHandler),
             typeof(UndoHandler),
+            typeof(CreateHandler),
             typeof(DeliveryHandler)
         };
 

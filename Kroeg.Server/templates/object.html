@@ -12,4 +12,6 @@
 			<div x-render="objects/header/object" x-render-attachment="true" x-render-hide-reply="false"></div>
 		</div>
 	</div>
+
+	<div data-component="renderhost" data-template="collection/full" data-id="{{AS.take('replies')}}" x-render-hide-reply="true" x-if="{{AS.has('replies')}}"></div>
 </div>
