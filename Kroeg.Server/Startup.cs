@@ -114,6 +114,7 @@ namespace Kroeg.Server
 
             services.AddSingleton<BackgroundTaskQueuer>();
             services.AddSingleton(Configuration);
+            services.AddTransient<IAuthorizer, DefaultAuthorizer>();
 
             services.AddTransient<DeliveryService>();
             services.AddTransient<RelevantEntitiesService>();

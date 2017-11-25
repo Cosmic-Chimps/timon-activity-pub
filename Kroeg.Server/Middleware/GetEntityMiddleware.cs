@@ -259,11 +259,12 @@ namespace Kroeg.Server.Middleware
             private readonly INotifier _notifier;
             private readonly JwtTokenSettings _tokenSettings;
             private readonly SignatureVerifier _verifier;
+            private readonly IAuthorizer _authorizer;
 
             public GetEntityHandler(DbConnection connection, EntityFlattener flattener, IEntityStore mainStore,
                 AtomEntryGenerator entryGenerator, IServiceProvider serviceProvider, DeliveryService deliveryService,
                 EntityData entityData, ClaimsPrincipal user, CollectionTools collectionTools, INotifier notifier, JwtTokenSettings tokenSettings,
-                SignatureVerifier verifier)
+                SignatureVerifier verifier, IAuthorizer authorizer)
             {
                 _connection = connection;
                 _flattener = flattener;
@@ -277,6 +278,7 @@ namespace Kroeg.Server.Middleware
                 _notifier = notifier;
                 _tokenSettings = tokenSettings;
                 _verifier = verifier;
+                _authorizer = authorizer;
             }
 
             internal async Task<APEntity> Get(string url, IQueryCollection arguments, HttpContext context, APEntity existing)
@@ -284,18 +286,8 @@ namespace Kroeg.Server.Middleware
                 var userId = _user.FindFirstValue(JwtTokenSettings.ActorClaim);
                 var entity = existing ?? await _mainStore.GetEntity(url, false);
                 if (entity == null) return null;
-                if (entity.Type == "_blocks" && !entity.Data["attributedTo"].Any(a => a.Id == userId)) throw new UnauthorizedAccessException("Blocks are private!");
-                if (entity.Type == "_blocked") throw new UnauthorizedAccessException("This collection is only used internally for optimization reasons");
-                if (entity.Type == "https://www.w3.org/ns/activitystreams#OrderedCollection" || entity.Type == "https://www.w3.org/ns/activitystreams#Collection" || entity.Type.StartsWith("_")) return APEntity.From(await _getCollection(entity, arguments), true);
-                if (entity.IsOwner && _entityData.IsActor(entity.Data)) return entity;
-                var audience = DeliveryService.GetAudienceIds(entity.Data);
-
-                if (userId == null && !audience.Contains("https://www.w3.org/ns/activitystreams#Public"))
-                {
-                    userId = await _verifier.Verify(url, context);
-                }
-
-                if (entity.Data["attributedTo"].Concat(entity.Data["actor"]).All(a => a.Id != userId) && !audience.Contains("https://www.w3.org/ns/activitystreams#Public") && (userId == null || !audience.Contains(userId)))
+                if (userId == null) userId = await _verifier.Verify(url, context);
+                if (!await _authorizer.VerifyAccess(entity, userId))
                 {
                     var unauth = new ASObject();
                     unauth.Id = "kroeg:unauthorized";
@@ -303,6 +295,15 @@ namespace Kroeg.Server.Middleware
 
                     return APEntity.From(unauth);
                 }
+                if (entity.Type == "https://www.w3.org/ns/activitystreams#OrderedCollection"
+                    || entity.Type == "https://www.w3.org/ns/activitystreams#Collection"
+                    || entity.Type.StartsWith("_"))
+                {
+                    if (entity.IsOwner && !entity.Data["totalItems"].Any())
+                        return APEntity.From(await _getCollection(entity, arguments), true);
+                    else
+                        return (await _mainStore.GetEntity(url + context.Request.QueryString.Value, true)) ?? entity;
+                } 
 
                 return entity;
             }
