@@ -40,14 +40,18 @@ export class RenderHost {
     public get template(): string|TemplateItem { return this._template; }
     public set template(value: string|TemplateItem) { this._template = value; this.render(); }
 
+    public depth: number = 0;
+
     constructor(public renderer: TemplateRenderer, private store: EntityStore, id: string, template: string|TemplateItem, dom?: HTMLElement, private _parent?: RenderHost, private _renderData?: {[name: string]: string}, private _parentAS?: ASObject) {
         this._dom = dom != null ? dom : document.createElement("div");
         this._id = id;
         this._template = template;
+        this.depth = _parent != null ? (_parent.depth + 1) : 0;
         this.update(true);
     }
 
     public async update(reload: boolean = false) {
+        if (this.depth > 40) return;
         if (this._storeActivityToken != null)
             this.store.deregister(this._storeActivityToken);
 

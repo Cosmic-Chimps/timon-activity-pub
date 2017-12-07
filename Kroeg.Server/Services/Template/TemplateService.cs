@@ -218,8 +218,9 @@ namespace Kroeg.Server.Services.Template
             return regs.Engine.Execute(data).GetCompletionValue().ToObject();
         }
 
-        private async Task<string> _parseElement(HtmlDocument doc, TemplateItem item, IEntityStore entityStore, ASObject data, Registers regs)
+        private async Task<string> _parseElement(HtmlDocument doc, TemplateItem item, IEntityStore entityStore, ASObject data, Registers regs, int depth)
         {
+            if (depth >= 40) return "recursion reached";
             regs.Engine.SetValue("Data", regs.Data);
             regs.Renderer.EmojiContext.Clear();
             var result = doc.CreateElement(item.Data);
@@ -300,9 +301,9 @@ namespace Kroeg.Server.Services.Template
                     regs.Data = extraRenderData;
                     string r;
                     if (template != null)
-                        r = await _parseTemplate(template, entityStore, objData, regs, doc);
+                        r = await _parseTemplate(template, entityStore, objData, regs, doc, depth + 1);
                     else
-                        r = await _parseElement(doc, item, entityStore, objData, regs);
+                        r = await _parseElement(doc, item, entityStore, objData, regs, depth + 1);
                     regs.Data = oldData;
                     return r;
                 }
@@ -338,7 +339,7 @@ namespace Kroeg.Server.Services.Template
                 }
 
                 if (objData != null)
-                    return await _parseTemplate(template, entityStore, objData, regs, doc);
+                    return await _parseTemplate(template, entityStore, objData, regs, doc, depth);
             }
 
             if (item.Arguments.ContainsKey("data-component") && item.Arguments["data-component"][0].Data == "emoji" && parse)
@@ -393,11 +394,11 @@ namespace Kroeg.Server.Services.Template
                         foreach (var forItem in forItems)
                         {
                             regs.Engine.SetValue(forIn, forItem);
-                            content.Append(await _parseElement(doc, subitem, entityStore, data, regs));
+                            content.Append(await _parseElement(doc, subitem, entityStore, data, regs, depth + 1));
                         }
                     }
                     else
-                         content.Append(await _parseElement(doc, subitem, entityStore, data, regs));
+                         content.Append(await _parseElement(doc, subitem, entityStore, data, regs, depth + 1));
                 }
             }
 
@@ -406,12 +407,12 @@ namespace Kroeg.Server.Services.Template
             return result.OuterHtml;
         }
 
-        private async Task<string> _parseTemplate(string template, IEntityStore entityStore, ASObject data, Registers regs, HtmlDocument doc)
+        private async Task<string> _parseTemplate(string template, IEntityStore entityStore, ASObject data, Registers regs, HtmlDocument doc, int depth)
         {
 
             if (!Templates.ContainsKey(template)) throw new InvalidOperationException($"Template {template} does not exist!");
             var templ = Templates[template];
-            return await _parseElement(doc, templ, entityStore, data, regs);
+            return await _parseElement(doc, templ, entityStore, data, regs, depth);
         }
 
         public async Task<string> ParseTemplate(string template, IEntityStore entityStore, APEntity entity, Registers regs = null)
@@ -428,7 +429,7 @@ namespace Kroeg.Server.Services.Template
 
             regs.UsedEntities[entity.Id] = entity;
 
-            var data = await _parseTemplate(template, entityStore, entity.Data, regs, doc);
+            var data = await _parseTemplate(template, entityStore, entity.Data, regs, doc, 0);
             Console.WriteLine($"{regs.EntityCount} entities gotten in total, {regs.UsedEntities.Count} separate");
             return data;
         }
