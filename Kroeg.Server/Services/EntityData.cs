@@ -8,6 +8,9 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
 using Kroeg.Server.Services.EntityStore;
+using Kroeg.Server.Middleware.Handlers.ServerToServer;
+using Kroeg.Server.Middleware.Handlers.Shared;
+using Kroeg.Server.Middleware.Handlers.ClientToServer;
 
 namespace Kroeg.Server.Tools
 {
@@ -44,6 +47,40 @@ namespace Kroeg.Server.Tools
             "https://www.w3.org/ns/activitystreams#Actor", "https://www.w3.org/ns/activitystreams#Application",
             "https://www.w3.org/ns/activitystreams#Group", "https://www.w3.org/ns/activitystreams#Organization",
             "https://www.w3.org/ns/activitystreams#Person", "https://www.w3.org/ns/activitystreams#Service"
+        };
+
+        
+
+        public static readonly List<Type> ServerToServerHandlers = new List<Type>
+        {
+            typeof(VerifyOwnershipHandler),
+            typeof(DeleteHandler),
+            typeof(FollowResponseHandler),
+            typeof(LikeFollowAnnounceHandler),
+            typeof(AddRemoveActivityHandler),
+            typeof(UndoHandler),
+            typeof(CreateHandler),
+            typeof(DeliveryHandler)
+        };
+
+
+
+        public static readonly List<Type> ClientToServerHandlers = new List<Type>
+        {
+            typeof(ObjectWrapperHandler),
+            typeof(ActivityMissingFieldsHandler),
+            typeof(CreateActivityHandler),
+            // commit changes before modifying collections
+            typeof(UpdateDeleteActivityHandler),
+            typeof(CommitChangesHandler),
+            typeof(AcceptRejectFollowHandler),
+            typeof(FollowLikeHandler),
+            typeof(AddRemoveActivityHandler),
+            typeof(UndoActivityHandler),
+            typeof(BlockHandler),
+            typeof(CreateActorHandler),
+            typeof(DeliveryHandler),
+            typeof(WebSubHandler)
         };
 
         [Obsolete("hardcoded single type")]

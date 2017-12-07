@@ -90,7 +90,9 @@ namespace Kroeg.Server.Services.Template
 
             public string date(string data)
             {
-                return DateTime.Parse(data).ToLocalTime().ToString();
+                try {
+                    return DateTime.Parse(data).ToLocalTime().ToString();
+                } catch (FormatException) { return data; }
             }
 
             public string sanitize(string data)

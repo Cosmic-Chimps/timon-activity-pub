@@ -41,9 +41,9 @@ namespace Kroeg.Server.Services.EntityStore
         {
             foreach (var item in _entities.Keys.ToList())
             {
-                if (item.StartsWith(prefix)) continue;
+                if (prefix != null && item.StartsWith(prefix)) continue;
                 var data = _entities[item].Data;
-                if (data["_:origin"].Any((a) => (string) a.Primitive == "atom") && data["atomUri"].Any((a) => ((string) a.Primitive).StartsWith(prefix))) continue;
+                if (prefix != null && data["_:origin"].Any((a) => (string) a.Primitive == "atom") && data["atomUri"].Any((a) => ((string) a.Primitive).StartsWith(prefix))) continue;
 
                 _entities.Remove(item);
             }
