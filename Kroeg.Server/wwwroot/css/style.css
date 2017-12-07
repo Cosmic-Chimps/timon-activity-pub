@@ -17,6 +17,11 @@
   padding: 0px;
 }
 
+.kroeg-content-ws {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
 .kroeg-content .invisible {
   display: none;
 }

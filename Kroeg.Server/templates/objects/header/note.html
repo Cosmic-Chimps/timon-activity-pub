@@ -7,14 +7,10 @@
 		</div>
 		<div class="col-md-12 kroeg-content">
 		        <div x-if="AS.has('inReplyTo') && Data['hide-reply'] == 'true'" x-render="objects/sub/in_reply_to" x-render-id="AS.take('inReplyTo')"></div>
-			<div x-if="!AS.has('summary')" data-component="emoji" data-context="{{AS.take('id')}}">
-				{{Renderer.clean(AS.take('content'))}}
-			</div>
+			<div x-if="!AS.has('summary')" data-component="emoji" data-context="{{AS.take('id')}}" class="kroeg-content-ws">{{Renderer.clean(AS.take('content'))}}</div>
 			<details x-if="AS.has('summary')">
 				<summary>{{Renderer.sanitize(AS.take('summary'))}}</summary>
-				<div data-component="emoji" data-context="{{AS.take('id')}}">
-					{{Renderer.clean(AS.take('content'))}}
-				</div>
+				<div data-component="emoji" data-context="{{AS.take('id')}}" class="kroeg-content-ws">{{Renderer.clean(AS.take('content'))}}</div>
 			</details>
 			<div class="kroeg-attachments" x-if="Data['attachment'] != 'false'">
 				<div x-render="attachment/attachment" x-render-id="item" x-for-in="{{AS.get('attachment')}}"></div>
