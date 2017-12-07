@@ -73,12 +73,20 @@ namespace Kroeg.Server.Services.EntityStore
                 }
             }
 
-            var response = await htc.GetAsync(loadUrl);
-
-            if (!response.IsSuccessStatusCode)
+            HttpResponseMessage response = null;
+            try
             {
-                response = await htc.GetAsync(loadUrl + ".atom"); // hack!
-                if (!response.IsSuccessStatusCode) return null;
+                response = await htc.GetAsync(loadUrl);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    response = await htc.GetAsync(loadUrl + ".atom"); // hack!
+                    if (!response.IsSuccessStatusCode) return null;
+                }
+            }
+            catch (HttpRequestException)
+            {
+                return null;
             }
             var converters = new List<IConverterFactory> { new AS2ConverterFactory(), new AtomConverterFactory(false) };
             tryAgain:

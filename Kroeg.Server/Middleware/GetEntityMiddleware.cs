@@ -676,8 +676,6 @@ namespace Kroeg.Server.Middleware
                         store = _mainStore;
                 }
 
-                await _notifier.Notify(BackgroundTaskQueuer.BackgroundTaskPath, "ye");
-
                 return flattened;
             }
         }
