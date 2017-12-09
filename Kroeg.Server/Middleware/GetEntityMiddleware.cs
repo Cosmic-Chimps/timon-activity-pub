@@ -300,7 +300,11 @@ namespace Kroeg.Server.Middleware
                     || entity.Type.StartsWith("_"))
                 {
                     if (entity.IsOwner && !entity.Data["totalItems"].Any())
-                        return APEntity.From(await _getCollection(entity, arguments), true);
+                        try {
+                            return APEntity.From(await _getCollection(entity, arguments), true);
+                        } catch (FormatException) {
+                            throw new InvalidOperationException("Invalid parameters!");
+                        }
                     else
                         return (await _mainStore.GetEntity(url + context.Request.QueryString.Value, true)) ?? entity;
                 } 
