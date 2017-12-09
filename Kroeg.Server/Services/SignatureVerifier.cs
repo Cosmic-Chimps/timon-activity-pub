@@ -239,6 +239,8 @@ namespace Kroeg.Server.Services
 
         public async Task<string> BuildJWS(APEntity subject, string inbox)
         {
+            if (!Uri.IsWellFormedUriString(inbox, UriKind.Absolute)) return null;
+
             var key = await GetJWK(subject);
 
             var subUri = new Uri(inbox);

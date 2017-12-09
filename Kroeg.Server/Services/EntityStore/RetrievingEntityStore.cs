@@ -69,17 +69,27 @@ namespace Kroeg.Server.Services.EntityStore
                 if (user != null)
                 {
                     var jwt = await signatureVerifier.BuildJWS(user, id);
-                    htc.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", jwt);
+                    if (jwt != null)
+                        htc.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", jwt);
                 }
             }
 
-            var response = await htc.GetAsync(loadUrl);
-
-            if (!response.IsSuccessStatusCode)
+            HttpResponseMessage response;
+            try
             {
-                response = await htc.GetAsync(loadUrl + ".atom"); // hack!
-                if (!response.IsSuccessStatusCode) return null;
+                response = await htc.GetAsync(loadUrl);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    response = await htc.GetAsync(loadUrl + ".atom"); // hack!
+                    if (!response.IsSuccessStatusCode) return null;
+                }
             }
+            catch (TaskCanceledException)
+            {
+                return null; // timeout
+            }
+
             var converters = new List<IConverterFactory> { new AS2ConverterFactory(), new AtomConverterFactory(false) };
             tryAgain:
             ASObject data = null;
