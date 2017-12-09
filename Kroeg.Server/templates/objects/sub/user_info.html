@@ -18,7 +18,5 @@
         <li x-render-id="AS.take('following')">following <b>{{AS.take('totalItems', 'unknown')+''}}</b> peeps</li>
         <li x-render-id="AS.take('followers')">and <b>{{AS.take('totalItems', 'unknown')+''}}</b> accounts follow them</li>
     </ul>
-    <div class="kroeg-content">
-        {{Renderer.clean(AS.take('summary'))}}
-    </div>
+    <div class="kroeg-content kroeg-content-ws">{{Renderer.clean(AS.take('summary'))}}</div>
 </div>

@@ -123,6 +123,7 @@ class Registers {
     public Renderer: RendererInfo;
     public object: AS.ASObject;
     public item: any;
+    public depth: number;
     public Data: {[data: string]: string} = {};
     public parent: AS.ASObject;
 }
@@ -170,10 +171,11 @@ export class TemplateRenderer {
         return result;
     }
 
-    private _render(item: TemplateItem, data: AS.ASObject, regs: Registers, renderResult: RenderResult, render: boolean, element?: HTMLElement, isSub?: boolean): HTMLElement {
+    private _render(item: TemplateItem, data: AS.ASObject, regs: Registers, renderResult: RenderResult, render: boolean, depth: number, element?: HTMLElement, isSub?: boolean): HTMLElement {
         if ("x-render-if" in item.arguments && render) {
             render = this._parse(item.arguments["x-render-if"][0], data, regs, true) as boolean;
         }
+        if (depth > 20) { if (element == null) element = document.createElement("span"); element.innerText = "recursion reached"; return element; }
         if (!isSub && ("x-render" in item.arguments || "x-render-id" in item.arguments) && render)
         {
             let itemId = data.id;
@@ -198,14 +200,14 @@ export class TemplateRenderer {
             if (typeof renderId == "object")
             {
                 regs.Data = newData;
-                let result = this._render(template, renderId as AS.ASObject, regs, renderResult, true, null, true);
+                let result = this._render(template, renderId as AS.ASObject, regs, renderResult, true, depth + 1, null, true);
                 regs.Data = oldData;
                 return result;
             }
 
             if (renderId !== undefined && renderId != itemId)
             {
-                let rendered = this._render(template, null, regs, renderResult, false, null, true);
+                let rendered = this._render(template, null, regs, renderResult, false, depth + 1, null, true);
                 rendered.dataset["render"] = templateName || "_sub_";
                 rendered.dataset["id"] = renderId;
                 renderResult.subRender.push({id: renderId, into: rendered, template, data: newData, parent: data});
@@ -213,6 +215,7 @@ export class TemplateRenderer {
             }
 
             item = template;
+            depth += 1;
         }
         if (element == undefined)
             element = document.createElement(item.data);
@@ -250,7 +253,7 @@ export class TemplateRenderer {
                         let prevItem = regs.item;
                         for (let subItem of resultItems) {
                             regs.item = subItem;
-                            element.appendChild(this._render(content, data, regs, renderResult, true));
+                            element.appendChild(this._render(content, data, regs, renderResult, true, depth));
                         }
                         regs.item = prevItem;
 
@@ -263,7 +266,7 @@ export class TemplateRenderer {
                         if (result) continue;
                     }
 
-                    element.appendChild(this._render(content, data, regs, renderResult, true));
+                    element.appendChild(this._render(content, data, regs, renderResult, true, depth));
                 }
             }
 
@@ -282,11 +285,12 @@ export class TemplateRenderer {
         regs.Renderer = new RendererInfo(this.entityStore.session);
         regs.Data = ndata || {};
         regs.parent = parent;
+        regs.depth = 0;
 
         let renderResult = new RenderResult();
         renderResult.subRender = [];
         renderResult.componentHandles = [];
-        let result = this._render(typeof(template) === "string" ? this.templates[template] : template, data, regs, renderResult, true, elem, typeof(template) !== "string");
+        let result = this._render(typeof(template) === "string" ? this.templates[template] : template, data, regs, renderResult, true, 0, elem, typeof(template) !== "string");
         renderResult.result = result;
 
         return renderResult;

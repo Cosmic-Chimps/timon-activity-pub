@@ -74,7 +74,7 @@ namespace Kroeg.Server.Services.EntityStore
                 }
             }
 
-            HttpResponseMessage response;
+            HttpResponseMessage response = null;
             try
             {
                 response = await htc.GetAsync(loadUrl);
@@ -88,6 +88,10 @@ namespace Kroeg.Server.Services.EntityStore
             catch (TaskCanceledException)
             {
                 return null; // timeout
+            }
+            catch (HttpRequestException)
+            {
+                return null;
             }
 
             var converters = new List<IConverterFactory> { new AS2ConverterFactory(), new AtomConverterFactory(false) };

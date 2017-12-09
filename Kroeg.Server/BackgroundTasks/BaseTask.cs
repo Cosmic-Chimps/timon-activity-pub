@@ -70,6 +70,8 @@ namespace Kroeg.Server.BackgroundTasks
                     Data = JsonConvert.SerializeObject(data),
                     NextAttempt = nextAttempt ?? DateTime.Now
                 });
+
+            await connection.ExecuteAsync("select pg_notify('kroeg', @Val)", new { Val = JsonConvert.SerializeObject(new { Path = BackgroundTaskQueuer.BackgroundTaskPath, Value = "ye" }) });
         }
 
         protected BaseTask(EventQueueItem item)
