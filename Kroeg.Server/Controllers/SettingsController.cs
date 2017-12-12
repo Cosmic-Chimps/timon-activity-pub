@@ -42,6 +42,7 @@ namespace Kroeg.Server.Controllers
         {
             public APUser User { get; set; }
             public List<UserActorPermission> Actors { get; set; }
+            public Dictionary<int, APEntity> Entities { get; set; }
         }
 
         public class NewActorModel
@@ -57,11 +58,8 @@ namespace Kroeg.Server.Controllers
         public class EditActorModel
         {
             public BaseModel Menu { get; set; }
-            public List<UserActorPermission> OtherPeople { get; set; }
 
-            public UserActorPermission Actor { get; set; }
-            public string OtherIsAdmin { get; set; }
-            public string AuthorizeOther { get; set; }
+            public APEntity Actor { get; set; }
         }
 
         private readonly IEntityStore _entityStore;
@@ -103,8 +101,18 @@ namespace Kroeg.Server.Controllers
         private async Task<BaseModel> _getUserInfo()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var actors = (await _connection.QueryAsync<UserActorPermission>("SELECT * from \"UserActorPermissions\" where \"UserId\" = @Id", new { Id = userId })).ToList();
+            var entities = new Dictionary<int, APEntity>();
+            foreach (var actor in actors)
+            {
+                entities[actor.ActorId] = await _entityStore.GetDBEntity(actor.ActorId);
+            }
 
-            throw new NotImplementedException();
+            return new BaseModel {
+                User = await _connection.QuerySingleAsync<APUser>("SELECT * from \"Users\" where \"Id\" = @Id", new { Id = userId }),
+                Actors = actors,
+                Entities = entities
+            };
         }
 
         [Authorize]
@@ -112,7 +120,9 @@ namespace Kroeg.Server.Controllers
         {
             var data = await _getUserInfo();
             if (data.Actors.Count == 0) return View("NewActor", new NewActorModel() { Menu = data });
-            throw new NotImplementedException();
+            var firstActor = data.Entities[data.Actors.First().ActorId];
+            
+            return View("ShowActor", new EditActorModel {Actor = firstActor, Menu = data});
         }
 
         [Authorize, HttpGet("new")]
@@ -168,7 +178,13 @@ namespace Kroeg.Server.Controllers
             var actor = data.Actors.FirstOrDefault(a => a.ActorId == ac.DbId);
             if (actor == null) return await Index();
 
-            throw new NotImplementedException();
+            var editData = new EditActorModel
+            {
+                Actor = ac,
+                Menu = data
+            };
+
+            return View("ShowActor", editData);
         }
 
         [Authorize, HttpPost("uploadMedia")]

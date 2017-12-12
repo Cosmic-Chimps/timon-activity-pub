@@ -135,7 +135,7 @@ namespace Kroeg.Server.Services.EntityStore
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            var entity = await _connection.QueryFirstOrDefaultAsync<APTripleEntity>("select * from \"TripleEntities\" where \"EntityId\" = @Id limit 1", new { IdId = id });
+            var entity = await _connection.QueryFirstOrDefaultAsync<APTripleEntity>("select * from \"TripleEntities\" where \"EntityId\" = @IdId limit 1", new { IdId = id });
             if (entity == null) return null;
 
             var b = await _build(entity);
@@ -252,14 +252,21 @@ namespace Kroeg.Server.Services.EntityStore
 
         private object _tripleToJson(string obj, string type)
         {
-            if (type == "xsd:boolean")
-                return obj == "true";
-            else if (type == "xsd:double")
-                return double.Parse(obj);
-            else if (type == "xsd:integer")
-                return int.Parse(type);
-            else
+            try
+            {
+                if (type == "xsd:boolean")
+                    return obj == "true";
+                else if (type == "xsd:double")
+                    return double.Parse(obj);
+                else if (type == "xsd:integer")
+                    return int.Parse(type);
+                else
+                    return obj;
+            }
+            catch (FormatException)
+            {
                 return obj;
+            }
         }
 
         private async Task<List<Triple>> _newTriples(APEntity entity)
