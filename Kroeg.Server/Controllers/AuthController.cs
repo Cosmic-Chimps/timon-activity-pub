@@ -225,7 +225,9 @@ namespace Kroeg.Server.Controllers
                 create["object"].Add(ASTerm.MakeSubObject(obj));
                 create["to"].Add(ASTerm.MakeId("https://www.w3.org/ns/activitystreams#Public"));
 
+                Console.WriteLine($"--- creating actor. Unflattened:\n{create.Serialize().ToString(Formatting.Indented)}");
                 var apo = await _entityFlattener.FlattenAndStore(_entityStore, create);
+                Console.WriteLine($"Flat: {apo.Data.Serialize().ToString(Formatting.Indented)}\n----");
                 var handler = new CreateActorHandler(_entityStore, apo, null, null, User, _collectionTools, _entityConfiguration, _connection);
                 handler.UserOverride = apuser.Id;
                 await handler.Handle();
