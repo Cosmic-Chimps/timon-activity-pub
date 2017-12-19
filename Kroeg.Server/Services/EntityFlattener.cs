@@ -164,7 +164,7 @@ namespace Kroeg.Server.Tools
                     if (_mayNotUnflatten.Contains(kv.Key) && (!entity.IsOwner || !UnflattenIfOwner.Contains(kv.Key))) continue;
                     var id = value.Id;
 
-                    if (alreadyMapped.ContainsKey(id)) continue;
+                    if (alreadyMapped.ContainsKey(id) && (depth != 3 || kv.Key != "https://www.w3.org/ns/activitystreams#object")) continue;
 
                     var obj = await store.GetEntity(id, false);
                     if (obj == null || _avoidFlatteningTypes.Contains(obj.Type) || obj.Type.StartsWith("_") || (!remote && !obj.IsOwner)) continue;

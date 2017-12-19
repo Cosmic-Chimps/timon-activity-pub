@@ -5,7 +5,8 @@
 	<div x-render="objects/activities/follow" x-if="AS.contains('type', 'Follow')"></div>
 	<div x-render="objects/activities/undo" x-if="AS.contains('type', 'Undo')"></div>
 	<div x-render="objects/activities/accept" x-if="AS.contains('type', 'Accept')"></div>
-	<div x-if="!AS.containsAny('type', ['Create', 'Announce', 'Follow', 'Undo', 'Accept', 'Like'])">
+	<div x-render="objects/activities/update" x-if="AS.contains('type', 'Update')"></div>
+	<div x-if="!AS.containsAny('type', ['Create', 'Announce', 'Follow', 'Undo', 'Accept', 'Like', 'Update'])">
 		Activity:
 		<div x-render="object" x-render-id="AS.take('object')"></div>
 	</div>
