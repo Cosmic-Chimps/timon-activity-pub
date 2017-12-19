@@ -8,7 +8,7 @@
 <div class="list-group">
     @foreach (var item in Model.Actors)
     {
-        <a class="list-group-item list-group-item-action" href="@Url.Action("Edit", new { id = item.ActorId })">@item.ActorId</a>
+        <a class="list-group-item list-group-item-action" href="@Url.Action("Edit", new { id = Model.Entities[item.ActorId].Id })">@Model.Entities[item.ActorId].Id</a>
     }
     <a class="list-group-item list-group-item-action" href="@Url.Action("NewActor")">New</a>
 </div>
