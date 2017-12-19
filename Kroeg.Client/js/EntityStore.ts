@@ -81,6 +81,11 @@ export class EntityStore {
         handler.items = {};
     }
 
+    private static _eq(a: any, b: any) {
+        if (typeof a == "string" && typeof b == "string") return a == b || (a.startsWith("_:") && b.startsWith("_:"));
+        return a == b;
+    }
+
     private static _equals(a: ASObject, b: ASObject) {
         let prevKeys = Object.getOwnPropertyNames(a);
         let newKeys = Object.getOwnPropertyNames(b);
@@ -94,10 +99,12 @@ export class EntityStore {
                 if (a[key].length != b[key].length) return false;
 
                 for (let i = 0; i < a[key].length; i++) {
-                    if (a[key][i] != b[key][i]) return false;
+                    if (!EntityStore._eq(a[key][i], b[key][i]) return false;
                 }
+            } else if (typeof a[key] == "object" && typeof b[key] == "object") {
+                if (!EntityStore._equals(a[key], b[key])) return false;
             } else {
-                if (a[key] != b[key]) return false;
+                if (!EntityStore._eq(a[key], b[key])) return false;
             }
         }
 

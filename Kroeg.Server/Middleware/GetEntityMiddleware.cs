@@ -590,7 +590,7 @@ namespace Kroeg.Server.Middleware
 
                 await stagingStore.CommitChanges();
 
-                foreach (var type in EntityData.ExtraFilters.Concat(EntityData.ServerToServerHandlers))
+                foreach (var type in EntityData.ServerToServerHandlers.Concat(EntityData.ExtraFilters))
                 {
                     var handler = (BaseHandler)ActivatorUtilities.CreateInstance(_serviceProvider, type,
                         _mainStore, flattened, user, inbox, _user);
@@ -639,7 +639,7 @@ namespace Kroeg.Server.Middleware
                 var flattened = await _flattener.FlattenAndStore(stagingStore, activity);
                 IEntityStore store = stagingStore;
 
-                foreach (var type in EntityData.ExtraFilters.Concat(EntityData.ClientToServerHandlers))
+                foreach (var type in EntityData.ClientToServerHandlers.Concat(EntityData.ExtraFilters))
                 {
                     var handler = (BaseHandler)ActivatorUtilities.CreateInstance(_serviceProvider, type,
                         store, flattened, user, outbox, _user);
