@@ -375,7 +375,7 @@ namespace Kroeg.Server.Controllers
             {
                 encodedJwt = _dataProtector.Protect(encodedJwt);
 
-                return _buildRedir(model.RedirectUri, model.ResponseType, $"code={Uri.EscapeDataString(encodedJwt)}&state={Uri.EscapeDataString(model.State)}"));
+                return _buildRedir(model.RedirectUri, model.ResponseType, $"code={Uri.EscapeDataString(encodedJwt)}&state={Uri.EscapeDataString(model.State)}");
             }
 
             return StatusCode(500);

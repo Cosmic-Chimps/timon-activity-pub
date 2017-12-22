@@ -7,16 +7,22 @@ using Kroeg.Server.Services.EntityStore;
 using Microsoft.AspNetCore.Http;
 using System;
 using Kroeg.Server.Salmon;
+using Kroeg.Server.Services;
+using Kroeg.Server.Configuration;
 
 namespace Kroeg.Server.Tools
 {
     public class EntityFlattener
     {
         private readonly EntityData _configuration;
+        private readonly IHttpContextAccessor _contextAccessor;
+        private readonly RelevantEntitiesService _relevantEntityService;
 
-        public EntityFlattener(EntityData configuration)
+        public EntityFlattener(EntityData configuration, IHttpContextAccessor contextAccessor, RelevantEntitiesService relevantEntitiesService)
         {
             _configuration = configuration;
+            _contextAccessor = contextAccessor;
+            _relevantEntityService = relevantEntitiesService;
         }
 
         public async Task<APEntity> FlattenAndStore(IEntityStore store, ASObject @object, bool generateId = true, Dictionary<string, APEntity> dict = null)
@@ -40,7 +46,7 @@ namespace Kroeg.Server.Tools
             return flattened[mainEntity.Id];
         }
 
-        public async Task<ASObject> Unflatten(IEntityStore store, APEntity entity, int depth = 3, Dictionary<string, APEntity> mapped = null, bool? isOwner = null)
+        public async Task<ASObject> Unflatten(IEntityStore store, APEntity entity, int depth = 3, Dictionary<string, APEntity> mapped = null, bool addRelevant = true, bool? isOwner = null)
         {
             if (mapped == null)
                 mapped = new Dictionary<string, APEntity>();
@@ -54,6 +60,12 @@ namespace Kroeg.Server.Tools
                 entity.IsOwner = isOwner.Value;
 
             var unflattened = await _unflatten(store, entity, depth, mapped, _configuration.UnflattenRemotely);
+            if (addRelevant && _contextAccessor.HttpContext != null)
+            {
+                var actor = _contextAccessor.HttpContext.User?.FindFirst(JwtTokenSettings.ActorClaim);
+                if (actor != null)
+                    await _relevantEntityService.FindTransparentPredicates(mapped, actor.Value);
+            }
 
             return unflattened;
         }

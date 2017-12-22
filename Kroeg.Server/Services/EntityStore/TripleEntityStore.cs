@@ -54,6 +54,11 @@ namespace Kroeg.Server.Services.EntityStore
             }
         }
 
+        public Dictionary<string, int> FindAttributes(List<string> attrs)
+        {
+            return _inverseAttributeMapping.Where(a => attrs.Contains(a.Key)).ToDictionary(a => a.Key, a => a.Value);
+        }
+
         private string _get(int id)
         {
             if (_attributeMapping.ContainsKey(id))

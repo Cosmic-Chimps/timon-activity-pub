@@ -35,7 +35,12 @@ namespace Kroeg.Server {
                     ["relevantObjects"] = new JObject { ["@id"] = "kroeg:relevantObjects", ["@type"] = "@id" },
                     ["search"] = new JObject { ["@id"] = "kroeg:search", ["@type"] = "@id" },
                     ["blocks"] = new JObject { ["@id"] = "kroeg:blocks", ["@type"] = "@id" },
-                    ["blocked"] = new JObject { ["@id"] = "kroeg:blocked", ["@type"] = "@id" }
+                    ["blocked"] = new JObject { ["@id"] = "kroeg:blocked", ["@type"] = "@id" },
+
+                    ["c2s"] = "https://puckipedia.com/kroeg/c2s#",
+                    ["c2s:likes"] = new JObject { ["@type"] = "@id"},
+                    ["c2s:follows"] = new JObject { ["@type"] = "@id"},
+                    ["c2s:announces"] = new JObject { ["@type"] = "@id"}
                 }
             );
 
