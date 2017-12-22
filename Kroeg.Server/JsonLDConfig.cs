@@ -31,6 +31,7 @@ namespace Kroeg.Server {
                     ["shares"] = new JObject { ["@id"] = "as:shares", ["@type"] = "@id" },
 
                     ["kroeg"] = "https://puckipedia.com/kroeg/ns#",
+                    ["unlisted"] = "kroeg:unlisted",
                     ["settingsEndpoint"] = new JObject { ["@id"] = "kroeg:settingsEndpoint", ["@type"] = "@id" },
                     ["relevantObjects"] = new JObject { ["@id"] = "kroeg:relevantObjects", ["@type"] = "@id" },
                     ["search"] = new JObject { ["@id"] = "kroeg:search", ["@type"] = "@id" },
