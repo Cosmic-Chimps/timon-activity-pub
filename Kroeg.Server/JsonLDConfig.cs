@@ -35,7 +35,6 @@ namespace Kroeg.Server {
                     ["relevantObjects"] = new JObject { ["@id"] = "kroeg:relevantObjects", ["@type"] = "@id" },
                     ["search"] = new JObject { ["@id"] = "kroeg:search", ["@type"] = "@id" },
                     ["blocks"] = new JObject { ["@id"] = "kroeg:blocks", ["@type"] = "@id" },
-                    ["unlisted"] = "kroeg:unlisted",
                     ["blocked"] = new JObject { ["@id"] = "kroeg:blocked", ["@type"] = "@id" }
                 }
             );
