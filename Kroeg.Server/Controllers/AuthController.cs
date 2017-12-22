@@ -311,10 +311,19 @@ namespace Kroeg.Server.Controllers
             }
         }
 
+        private RedirectResult _buildRedir(string baseUri, string response_type, string data)
+        {
+            if (response_type == "token")
+                return RedirectPermanent(baseUri.Contains("#") ? (baseUri + "&" + data) : (baseUri + "#" + data));
+            else
+                return RedirectPermanent(_appendToUri(baseUri, data));
+        }
+
         [Authorize("pass"), HttpGet("oauth")]
         public async Task<IActionResult> DoOAuthToken(string id, string response_type, string redirect_uri, string state)
         {
-            if (response_type != "token" && response_type != "code") return RedirectPermanent(_appendToUri(redirect_uri, "error=unsupported_response_type"));
+            if (redirect_uri == null) return Ok("Could not find redirect url. What's going on?");
+            if (response_type != "token" && response_type != "code") return _buildRedir(redirect_uri, response_type, "error=unsupported_response_type");
             if (User == null || User.FindFirstValue(ClaimTypes.NameIdentifier) == null) return RedirectToAction("Login", new { redirect = Request.Path.Value + Request.QueryString });
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -322,13 +331,7 @@ namespace Kroeg.Server.Controllers
             var hasAccess = await _connection.ExecuteScalarAsync<bool>("select exists(select 1 from \"UserActorPermissions\" where \"UserId\" = @UserId and \"ActorId\" = @ActorId)", new { UserId = userId, ActorId = actor.DbId });
             if (!hasAccess || actor == null || !actor.IsOwner)
             {
-                if (response_type == "token")
-                    if (redirect_uri.Contains("#"))
-                        return RedirectPermanent(redirect_uri + "&error=access_denied&state=" + Uri.EscapeDataString(state));
-                    else
-                        return RedirectPermanent(redirect_uri + "#error=access_denied&state=" + Uri.EscapeDataString(state));
-                else
-                    return RedirectPermanent(_appendToUri(redirect_uri, "error=access_denied&state=" + Uri.EscapeDataString(state)));
+                return _buildRedir(redirect_uri, response_type, $"error=invalid_request&state={state}");
             }
 
             return View("ChooseActorOAuth", new OAuthActorModel { Actor = actor, ResponseType = response_type, RedirectUri = redirect_uri, State = state, Expiry = (int) _tokenSettings.ExpiryTime.TotalSeconds});
@@ -347,13 +350,7 @@ namespace Kroeg.Server.Controllers
                 exp = _tokenSettings.ExpiryTime;
 
             if (!string.IsNullOrWhiteSpace(model.Deny))
-                if (model.ResponseType == "token")
-                    if (model.RedirectUri.Contains("#"))
-                        return RedirectPermanent(model.RedirectUri + "&error=access_denied&state=" + Uri.EscapeDataString(model.State));
-                    else
-                        return RedirectPermanent(model.RedirectUri + "#error=access_denied&state=" + Uri.EscapeDataString(model.State));
-                else
-                    return RedirectPermanent(_appendToUri(model.RedirectUri, "error=access_denied&state=" + Uri.EscapeDataString(model.State)));
+                return _buildRedir(model.RedirectUri, model.ResponseType, $"error=access_denied&state={model.State}");
 
             var claims = new Claim[]
             {
@@ -373,17 +370,12 @@ namespace Kroeg.Server.Controllers
             var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
 
             if (model.ResponseType == "token")
-            {
-                if (model.RedirectUri.Contains("#"))
-                    return RedirectPermanent(model.RedirectUri + $"&access_token={encodedJwt}&token_type=bearer&expires_in={(int) exp.TotalSeconds}&state={Uri.EscapeDataString(model.State)}");
-                else
-                    return RedirectPermanent(model.RedirectUri + $"#access_token={encodedJwt}&token_type=bearer&expires_in={(int) exp.TotalSeconds}&state={Uri.EscapeDataString(model.State)}");
-            }
+                return _buildRedir(model.RedirectUri, model.ResponseType, $"access_token={encodedJwt}&token_type=bearer&expires_in={(int) exp.TotalSeconds}&state={Uri.EscapeDataString(model.State)}");
             else if (model.ResponseType == "code")
             {
                 encodedJwt = _dataProtector.Protect(encodedJwt);
 
-                return RedirectPermanent(_appendToUri(model.RedirectUri, $"code={Uri.EscapeDataString(encodedJwt)}&state={Uri.EscapeDataString(model.State)}"));
+                return _buildRedir(model.RedirectUri, model.ResponseType, $"code={Uri.EscapeDataString(encodedJwt)}&state={Uri.EscapeDataString(model.State)}"));
             }
 
             return StatusCode(500);
