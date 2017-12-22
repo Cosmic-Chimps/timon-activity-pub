@@ -23,12 +23,17 @@ export class Form implements IComponent {
         e.preventDefault();
 
         let formData = new FormData(this.element as HTMLFormElement);
-        let resultJson: FakeASObject = {"@context": "https://www.w3.org/ns/activitystreams"};
+        let resultJson: FakeASObject = {"@context": ["https://www.w3.org/ns/activitystreams", window.location.origin + "/render/context"]};
         for (let item of (formData as any).keys()) {
             let value: string|string[]|boolean|FakeASObject[] = formData.getAll(item) as string[];
             if (item.endsWith(".bool")) {
                 value = formData.get(item) == "true";
                 item = item.substr(0, item.length - 5);
+            }
+            if (item.endsWith(".bool?")) {
+                value = formData.get(item) == "true";
+                item = item.substr(0, item.length - 6);
+                if (!value) continue;
             }
             if (item.endsWith("$")) {
                 let result: FakeASObject[] = [];
@@ -39,7 +44,13 @@ export class Form implements IComponent {
                 item = item.substr(0, item.length - 1);
                 value = result;
             }
-            resultJson[item] = value;
+
+            if (Array.isArray(value)) {
+                resultJson[item] = [];
+                for (let it of (value as string[]))
+                    if (it.length > 0)
+                        (resultJson[item] as string[]).push(it);
+            } else resultJson[item] = value;
         }
 
         let headers = new Headers();

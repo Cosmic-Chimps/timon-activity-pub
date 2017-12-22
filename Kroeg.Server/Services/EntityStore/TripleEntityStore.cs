@@ -255,7 +255,7 @@ namespace Kroeg.Server.Services.EntityStore
             try
             {
                 if (type == "xsd:boolean")
-                    return obj == "true";
+                    return obj.ToLower() == "true";
                 else if (type == "xsd:double")
                     return double.Parse(obj);
                 else if (type == "xsd:integer")

@@ -27,8 +27,12 @@ export class Emoji implements IComponent {
             this._resolveEmoji(tag);
     }
 
-    private async _resolveEmoji(tag: string): Promise<void> {
-        let emoji = await this.entityStore.get(tag);
+    private async _resolveEmoji(tag: string|AS.ASObject): Promise<void> {
+        let emoji: AS.ASObject;
+        if (typeof(tag) === 'string')
+            emoji = await this.entityStore.get(tag as string);
+        else
+            emoji = tag as AS.ASObject;
         if (!AS.contains(emoji, 'type', 'Emoji')) return;
         let name = AS.take(emoji, 'name');
         let icon = typeof(AS.take(emoji, 'icon')) == "string" ? await this.entityStore.get(AS.take(emoji, 'icon')) : AS.take(emoji, 'icon');

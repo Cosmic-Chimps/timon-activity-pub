@@ -28,12 +28,14 @@ namespace Kroeg.Server {
                     ["uploadMedia"] = new JObject { ["@id"] = "as:uploadMedia", ["@type"] = "@id" },
                     ["likes"] = new JObject { ["@id"] = "as:likes", ["@type"] = "@id" },
                     ["liked"] = new JObject { ["@id"] = "as:liked", ["@type"] = "@id" },
+                    ["shares"] = new JObject { ["@id"] = "as:shares", ["@type"] = "@id" },
 
                     ["kroeg"] = "https://puckipedia.com/kroeg/ns#",
                     ["settingsEndpoint"] = new JObject { ["@id"] = "kroeg:settingsEndpoint", ["@type"] = "@id" },
                     ["relevantObjects"] = new JObject { ["@id"] = "kroeg:relevantObjects", ["@type"] = "@id" },
                     ["search"] = new JObject { ["@id"] = "kroeg:search", ["@type"] = "@id" },
                     ["blocks"] = new JObject { ["@id"] = "kroeg:blocks", ["@type"] = "@id" },
+                    ["unlisted"] = "kroeg:unlisted",
                     ["blocked"] = new JObject { ["@id"] = "kroeg:blocked", ["@type"] = "@id" }
                 }
             );

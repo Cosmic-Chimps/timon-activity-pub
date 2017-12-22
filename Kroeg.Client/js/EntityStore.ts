@@ -99,7 +99,7 @@ export class EntityStore {
                 if (a[key].length != b[key].length) return false;
 
                 for (let i = 0; i < a[key].length; i++) {
-                    if (!EntityStore._eq(a[key][i], b[key][i]) return false;
+                    if (!EntityStore._eq(a[key][i], b[key][i])) return false;
                 }
             } else if (typeof a[key] == "object" && typeof b[key] == "object") {
                 if (!EntityStore._equals(a[key], b[key])) return false;

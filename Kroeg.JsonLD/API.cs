@@ -895,7 +895,7 @@ namespace Kroeg.JsonLD
 
             if (value.Type == JTokenType.Boolean)
             {
-                value = value.Value<bool>().ToString();
+                value = value.Value<bool>() ? "true" : "false";
                 dataType = dataType ?? "xsd:boolean";
             }
             else if (value.Type == JTokenType.Float && (value.Value<double>() % 1) != 0.0 || dataType == "xsd:double")
