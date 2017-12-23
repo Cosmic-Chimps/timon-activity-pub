@@ -104,6 +104,8 @@ namespace Kroeg.Server.Services
 
             foreach (var obj in intactObjects)
             {
+                if (!objects.ContainsKey(obj.Data["object"].First().Id)) continue;
+
                 var target = objects[obj.Data["object"].First().Id];
                 if (obj.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Like"))
                     target.Data["c2s:likes"].Add(ASTerm.MakeSubObject(obj.Data));
