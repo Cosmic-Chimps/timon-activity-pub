@@ -47,7 +47,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
                 return true;
             }
             else if (toUndo.Type == "https://www.w3.org/ns/activitystreams#Like")
-                targetCollectionId = userData["likes"].Single().Id;
+                targetCollectionId = userData["liked"].Single().Id;
             else if (toUndo.Type == "https://www.w3.org/ns/activitystreams#Follow")
                 targetCollectionId = userData["following"].Single().Id;
 
