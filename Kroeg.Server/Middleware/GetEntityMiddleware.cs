@@ -494,13 +494,15 @@ namespace Kroeg.Server.Middleware
             private async Task<ASObject> _getCollection(APEntity entity, IQueryCollection arguments)
             {
                 var from_id = arguments["from_id"].FirstOrDefault();
+                var to_id = arguments["to_id"].FirstOrDefault();
                 var collection = entity.Data;
                 bool seePrivate = collection["attributedTo"].Any() && _user.FindFirstValue(JwtTokenSettings.ActorClaim) == collection["attributedTo"].First().Id;
 
-                if (from_id != null)
+                if (from_id != null || to_id != null)
                 {
-                    var fromId = int.Parse(from_id);
-                    var items = await _collectionTools.GetItems(entity.Id, fromId, 11);
+                    var fromId = from_id != null ? int.Parse(from_id) : int.MaxValue;
+                    var toId = to_id != null ? int.Parse(to_id) : int.MinValue;
+                    var items = await _collectionTools.GetItems(entity.Id, fromId, toId, count: 11);
                     var hasItems = items.Any();
                     var page = new ASObject();
                     page.Type.Add("https://www.w3.org/ns/activitystreams#OrderedCollectionPage");
@@ -509,6 +511,8 @@ namespace Kroeg.Server.Middleware
                     page["partOf"].Add(ASTerm.MakeId(entity.Id));
                     if (collection["attributedTo"].Any())
                         page["attributedTo"].Add(collection["attributedTo"].First());
+                    if (items.Count > 0)
+                        page["prev"].Add(ASTerm.MakeId(entity.Id + "?to_id=" + items[0].CollectionItemId.ToString()));
                     if (items.Count > 10)
                         page["next"].Add(ASTerm.MakeId(entity.Id + "?from_id=" + (items[9].CollectionItemId - 1).ToString()));
                     page["orderedItems"].AddRange(items.Take(10).Select(a => ASTerm.MakeId(a.Entity.Id)));

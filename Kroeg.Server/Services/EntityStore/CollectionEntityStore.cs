@@ -15,10 +15,10 @@ namespace Kroeg.Server.Services.EntityStore
     {
         private readonly CollectionTools _collectionTools;
 
-        private async Task<ASObject> _buildPage(APEntity entity, int from_id)
+        private async Task<ASObject> _buildPage(APEntity entity, int from_id, int to_id)
         {
             var collection = entity.Data;
-            var items = await _collectionTools.GetItems(entity.Id, from_id, 11);
+            var items = await _collectionTools.GetItems(entity.Id, from_id, to_id, 11);
             var hasItems = items.Any();
             var page = new ASObject();
             page.Type.Add("https://www.w3.org/ns/activitystreams#OrderedCollectionPage");
@@ -27,6 +27,8 @@ namespace Kroeg.Server.Services.EntityStore
             page["partOf"].Add(ASTerm.MakeId(entity.Id));
             if (collection["attributedTo"].Any())
                 page["attributedTo"].Add(collection["attributedTo"].First());
+            if (items.Count > 0)
+                page["prev"].Add(ASTerm.MakeId(entity.Id + "?to_id=" + items[0].CollectionItemId.ToString()));
             if (items.Count > 10)
                 page["next"].Add(ASTerm.MakeId(entity.Id + "?from_id=" + (items[9].CollectionItemId - 1).ToString()));
             page["orderedItems"].AddRange(items.Take(10).Select(a => ASTerm.MakeId(a.Entity.Id)));
@@ -76,15 +78,18 @@ namespace Kroeg.Server.Services.EntityStore
             }
             else
             {
-                int from_id = 0;
+                int from_id = int.MaxValue;
+                int to_id = int.MinValue;
                 foreach (var item in query.Split('&'))
                 {
                     var kv = item.Split('=');
                     if (kv[0] == "from_id" && kv.Length > 1)
                         from_id = int.Parse(kv[1]);
+                    if (kv[0] == "to_id" && kv.Length > 1)
+                        to_id = int.Parse(kv[1]);
                 }
 
-                return APEntity.From(await _buildPage(entity, from_id));
+                return APEntity.From(await _buildPage(entity, from_id, to_id));
             }
         }
 
