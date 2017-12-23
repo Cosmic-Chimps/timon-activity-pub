@@ -18,6 +18,7 @@ namespace Kroeg.Server.Services.EntityStore
         private async Task<ASObject> _buildPage(APEntity entity, int from_id, int to_id)
         {
             var collection = entity.Data;
+            var maxitem = (await _collectionTools.GetItems(entity.Id, count: 1)).FirstOrDefault()?.CollectionItemId;
             var items = await _collectionTools.GetItems(entity.Id, from_id, to_id, 11);
             var hasItems = items.Any();
             var page = new ASObject();
@@ -27,7 +28,7 @@ namespace Kroeg.Server.Services.EntityStore
             page["partOf"].Add(ASTerm.MakeId(entity.Id));
             if (collection["attributedTo"].Any())
                 page["attributedTo"].Add(collection["attributedTo"].First());
-            if (items.Count > 0)
+            if (items.Count > 0 && items[0].CollectionItemId != maxitem)
                 page["prev"].Add(ASTerm.MakeId(entity.Id + "?to_id=" + items[0].CollectionItemId.ToString()));
             if (items.Count > 10)
                 page["next"].Add(ASTerm.MakeId(entity.Id + "?from_id=" + (items[9].CollectionItemId - 1).ToString()));

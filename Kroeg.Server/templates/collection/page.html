@@ -1,9 +1,11 @@
 <div class="list-group">
+    <div class="list-group-item" x-if="AS.has('prev')">
+        <a class="btn btn-default center-block" href="{{AS.take('prev')}}" data-open="renderhost" style="display: block"><h4>Newer</h4></a>
+    </div>
     <div class="list-group-item" x-for-in="AS.get('orderedItems')">
         <div x-render="objects/header/object" x-render-id="item" x-render-collection="{{AS.take('partOf')}}" x-render-hide-reply="true"></div>
     </div>
-    <div class="list-group-item" x-if="AS.has('next') || AS.has('prev')">
-        <a class="btn btn-default" href="{{AS.take('prev')}}" data-open="renderhost">&laquo; Previous</a>
-        <a class="btn btn-default" href="{{AS.take('next')}}" data-open="renderhost">Next &raquo;</a>
+    <div class="list-group-item" x-if="AS.has('next')">
+        <a class="btn btn-default center-block" href="{{AS.take('next')}}" data-open="renderhost" style="display: block"><h4>Older</h4></a>
     </div>
 </div>
