@@ -18,19 +18,7 @@
 			<div class="kroeg-attachments" x-if="Data['attachment'] == 'false' && AS.get('attachment').length > 0">
 				<small>{{AS.get('attachment').length.toString()}} attachment{{AS.get('attachment').length == 1 ? "" : "s"}}</small>
 			</div>
-			<div x-if="Renderer.loggedInAs != null">
-				<a class="btn btn-sm btn-primary" href="kroeg:newnote#reply={{AS.take('id')}}">reply</a>
-				<a class="btn btn-sm btn-primary" href="kroeg:announce#post={{AS.take('id')}}">announce</a>
-		                <form x-if="Renderer.loggedInAs != null" data-endpoint="{{Renderer.loggedInAs.outbox}}" data-component="form" style="display: inline">
-		                  <input type="hidden" name="type" value="Like" />
-		                  <input type="hidden" name="actor" value="{{Renderer.loggedInAs.id}}" />
-		                  <input type="hidden" name="object" value="{{AS.take('id')}}" />
-		                  <input type="hidden" name="to" value="{{AS.take('attributedTo')}}" />
-		                  <input type="submit" class="btn btn-primary btn-sm" value="Like" />
-				</form>
-				<a class="btn btn-sm btn-primary float-right" href="kroeg:remove#collection={{Data.collection}}&item={{AS.take('id')}}" x-if="Renderer.loggedInAs != null && (Data.collection||'') != ''">remove</a>
-				<a class="btn btn-sm btn-primary float-right" href="kroeg:add#item={{AS.take('id')}}" x-if="Renderer.loggedInAs != null">add</a>
-			</div>
+			<div x-if="Renderer.loggedInAs != null" x-render="objects/sub/buttons"></div>
 		</div>
 	</div>
 </div>

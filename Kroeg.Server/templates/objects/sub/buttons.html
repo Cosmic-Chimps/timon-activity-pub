@@ -1,0 +1,20 @@
+<div>
+	<a class="btn btn-sm btn-primary" href="kroeg:newnote#reply={{AS.take('id')}}">reply</a>
+	<a class="btn btn-sm btn-primary" href="kroeg:announce#post={{AS.take('id')}}">announce</a>
+	<form data-endpoint="{{Renderer.loggedInAs.outbox}}" data-component="form" style="display: inline" x-if="Renderer.loggedInAs != null && !AS.has('c2s:likes')">
+		<input type="hidden" name="type" value="Like" />
+		<input type="hidden" name="actor" value="{{Renderer.loggedInAs.id}}" />
+		<input type="hidden" name="object" value="{{AS.take('id')}}" />
+		<input type="hidden" name="to" value="{{AS.take('attributedTo')}}" />
+		<input type="submit" class="btn btn-primary btn-sm" value="Like" />
+	</form>
+	<form data-endpoint="{{Renderer.loggedInAs.outbox}}" data-component="form" style="display: inline" x-if="Renderer.loggedInAs != null && AS.has('c2s:likes')">
+		<input type="hidden" name="type" value="Undo" />
+		<input type="hidden" name="actor" value="{{Renderer.loggedInAs.id}}" />
+		<input type="hidden" name="object" value="{{AS.take('c2s:likes')}}" />
+		<input type="hidden" name="to" value="{{AS.take('attributedTo')}}" />
+		<input type="submit" class="btn btn-primary btn-sm" value="Unlike" />
+	</form>
+	<a class="btn btn-sm btn-primary float-right" href="kroeg:remove#collection={{Data.collection}}&item={{AS.take('id')}}" x-if="Renderer.loggedInAs != null && (Data.collection||'') != ''">remove</a>
+	<a class="btn btn-sm btn-primary float-right" href="kroeg:add#item={{AS.take('id')}}" x-if="Renderer.loggedInAs != null">add</a>
+</div>

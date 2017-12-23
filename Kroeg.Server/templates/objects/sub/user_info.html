@@ -1,6 +1,6 @@
 <div class="h-card">
     <h1><span class="kroeg-username p-name">{{Renderer.sanitize(AS.take('name', AS.take('preferredUsername')))}}</span> <small>{{AS.take('id')}}</small></h1>
-    <div x-if="Renderer.loggedInAs != null && Renderer.loggedInAs.id != AS.take('id')">
+    <div x-if="Renderer.loggedInAs != null && Renderer.loggedInAs.id != AS.take('id') && !AS.has('c2s:follows')">
         <form data-endpoint="{{Renderer.loggedInAs.outbox}}" data-component="form">
            <input type="hidden" name="type" value="Follow" />
            <input type="hidden" name="actor" value="{{Renderer.loggedInAs.id}}" />
@@ -9,10 +9,14 @@
            <input type="submit" class="btn btn-primary" value="Follow" />
         </form>
     </div>
-    <div x-if="AS.take('id') == 'https://puckipedia.com/'">
-        <p>Hey! This is an experiment, I'm running my own social network server, <a data-nav="nav" href="https://github.com/puckipedia/Kroeg">Kroeg</a>, which can communicate with Mastodon and other ActivityPub-compatible servers. I'll be trying to mirror a bit of what I do on here, but it might just randomly break as well.</p>
-        <p>My old content can be found <a href="/index2.html" data-open="ext">here.</a></p>
-        <p>Want to follow me on Mastodon etc? just enter <code>@puckipedia@puckipedia.com</code> into the search bar!</p>
+    <div x-if="Renderer.loggedInAs != null && Renderer.loggedInAs.id != AS.take('id') && AS.has('c2s:follows')">
+        <form data-endpoint="{{Renderer.loggedInAs.outbox}}" data-component="form">
+           <input type="hidden" name="type" value="Undo" />
+           <input type="hidden" name="actor" value="{{Renderer.loggedInAs.id}}" />
+           <input type="hidden" name="object" value="{{AS.take('c2s:follows')}}" />
+           <input type="hidden" name="to" value="{{AS.take('id')}}" />
+           <input type="submit" class="btn btn-primary" value="Unfollow" />
+        </form>
     </div>
     <ul>
         <li x-render-id="AS.take('following')">following <b>{{AS.take('totalItems', 'unknown')+''}}</b> peeps</li>

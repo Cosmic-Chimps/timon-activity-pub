@@ -105,12 +105,16 @@ namespace Kroeg.Server.Services
             foreach (var obj in intactObjects)
             {
                 var target = objects[obj.Data["object"].First().Id];
-                if (obj.Data.Type.Contains("https://www.w3.org/ns/actvitystreams#Like"))
+                if (obj.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Like"))
                     target.Data["c2s:likes"].Add(ASTerm.MakeSubObject(obj.Data));
-                if (obj.Data.Type.Contains("https://www.w3.org/ns/actvitystreams#Follow"))
+                if (obj.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Follow"))
                     target.Data["c2s:follows"].Add(ASTerm.MakeSubObject(obj.Data));
-                if (obj.Data.Type.Contains("https://www.w3.org/ns/actvitystreams#Announce"))
+                if (obj.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Announce"))
                     target.Data["c2s:announces"].Add(ASTerm.MakeSubObject(obj.Data));
+                if (obj.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Accept"))
+                    target.Data["c2s:accepts"].Add(ASTerm.MakeSubObject(obj.Data));
+                if (obj.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Reject"))
+                    target.Data["c2s:rejects"].Add(ASTerm.MakeSubObject(obj.Data));
             }
         }
 
