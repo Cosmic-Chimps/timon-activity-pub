@@ -31,6 +31,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
             if (obj == null)
                 return true;
 
+            if (!obj.Data["inReplyTo"].Any()) return true;
             var inReply = await EntityStore.GetEntity(obj.Data["inReplyTo"].Single().Id, false);
             if (inReply == null || !inReply.IsOwner) return true;
             if (inReply.Data["attributedTo"].Single().Id != Actor.Id) return true;
