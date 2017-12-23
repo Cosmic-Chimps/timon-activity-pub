@@ -49,14 +49,16 @@ namespace Kroeg.Server.Services.EntityStore
                 foreach (var item in dbs)
                 {
                     _attributeMapping[item.AttributeId] = item.Uri;
-                    _inverseAttributeMapping[item.Uri] = item.AttributeId;
+                    lock (_inverseAttributeMapping)
+                        _inverseAttributeMapping[item.Uri] = item.AttributeId;
                 }
             }
         }
 
         public Dictionary<string, int> FindAttributes(List<string> attrs)
         {
-            return _inverseAttributeMapping.Where(a => attrs.Contains(a.Key)).ToDictionary(a => a.Key, a => a.Value);
+            lock (_inverseAttributeMapping)
+                return _inverseAttributeMapping.Where(a => attrs.Contains(a.Key)).ToDictionary(a => a.Key, a => a.Value);
         }
 
         private string _get(int id)
