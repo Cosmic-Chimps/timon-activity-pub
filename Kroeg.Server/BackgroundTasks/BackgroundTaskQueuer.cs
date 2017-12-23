@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading;
@@ -11,6 +11,7 @@ using Dapper;
 using Dapper.Contrib.Extensions;
 using System.Data.Common;
 using Npgsql;
+using Microsoft.Extensions.Configuration;
 
 namespace Kroeg.Server.BackgroundTasks
 {
@@ -24,7 +25,7 @@ namespace Kroeg.Server.BackgroundTasks
 
         public static string BackgroundTaskPath = "backgroundtask:new";
 
-        public BackgroundTaskQueuer(NpgsqlConnection connection, IServiceProvider serviceProvider, ILogger<BackgroundTaskQueuer> logger, INotifier notifier)
+        public BackgroundTaskQueuer(NpgsqlConnection connection, IServiceProvider serviceProvider, ILogger<BackgroundTaskQueuer> logger, INotifier notifier, IConfigurationRoot configuration)
         {
             _connection = connection;
             _serviceProvider = serviceProvider;
@@ -32,6 +33,7 @@ namespace Kroeg.Server.BackgroundTasks
             _notifier = notifier;
 
             _connection.Open();
+            Console.WriteLine("Working background tasks...");
             _do();
         }
 

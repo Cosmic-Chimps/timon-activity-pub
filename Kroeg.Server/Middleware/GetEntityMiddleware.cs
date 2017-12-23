@@ -502,6 +502,7 @@ namespace Kroeg.Server.Middleware
                 {
                     var fromId = from_id != null ? int.Parse(from_id) : int.MaxValue;
                     var toId = to_id != null ? int.Parse(to_id) : int.MinValue;
+                    var maxitem = (await _collectionTools.GetItems(entity.Id, count: 1)).FirstOrDefault()?.CollectionItemId;
                     var items = await _collectionTools.GetItems(entity.Id, fromId, toId, count: 11);
                     var hasItems = items.Any();
                     var page = new ASObject();
@@ -511,7 +512,7 @@ namespace Kroeg.Server.Middleware
                     page["partOf"].Add(ASTerm.MakeId(entity.Id));
                     if (collection["attributedTo"].Any())
                         page["attributedTo"].Add(collection["attributedTo"].First());
-                    if (items.Count > 0)
+                    if (items.Count > 0 && items[0].CollectionItemId != maxitem)
                         page["prev"].Add(ASTerm.MakeId(entity.Id + "?to_id=" + items[0].CollectionItemId.ToString()));
                     if (items.Count > 10)
                         page["next"].Add(ASTerm.MakeId(entity.Id + "?from_id=" + (items[9].CollectionItemId - 1).ToString()));

@@ -5,10 +5,11 @@
 		<details x-if="AS.has('summary')">
 			<summary>{{Renderer.sanitize(AS.take('summary'))}}</summary>
 			<div data-component="emoji" data-context="{{AS.take('id')}}" class="kroeg-content-ws">{{Renderer.clean(AS.take('content'))}}</div>
-			<div class="kroeg-attachments" x-if="AS.get('attachment').length > 0">
-				<small>{{AS.get('attachment').length.toString()}} attachment{{AS.get('attachment').length == 1 ? "" : "s"}}</small>
-			</div>
 		</details>
+
+		<div class="kroeg-attachments" x-if="AS.get('attachment').length > 0">
+			<small>{{AS.get('attachment').length.toString()}} attachment{{AS.get('attachment').length == 1 ? "" : "s"}}</small>
+		</div>
 
 		<div x-if="Renderer.loggedInAs != null" x-render="objects/sub/buttons"></div>
 	</div>

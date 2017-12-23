@@ -43,9 +43,7 @@ namespace Kroeg.Server.Services
             var targetIds = new List<string>();
 
             targetIds.AddRange(@object["to"].Select(a => a.Id));
-            targetIds.AddRange(@object["cc"].Select(a => a.Id));
             targetIds.AddRange(@object["bto"].Select(a => a.Id));
-            targetIds.AddRange(@object["bcc"].Select(a => a.Id));
 
             return targetIds.Contains("https://www.w3.org/ns/activitystreams#Public") && !@object["unlisted"].Any(a => (bool) a.Primitive);
         }

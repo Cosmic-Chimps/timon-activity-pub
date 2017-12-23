@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -110,7 +110,6 @@ namespace Kroeg.Server
 
             services.AddScoped<INotifier, LocalNotifier>();
 
-            services.AddSingleton<BackgroundTaskQueuer>();
             services.AddSingleton(Configuration);
             services.AddTransient<IAuthorizer, DefaultAuthorizer>();
 
@@ -192,7 +191,12 @@ namespace Kroeg.Server
             app.UseMvc();
 
             app.ApplicationServices.GetRequiredService<DatabaseManager>().EnsureExists();
-            app.ApplicationServices.GetRequiredService<BackgroundTaskQueuer>(); // kickstart background tasks!
+
+            for (int i = 0; i < int.Parse(Configuration.GetSection("Kroeg")["BackgroundThreads"]); i++)
+            {
+                var serviceProvider = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope().ServiceProvider;
+                ActivatorUtilities.CreateInstance<BackgroundTaskQueuer>(serviceProvider);
+            }
 
             var sevc = app.ApplicationServices.GetRequiredService<EntityData>();
             await ActivityStreams.ASObject.SetContext(JsonLDConfig.GetContext(true), sevc.BaseUri + "render/context");

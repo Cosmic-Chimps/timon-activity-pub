@@ -37,7 +37,8 @@ namespace Kroeg.Server.ConsoleSystem
             ["t"] = typeof(Commands.TriplesCommand),
             ["triples"] = typeof(Commands.TriplesCommand),
             ["r"] = typeof(Commands.RefreshCommand),
-            ["refresh"] = typeof(Commands.RefreshCommand)
+            ["refresh"] = typeof(Commands.RefreshCommand),
+            ["calculate_visibility"] = typeof(Commands.CalculateVisibilityCommand)
         };
 
         private class _nullHttpContextAccessor : IHttpContextAccessor
@@ -138,6 +139,7 @@ namespace Kroeg.Server.ConsoleSystem
 
             _services.AddSingleton<BackgroundTaskQueuer>();
             _services.AddSingleton(_configuration);
+            _services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
             _services.AddTransient<DeliveryService>();
             _services.AddTransient<RelevantEntitiesService>();
@@ -169,6 +171,7 @@ namespace Kroeg.Server.ConsoleSystem
             _services.AddTransient<Commands.AttributeCommand>();
             _services.AddTransient<Commands.TriplesCommand>();
             _services.AddTransient<Commands.RefreshCommand>();
+            _services.AddTransient<Commands.CalculateVisibilityCommand>();
         }
     }
 }
