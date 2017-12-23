@@ -4,7 +4,7 @@
 		<a href="{{AS.take('object')}}"><small x-if="AS.has('published')">created at {{Renderer.date(AS.take('published'))}}</small></a> 
        	        <small x-if="AS.containsAny('to', ['https://www.w3.org/ns/activitystreams#Public', 'as:Public'])" style="float: right" title="Public">{{Renderer.clean('\uD83C\uDF10')}}</small>
                 <small x-if="AS.containsAny('cc', ['https://www.w3.org/ns/activitystreams#Public', 'as:Public'])" style="float: right" title="Unlisted">{{Renderer.clean('\uD83D\uDE48')}}</small>
-       	        <small x-if="!AS.containsAny('to', ['https://www.w3.org/ns/activitystreams#Public', 'as:Public']) && !AS.containsAny('cc', ['https://www.w3.org/ns/activitystreams#Public', 'as:Public'])" style="float: right" x-render-id="AS.take('attributedTo')" x-render-to="AS.get('to').join(' ') + ' ' + AS.get('cc').join(' ') + ' '">
+       	        <small x-if="!AS.containsAny('to', ['https://www.w3.org/ns/activitystreams#Public', 'as:Public']) && !AS.containsAny('cc', ['https://www.w3.org/ns/activitystreams#Public', 'as:Public'])" style="float: right" x-render-id="AS.take('actor')" x-render-to="AS.get('to').join(' ') + ' ' + AS.get('cc').join(' ') + ' '">
 			<span x-if="Data['to'].indexOf(AS.take('followers')) != -1" title="Follower-only">{{Renderer.clean('\uD83D\uDD12')}}</span>
 			<span x-if="Data['to'].indexOf(AS.take('followers')) == -1" title="Private">{{Renderer.clean('\uD83D\uDCE9')}}</span>
 		</small>
