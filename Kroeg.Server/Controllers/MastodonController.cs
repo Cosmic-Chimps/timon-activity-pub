@@ -251,6 +251,9 @@ namespace Kroeg.Server.Controllers
         [HttpGet("accounts/{id}")]
         public async Task<IActionResult> GetAccount(string id)
         {
+            var userId = User.FindFirst(JwtTokenSettings.ActorClaim)?.Value;
+            if (userId == null) return Unauthorized();
+
             id = Uri.UnescapeDataString(id);
             var user = await _entityStore.GetEntity(id, true);
             if (user == null) return NotFound();
@@ -261,6 +264,9 @@ namespace Kroeg.Server.Controllers
         [HttpGet("statuses/{id}")]
         public async Task<IActionResult> GetStatus(string id)
         {
+            var userId = User.FindFirst(JwtTokenSettings.ActorClaim)?.Value;
+            if (userId == null) return Unauthorized();
+
             CollectionTools.EntityCollectionItem item = null;
             if (int.TryParse(id, out var idInt))
             {
@@ -281,6 +287,9 @@ namespace Kroeg.Server.Controllers
         [HttpGet("statuses/{id}/context")]
         public async Task<IActionResult> GetStatusContext(string id)
         {
+            var userId = User.FindFirst(JwtTokenSettings.ActorClaim)?.Value;
+            if (userId == null) return Unauthorized();
+            
             CollectionTools.EntityCollectionItem item = null;
             if (int.TryParse(id, out var idInt))
             {
