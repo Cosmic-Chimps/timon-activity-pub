@@ -43,7 +43,7 @@ namespace Kroeg.Server.Services.EntityStore
                 return ent;
             }
             try {
-                if ((new Uri(id)).Host == "localhost") return null;
+                if ((new Uri(id)).Host == "localhost") return await Bypass.GetEntity(id, doRemote);
             } catch (UriFormatException) { /* nom */ }
 
             APEntity entity = null;
