@@ -43,8 +43,8 @@ namespace Kroeg.Server.Services
                 var basePath = $"{idu.Scheme}://{idu.Host}{(idu.IsDefaultPort?"":$":{idu.Port}")}{_configuration.BasePath}";
 
                 var endpoints = new ASObject();
-                endpoints.Replace("oauthAuthorizationEndpoint", ASTerm.MakeId(basePath + "auth/oauth?id=" + Uri.EscapeDataString(entity.Id)));
-                endpoints.Replace("oauthTokenEndpoint", ASTerm.MakeId(basePath + "auth/token?"));
+                endpoints.Replace("oauthAuthorizationEndpoint", ASTerm.MakeId(basePath + "oauth/authorize?id=" + Uri.EscapeDataString(entity.Id)));
+                endpoints.Replace("oauthTokenEndpoint", ASTerm.MakeId(basePath + "oauth/token?"));
                 endpoints.Replace("settingsEndpoint", ASTerm.MakeId(basePath + "settings/auth"));
                 endpoints.Replace("uploadMedia", data["outbox"].Single());
                 endpoints.Replace("relevantObjects", ASTerm.MakeId(basePath + "settings/relevant"));

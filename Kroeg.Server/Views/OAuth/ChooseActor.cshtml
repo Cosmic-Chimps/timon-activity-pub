@@ -7,7 +7,7 @@
 }
 
 @using Newtonsoft.Json
-@model Kroeg.Server.Controllers.AuthController.OAuthActorModel
+@model Kroeg.Server.Controllers.OAuthController.OAuthActorModel
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
 <div class="container">
@@ -16,7 +16,7 @@
             <br/>
             <div class="jumbotron">
                 <h1>An application wants access to <b>@Model.Actor.Data["name"].First().Primitive</b></h1>
-                <form asp-controller="Auth" asp-action="DoChooseActorOAuth" method="post">
+                <form asp-controller="OAuth" asp-action="VerifyAuthorize" method="post">
                     <div class="form-inline">
                         <label for="Expiry">How long to give access: </label>
                         <select class="form-control" name="Expiry" id="Expiry">

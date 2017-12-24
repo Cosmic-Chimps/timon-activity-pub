@@ -1,0 +1,53 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    ViewBag.Title = "Choose actor";
+    Layout = "_LayoutBootstrap";
+}
+
+@using Newtonsoft.Json
+@model Kroeg.Server.Controllers.OAuthController.OAuthActorModel
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-6 push-md-3">
+            <br/>
+            <div class="jumbotron">
+                <form asp-controller="OAuth" asp-action="VerifyAuthorize" method="post">
+                    <h1>An application wants access to 
+                        <select asp-for="ActorID">
+                            @foreach (var actor in Model.Actors) {
+                                <option value="@actor.Id">@actor.Data["name"].First().Primitive</option>
+                            }
+                        </select>
+                    </h1>
+                    <div class="form-inline">
+                        <label for="Expiry">How long to give access: </label>
+                        <select class="form-control" name="Expiry" id="Expiry">
+                            <option value="3600">1 hour</option>
+                            <option value="86400">1 day</option>
+                            @if (Model.Expiry >= 604800)
+                            {
+                                <option value="604800">1 week</option>
+                            }
+                            <option value="@Model.Expiry" selected>Maximum (@(TimeSpan.FromSeconds(Model.Expiry).ToString()))</option>
+                        </select>
+                    </div><br />
+                    <input type="hidden" asp-for="ResponseType" value="@Model.ResponseType" />
+                    <input type="hidden" asp-for="RedirectUri" value="@Model.RedirectUri" />
+                    <input type="hidden" asp-for="State" value="@Model.State" />
+
+                    <input class="btn btn-primary" type="submit" name="Accept" value="Give access" /> <input class="btn btn-danger" type="submit" name="Deny" value="Deny access" />
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 push-md-3" style="text-align: right;">
+            <small>Instance of <a href="https://github.com/puckipedia/Kroeg">Kroeg</a></small>
+        </div>
+    </div>
+</div>
