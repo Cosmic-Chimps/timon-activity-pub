@@ -278,7 +278,8 @@ namespace Kroeg.Server.Controllers
             string links = null;
             while (parsed.Count < limit)
             {
-                var items = await _collectionTools.GetItems(id, fromId, toId, limit + 1);
+                var items = await _collectionTools.GetItems(id, fromId, toId, limit + 1,
+                    new List<string> { "https://www.w3.org/ns/activitystreams#Create", "https://www.w3.org/ns/activitystreams#Announce" });
                 if (items.Count == 0) break;
 
                 if (links == null)
