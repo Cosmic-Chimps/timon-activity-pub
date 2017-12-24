@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Kroeg.Server.Configuration;
@@ -216,6 +217,44 @@ namespace Kroeg.Server.Controllers
             var translated = await _translateStatus(item);
             if (translated == null) return NotFound();
             return Json(translated);
+        }
+
+        private async Task<IActionResult> _timeline(string id, string max_id, string since_id, int limit)
+        {
+
+            if (!int.TryParse(max_id, out var fromId)) fromId = int.MaxValue;
+            if (!int.TryParse(since_id, out var toId)) toId = int.MinValue;
+
+            limit = Math.Min(40, Math.Max(20, limit));
+            var items = await _collectionTools.GetItems(id, fromId, toId, limit + 1);
+
+            if (items.Count > 0)
+            {
+                var links = $"<{Request.Scheme}://{Request.Host.ToUriComponent()}{Request.Path}?max_id={items[0].CollectionItemId}>; rel=\"prev\"";
+                if (items.Count > limit)
+                    links += $", <{Request.Scheme}://{Request.Host.ToUriComponent()}{Request.Path}?since_id={items[limit-1].CollectionItemId}>; rel=\"next\"";
+
+                Response.Headers.Add("Link", links);
+            }
+
+            var parsed = new List<Mastodon.Status>();
+            foreach (var item in items)
+            {
+                var translated = await _translateStatus(item);
+                if (translated != null) parsed.Add(translated);
+            }
+
+            return Json(parsed);
+        }
+
+        [HttpGet("timelines/home")]
+        public async Task<IActionResult> HomeTimeline(string max_id, string since_id, int limit)
+        {
+            var userId = User.FindFirst(JwtTokenSettings.ActorClaim)?.Value;
+            if (userId == null) return Unauthorized();
+
+            var user = await _entityStore.GetEntity(userId, false);
+            return await _timeline(user.Data["inbox"].First().Id, max_id, since_id, limit);
         }
     }
 }
