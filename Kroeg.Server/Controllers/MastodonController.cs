@@ -230,9 +230,9 @@ namespace Kroeg.Server.Controllers
 
             if (items.Count > 0)
             {
-                var links = $"<{Request.Scheme}://{Request.Host.ToUriComponent()}{Request.Path}?max_id={items[0].CollectionItemId}>; rel=\"prev\"";
+                var links = $"<{Request.Scheme}://{Request.Host.ToUriComponent()}{Request.Path}?since_id={items[0].CollectionItemId}>; rel=\"prev\"";
                 if (items.Count > limit)
-                    links += $", <{Request.Scheme}://{Request.Host.ToUriComponent()}{Request.Path}?since_id={items[limit-1].CollectionItemId}>; rel=\"next\"";
+                    links += $", <{Request.Scheme}://{Request.Host.ToUriComponent()}{Request.Path}?max_id={items[limit-1].CollectionItemId}>; rel=\"next\"";
 
                 Response.Headers.Add("Link", links);
             }
