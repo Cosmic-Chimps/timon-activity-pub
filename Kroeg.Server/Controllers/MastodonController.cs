@@ -108,7 +108,7 @@ namespace Kroeg.Server.Controllers
         {
             var isCreate = item.Entity.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Create");
             var isAnnounce = item.Entity.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Announce");
-            if (!isCreate && !isAnnounce) return null;
+            if (!isCreate && !isAnnounce) return await _translateNote(item.Entity, null);
 
             var inner = await _translateNote(await _entityStore.GetEntity(item.Entity.Data["object"].First().Id, true), (isCreate && item.CollectionItemId >= 0) ? item.CollectionItemId.ToString() : null);
             if (inner == null) return null;
