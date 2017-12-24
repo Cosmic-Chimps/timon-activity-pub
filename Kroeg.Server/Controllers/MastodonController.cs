@@ -244,6 +244,9 @@ namespace Kroeg.Server.Controllers
                     }
                     var translated = await _translateStatus(item);
                     if (translated != null) parsed.Add(translated);
+
+                    toId = int.MinValue;
+                    fromId = item.CollectionItemId;
                 }
 
             }
