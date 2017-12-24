@@ -99,7 +99,7 @@ namespace Kroeg.Server.Services
             return await _connection.QueryAsync<CollectionItem>(
                 "select c.* from \"CollectionItems\" c, \"TripleEntities\" e WHERE e.\"EntityId\" = c.\"ElementId\" and \"CollectionItemId\" < @Under and \"CollectionItemId\" > @Above and \"CollectionId\" = @DbId"
                 + " and exists(select 1 from \"Triples\" where \"PredicateId\" = any(@Ids) and \"AttributeId\" = @UserId and \"SubjectId\" = e.\"IdId\" and \"SubjectEntityId\" = e.\"EntityId\" limit 1) "
-                + (typeFilter != null ? "" : " and exists(select 1 from \"Triples\" where \"PredicateId\" = @TypeId and \"AttributeId\" = @TypeFilter and \"SubjectId\" = e.\"IdId\" and \"SubjectEntityId\" = e.\"EntityId\" limit 1)")
+                + (typeFilter != null ? "" : " and exists(select 1 from \"Triples\" where \"PredicateId\" = @TypeId and \"AttributeId\" = any(@TypeFilter) and \"SubjectId\" = e.\"IdId\" and \"SubjectEntityId\" = e.\"EntityId\" limit 1)")
                  + "order by c.\"CollectionItemId\" desc " + (count > 0 ? $"limit {count}" : ""),
                  new { Under = under, Above = above, Ids = ids, UserId = userId.Value, DbId = dbId, TypeId = type, TypeFilter = typeIds }
             );
