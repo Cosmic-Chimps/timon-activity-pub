@@ -365,7 +365,6 @@ namespace Kroeg.Server.Controllers
                     catch (Exception e)
                     {
                         Console.WriteLine(e);
-                        break;
                     }
 
                     toId = int.MinValue;
@@ -423,7 +422,6 @@ namespace Kroeg.Server.Controllers
                     catch (Exception e)
                     {
                         Console.WriteLine(e);
-                        break;
                     }
 
                     toId = int.MinValue;
