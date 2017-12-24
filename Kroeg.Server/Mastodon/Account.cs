@@ -5,6 +5,13 @@ namespace Kroeg.Server.Mastodon
 {
     public class Account
     {
+		public class Source
+		{
+			[JsonProperty("privacy")] public string privacy { get; set; }
+			[JsonProperty("sensitive")] public bool sensitive { get; set; }
+			[JsonProperty("note")] public string note { get; set; }
+		}
+
 		[JsonProperty("id")] public string id { get; set; }
 		[JsonProperty("username")] public string username { get; set; }
 		[JsonProperty("acct")] public string acct { get; set; }
@@ -21,5 +28,6 @@ namespace Kroeg.Server.Mastodon
 		[JsonProperty("header")] public string header { get; set; }
 		[JsonProperty("header_static")] public string header_static { get; set; }
 		[JsonProperty("moved")] public Account moved { get; set; }
+		[JsonProperty("source")] public Source source { get; set; }
     }
 }

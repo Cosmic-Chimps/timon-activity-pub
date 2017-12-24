@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Kroeg.Server.Configuration;
 using Kroeg.Server.Models;
 using Kroeg.Server.Services;
 using Kroeg.Server.Services.EntityStore;
@@ -151,6 +152,40 @@ namespace Kroeg.Server.Controllers
                 ClientId = "id",
                 ClientSecret = "secret"
             });
+        }
+
+        [HttpGet("accounts/verify_credentials")]
+        public async Task<IActionResult> VerifyCredentials()
+        {
+            var userId = User.FindFirst(JwtTokenSettings.ActorClaim)?.Value;
+            if (userId == null) return Unauthorized();
+
+            var user = await _entityStore.GetEntity(userId, false);
+            var parsed = await _processAccount(user);
+            parsed.source = new Mastodon.Account.Source {
+                privacy = "public",
+                sensitive = false,
+                note = parsed.note
+            };
+
+            return Json(parsed);
+        }
+
+        [HttpPatch("accounts/update_credentials")]
+        public async Task<IActionResult> UpdateCredentials()
+        {
+            var userId = User.FindFirst(JwtTokenSettings.ActorClaim)?.Value;
+            if (userId == null) return Unauthorized();
+
+            var user = await _entityStore.GetEntity(userId, false);
+            var parsed = await _processAccount(user);
+            parsed.source = new Mastodon.Account.Source {
+                privacy = "public",
+                sensitive = false,
+                note = parsed.note
+            };
+
+            return Json(parsed);
         }
 
         [HttpGet("accounts/{id}")]
