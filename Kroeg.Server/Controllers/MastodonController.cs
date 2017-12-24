@@ -80,7 +80,7 @@ namespace Kroeg.Server.Controllers
                 in_reply_to_id = note.Data["inReplyTo"].Any() ? Uri.EscapeDataString(note.Data["inReplyTo"].FirstOrDefault()?.Id) : null,
                 reblog = null,
                 content = (string) note.Data["content"].First().Primitive,
-                created_at = DateTime.Parse((string) note.Data["published"].First().Primitive ?? DateTime.Now.ToString()),
+                created_at = DateTime.Parse((string) note.Data["published"].FirstOrDefault()?.Primitive ?? note.Updated.ToString()),
                 emojis = new string[] {},
                 reblogs_count = 0,
                 favourites_count = 0,
@@ -132,7 +132,7 @@ namespace Kroeg.Server.Controllers
                 in_reply_to_account_id = inner.in_reply_to_account_id,
                 reblog = inner,
                 content = inner.content,
-                created_at = DateTime.Parse((string) item.Entity.Data["published"].First().Primitive ?? DateTime.Now.ToString()),
+                created_at = DateTime.Parse((string) item.Entity.Data["published"].FirstOrDefault()?.Primitive ?? DateTime.Now.ToString()),
                 emojis = inner.emojis,
                 reblogs_count = inner.reblogs_count,
                 favourites_count = inner.favourites_count,
@@ -194,7 +194,7 @@ namespace Kroeg.Server.Controllers
                 {
                     id = item.CollectionItemId.ToString(),
                     type = "mention",
-                    created_at = DateTime.Parse((string) item.Entity.Data["published"].First().Primitive ?? DateTime.Now.ToString()),
+                    created_at = DateTime.Parse((string) item.Entity.Data["published"].FirstOrDefault()?.Primitive ?? DateTime.Now.ToString()),
                     account = await _processAccount(await _entityStore.GetEntity(item.Entity.Data["actor"].First().Id, true)),
                     status = status
                 };
@@ -371,6 +371,64 @@ namespace Kroeg.Server.Controllers
             return Json(parsed);
         }
 
+        private async Task<IActionResult> _queryPublic<T>(string max_id, string since_id, int limit, _processItem<T> process)
+        {
+            if (!int.TryParse(max_id, out var fromId)) fromId = int.MaxValue;
+            if (!int.TryParse(since_id, out var toId)) toId = int.MinValue;
+
+            limit = Math.Min(40, Math.Max(20, limit));
+            var parsed = new List<T>();
+            string links = null;
+            while (parsed.Count < limit)
+            {
+                var items = await _relevantEntities.Query(
+                    new RelevantEntitiesService.AllStatement
+                    {
+                        new RelevantEntitiesService.ContainsAnyStatement("rdf:type")
+                        {
+                            "https://www.w3.org/ns/activitystreams#Create", "https://www.w3.org/ns/activitystreams#Announce"
+                        },
+                        new RelevantEntitiesService.AnyStatement
+                        {
+                            new RelevantEntitiesService.ContainsAnyStatement("https://www.w3.org/ns/activitystreams#to") { "https://www.w3.org/ns/activitystreams#Public" },
+                            new RelevantEntitiesService.ContainsAnyStatement("https://www.w3.org/ns/activitystreams#bto") { "https://www.w3.org/ns/activitystreams#Public" },
+                        }
+                    }, fromId, toId, limit);
+                if (items.Count == 0) break;
+
+                if (links == null)
+                    links = $"<{Request.Scheme}://{Request.Host.ToUriComponent()}{Request.Path}?since_id={items[0].DbId}>; rel=\"prev\"";
+
+                foreach (var item in items)
+                {
+                    if (parsed.Count >= limit)
+                    {
+                        links += $", <{Request.Scheme}://{Request.Host.ToUriComponent()}{Request.Path}?max_id={item.DbId}>; rel=\"next\"";
+                        break;
+                    }
+                    try
+                    {
+                        var translated = await process(new CollectionTools.EntityCollectionItem { CollectionItemId = -1, Entity = item });
+                        if (translated != null) parsed.Add(translated);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                        break;
+                    }
+
+                    toId = int.MinValue;
+                    fromId = item.DbId;
+                }
+
+            }
+
+            if (links != null)
+                Response.Headers.Add("Link", links);
+
+            return Json(parsed);
+        }
+
         [HttpGet("timelines/home")]
         public async Task<IActionResult> HomeTimeline(string max_id, string since_id, int limit)
         {
@@ -414,6 +472,15 @@ namespace Kroeg.Server.Controllers
                     },
                 }
             );
+        }
+
+        [HttpGet("timelines/public")]
+        public async Task<IActionResult> PublicTimeline(string max_id, string since_id, int limit)
+        {
+            var userId = User.FindFirst(JwtTokenSettings.ActorClaim)?.Value;
+            if (userId == null) return Unauthorized();
+
+            return await _queryPublic(max_id, since_id, limit, _translateStatus);
         }
     }
 }

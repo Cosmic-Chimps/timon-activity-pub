@@ -124,7 +124,7 @@ namespace Kroeg.Server.Services
             return await _entityStore.GetEntities((await _connection.QueryAsync<APTripleEntity>(start)).Select(a => a.EntityId).ToList());
         }
 
-        public async Task<List<APEntity>> Query(IQueryStatement statement, int? inCollectionId = null)
+        public async Task<List<APEntity>> Query(IQueryStatement statement, int maxId = int.MaxValue, int minId = int.MinValue, int count = 0, int? inCollectionId = null)
         {
             var attributeMapping = new Dictionary<string, int>();
             foreach (var val in statement.RequiredProperties)
@@ -134,13 +134,16 @@ namespace Kroeg.Server.Services
                 attributeMapping[val] = id.Value;
             }
 
-            var start = $"select a.* from \"TripleEntities\" a where ";
+            var start = $"select a.* from \"TripleEntities\" a where a.\"EntityId\" > @MinId and a.\"EntityId\" < @MaxId and ";
             start += statement.BuildSQL(attributeMapping);
 
             if (inCollectionId != null)
                 start += $" and exists(select 1 from \"CollectionItems\" where \"CollectionId\" = {inCollectionId} and \"CollectionItemId\" = a.\"EntityId\")";
 
-            return await _entityStore.GetEntities((await _connection.QueryAsync<APTripleEntity>(start)).Select(a => a.EntityId).ToList());
+            if (count > 0)
+                start += " limit " + count;
+
+            return await _entityStore.GetEntities((await _connection.QueryAsync<APTripleEntity>(start, new { MinId = minId, MaxId = maxId })).Select(a => a.EntityId).ToList());
         }
 
         public async Task FindTransparentPredicates(Dictionary<string, APEntity> objects, string actor)
