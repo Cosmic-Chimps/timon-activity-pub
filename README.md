@@ -1,4 +1,6 @@
 # Kroeg
+> Noun (plural **kroegen**, diminutive **kroegje**) - (informal) a pub.
+
 A reference implementation for [ActivityPub](http://www.w3.org/TR/activitypub/).
 
 ## Info
