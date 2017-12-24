@@ -265,8 +265,8 @@ namespace Kroeg.Server.Services.EntityStore
                     return obj.ToLower() == "true";
                 else if (type == "xsd:double")
                     return double.Parse(obj);
-                else if (type == "xsd:integer")
-                    return int.Parse(type);
+                else if (type == "xsd:integer" || type == "http://www.w3.org/2001/XMLSchema#nonNegativeInteger")
+                    return int.Parse(obj);
                 else
                     return obj;
             }

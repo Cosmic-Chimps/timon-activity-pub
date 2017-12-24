@@ -118,6 +118,13 @@ namespace Kroeg.Server.Services
             return (await _entityStore.GetEntities(entities.Select(a => a.ElementId).ToList())).Zip(entities, (a, b) => new EntityCollectionItem { CollectionItemId = b.CollectionItemId, Entity = a }).ToList();
         }
 
+        public async Task<EntityCollectionItem> GetCollectionItem(int id)
+        {
+            var collectionItem = await _connection.QuerySingleOrDefaultAsync<CollectionItem>("select * from \"CollectionItems\" where \"CollectionItemId\" = @Id", new { Id = id });
+            if (collectionItem == null) return null;
+            return new EntityCollectionItem { CollectionItemId = id, Entity = await _entityStore.GetEntity(collectionItem.ElementId) };
+        }
+
         public async Task<List<APEntity>> CollectionsContaining(string containId, string type = null)
         {
             var element = await _entityStore.GetEntity(containId, false);
