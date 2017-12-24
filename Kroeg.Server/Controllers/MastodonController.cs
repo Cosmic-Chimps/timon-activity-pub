@@ -160,7 +160,7 @@ namespace Kroeg.Server.Controllers
                 {
                     id = item.CollectionItemId.ToString(),
                     type = "follow",
-                    created_at = DateTime.Parse((string) item.Entity.Data["published"].First().Primitive ?? DateTime.Now.ToString()),
+                    created_at = DateTime.Parse((string) item.Entity.Data["published"].FirstOrDefault().Primitive ?? item.Entity.Updated.ToString()),
                     account = await _processAccount(await _entityStore.GetEntity(item.Entity.Data["actor"].First().Id, true)),
                     status = null
                 };
@@ -177,7 +177,7 @@ namespace Kroeg.Server.Controllers
                 {
                     id = item.CollectionItemId.ToString(),
                     type = item.Entity.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Announce") ? "reblog" : "favourite",
-                    created_at = DateTime.Parse((string) item.Entity.Data["published"].First().Primitive ?? DateTime.Now.ToString()),
+                    created_at = DateTime.Parse((string) item.Entity.Data["published"].FirstOrDefault().Primitive ?? item.Entity.Updated.ToString()),
                     account = await _processAccount(await _entityStore.GetEntity(item.Entity.Data["actor"].First().Id, true)),
                     status = status
                 };
