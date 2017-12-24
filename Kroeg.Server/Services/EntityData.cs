@@ -144,19 +144,18 @@ namespace Kroeg.Server.Tools
             return curr;
         }
 
-        private async Task<string> _runCommand(IEntityStore store, JObject data, IEnumerable<string> args, ref bool usesGuid)
+        private async Task<string> _runCommand(IEntityStore store, JObject data, IEnumerable<string> args)
         {
             JToken val = null;
             foreach (var item in args)
             {
-                if (item.Contains("guid") && val == null) usesGuid = true;
                 val = await _parse(store, data, val, item);
             }
 
             return (val ?? "unknown").ToObject<string>();
         }
 
-        private async Task<string> _parseUriFormat(IEntityStore store, JObject data, string format, ref bool usesGuid)
+        private async Task<string> _parseUriFormat(IEntityStore store, JObject data, string format)
         {
             var result = new StringBuilder();
             var index = 0;
@@ -180,7 +179,7 @@ namespace Kroeg.Server.Tools
                     if (end == -1) throw new Exception("invalid format for URI");
 
                     var contents = format.Substring(nextStart + 2, end - nextStart - 2).Split('|');
-                    result.Append(await _runCommand(store, data, contents, ref usesGuid));
+                    result.Append(await _runCommand(store, data, contents));
 
                     index = end + 1;
                 }
@@ -201,7 +200,7 @@ namespace Kroeg.Server.Tools
             return a + "/" + b;
         }
 
-        public async Task<string> UriFor(IEntityStore store, ASObject @object, string category, string parentId, ref bool usesGuid)
+        public async Task<string> UriFor(IEntityStore store, ASObject @object, string category = null, string parentId = null)
         {
             var types = @object.Type;
 
@@ -214,7 +213,7 @@ namespace Kroeg.Server.Tools
                     category = "object";
 
             var format = _getFormat(types, category, parentId != null);
-            var result = await _parseUriFormat(store, @object.Serialize(), format, ref usesGuid);
+            var result = await _parseUriFormat(store, @object.Serialize(), format);
             if (parentId != null && result.StartsWith("+"))
                 return _append(parentId, result.Substring(1).ToLower());
 
@@ -229,10 +228,9 @@ namespace Kroeg.Server.Tools
         {
             var types = @object.Type;
             var format = _getFormat(types, category, parentId != null);
-            bool usesGuid = false;
 
-            string uri = await UriFor(entityStore, @object, category, parentId, ref usesGuid);
-            if (usesGuid) // is GUID-based, can just regenerate
+            string uri = await UriFor(entityStore, @object, category, parentId);
+            if (format.Contains("guid")) // is GUID-based, can just regenerate
             {
                 while (await entityStore.GetEntity(uri, false) != null) uri = await UriFor(entityStore, @object, category, parentId);                
             }
