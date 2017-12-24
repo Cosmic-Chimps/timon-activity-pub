@@ -348,8 +348,16 @@ namespace Kroeg.Server.Controllers
                         links += $", <{Request.Scheme}://{Request.Host.ToUriComponent()}{Request.Path}?max_id={item.CollectionItemId}>; rel=\"next\"";
                         break;
                     }
-                    var translated = await process(item);
-                    if (translated != null) parsed.Add(translated);
+                    try
+                    {
+                        var translated = await process(item);
+                        if (translated != null) parsed.Add(translated);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                        break;
+                    }
 
                     toId = int.MinValue;
                     fromId = item.CollectionItemId;
