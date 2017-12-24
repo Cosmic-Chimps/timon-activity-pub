@@ -140,6 +140,8 @@ namespace Kroeg.Server.Services
             if (inCollectionId != null)
                 start += $" and exists(select 1 from \"CollectionItems\" where \"CollectionId\" = {inCollectionId} and \"CollectionItemId\" = a.\"EntityId\")";
 
+            start += " order by a.\"EntityId\" desc ";
+
             if (count > 0)
                 start += " limit " + count;
 
