@@ -1,12 +1,13 @@
 using System;
+using System.Collections.Generic;
 using Newtonsoft.Json;
 
 namespace Kroeg.Server.Mastodon
 {
     public class Context
     {
-        [JsonProperty("ancestors")] public Status[] ancestors { get; set; }
-        [JsonProperty("descendants")] public Status[] descendants { get; set; }
+        [JsonProperty("ancestors")] public List<Status> ancestors { get; set; }
+        [JsonProperty("descendants")] public List<Status> descendants { get; set; }
     }
 
     public class Status

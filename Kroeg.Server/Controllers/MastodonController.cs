@@ -77,7 +77,7 @@ namespace Kroeg.Server.Controllers
                 uri = note.Id,
                 url = note.Data["url"].FirstOrDefault()?.Id ?? note.Id,
                 account = await _processAccount(attributed),
-                in_reply_to_id = note.Data["inReplyTo"].FirstOrDefault()?.Id,
+                in_reply_to_id = note.Data["inReplyTo"].Any() ? Uri.EscapeDataString(note.Data["inReplyTo"].FirstOrDefault()?.Id) : null,
                 reblog = null,
                 content = (string) note.Data["content"].First().Primitive,
                 created_at = DateTime.Parse((string) note.Data["published"].First().Primitive ?? DateTime.Now.ToString()),
@@ -100,6 +100,13 @@ namespace Kroeg.Server.Controllers
                 language = null,
                 pinned = false
             };
+
+            if (note.Data["inReplyTo"].Any())
+            {
+                var reply = await _entityStore.GetEntity(note.Data["inReplyTo"].First().Id, true);
+                if (reply != null)
+                    status.in_reply_to_account_id = Uri.EscapeDataString(reply.Data["attributedTo"].First().Id);
+            }
 
             return status;
         }
@@ -217,6 +224,39 @@ namespace Kroeg.Server.Controllers
             var translated = await _translateStatus(item);
             if (translated == null) return NotFound();
             return Json(translated);
+        }
+
+        [HttpGet("statuses/{id}/context")]
+        public async Task<IActionResult> GetStatusContext(string id)
+        {
+            CollectionTools.EntityCollectionItem item = null;
+            if (int.TryParse(id, out var idInt))
+            {
+                item = await _collectionTools.GetCollectionItem(idInt);
+            }
+            else
+            {
+                var ent = await _entityStore.GetEntity(Uri.UnescapeDataString(id), true);
+                if (ent != null) item = new CollectionTools.EntityCollectionItem { CollectionItemId = -1, Entity = ent };
+            }
+
+            if (item == null) return NotFound();
+            var res = new Mastodon.Context { ancestors = new List<Mastodon.Status>(), descendants = new List<Mastodon.Status>() };
+            while (item.Entity.Data["inReplyTo"].Any())
+            {
+                var replyPost = await _entityStore.GetEntity(item.Entity.Data["inReplyTo"].First().Id, false);
+                if (replyPost == null)
+                    break;
+                
+                item.Entity = replyPost;
+                var translated = await _translateStatus(item);
+                if (translated != null)
+                    res.ancestors.Add(translated);
+            }
+
+            res.ancestors.Reverse();
+            
+            return Json(res);
         }
 
         private async Task<IActionResult> _timeline(string id, string max_id, string since_id, int limit)
