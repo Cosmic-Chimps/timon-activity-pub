@@ -240,6 +240,9 @@ namespace Kroeg.Server.Controllers
                 if (ent != null) item = new CollectionTools.EntityCollectionItem { CollectionItemId = -1, Entity = ent };
             }
 
+            if (item.Entity.Data["object"].Any())
+                item.Entity = await _entityStore.GetEntity(item.Entity.Data["object"].First().Id, true);
+
             if (item == null) return NotFound();
             var res = new Mastodon.Context { ancestors = new List<Mastodon.Status>(), descendants = new List<Mastodon.Status>() };
             while (item.Entity.Data["inReplyTo"].Any())
