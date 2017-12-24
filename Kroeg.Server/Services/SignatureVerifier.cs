@@ -99,6 +99,8 @@ namespace Kroeg.Server.Services
 
         public async Task<JWKEntry> GetJWK(APEntity actor, string kid = null)
         {
+            if (actor == null) return null;
+
             if (!actor.IsOwner)
             {
                 if (kid == null) return null; // can't do that for remote actors
