@@ -221,28 +221,35 @@ namespace Kroeg.Server.Controllers
 
         private async Task<IActionResult> _timeline(string id, string max_id, string since_id, int limit)
         {
-
             if (!int.TryParse(max_id, out var fromId)) fromId = int.MaxValue;
             if (!int.TryParse(since_id, out var toId)) toId = int.MinValue;
 
             limit = Math.Min(40, Math.Max(20, limit));
-            var items = await _collectionTools.GetItems(id, fromId, toId, limit + 1);
-
-            if (items.Count > 0)
-            {
-                var links = $"<{Request.Scheme}://{Request.Host.ToUriComponent()}{Request.Path}?since_id={items[0].CollectionItemId}>; rel=\"prev\"";
-                if (items.Count > limit)
-                    links += $", <{Request.Scheme}://{Request.Host.ToUriComponent()}{Request.Path}?max_id={items[limit-1].CollectionItemId}>; rel=\"next\"";
-
-                Response.Headers.Add("Link", links);
-            }
-
             var parsed = new List<Mastodon.Status>();
-            foreach (var item in items)
+            string links = null;
+            while (parsed.Count < limit)
             {
-                var translated = await _translateStatus(item);
-                if (translated != null) parsed.Add(translated);
+                var items = await _collectionTools.GetItems(id, fromId, toId, limit + 1);
+                if (items.Count == 0) break;
+
+                if (links == null)
+                    links = $"<{Request.Scheme}://{Request.Host.ToUriComponent()}{Request.Path}?since_id={items[0].CollectionItemId}>; rel=\"prev\"";
+
+                foreach (var item in items)
+                {
+                    if (parsed.Count >= limit)
+                    {
+                        links += $", <{Request.Scheme}://{Request.Host.ToUriComponent()}{Request.Path}?max_id={item.CollectionItemId}>; rel=\"next\"";
+                        break;
+                    }
+                    var translated = await _translateStatus(item);
+                    if (translated != null) parsed.Add(translated);
+                }
+
             }
+
+            if (links != null)
+                Response.Headers.Add("Link", links);
 
             return Json(parsed);
         }
