@@ -259,6 +259,12 @@ namespace Kroeg.Server.Controllers
             return Json(res);
         }
 
+        [HttpGet("statuses/{id}/card")]
+        public IActionResult GetStatusCard(string id)
+        {
+            return Json(new {});
+        }
+
         private async Task<IActionResult> _timeline(string id, string max_id, string since_id, int limit)
         {
             if (!int.TryParse(max_id, out var fromId)) fromId = int.MaxValue;
