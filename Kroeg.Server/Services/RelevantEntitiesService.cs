@@ -46,7 +46,7 @@ namespace Kroeg.Server.Services
             public string Followers { get; set; }
         }
 
-        private async Task<List<APEntity>> _search(Dictionary<string, string> lookFor, bool? isOwner = null)
+        private async Task<List<APEntity>> _search(Dictionary<string, string> lookFor, int? inCollectionId = null)
         {
             var attributeMapping = new Dictionary<int, int>();
             foreach (var val in lookFor)
@@ -63,8 +63,8 @@ namespace Kroeg.Server.Services
             var start = $"select a.* from \"TripleEntities\" a where ";
             start += string.Join(" and ", attributeMapping.Select(a => $"exists(select 1 from \"Triples\" where \"PredicateId\" = {a.Key} and \"AttributeId\" = {a.Value} and \"SubjectId\" = a.\"IdId\" and \"SubjectEntityId\" = a.\"EntityId\")"));
 
-            if (isOwner.HasValue)
-                start += " and a.\"IsOwner\" = " + (isOwner.Value ? "TRUE" : "FALSE");
+            if (inCollectionId != null)
+                start += $" and exists(select 1 from \"CollectionItems\" where \"CollectionId\" = {inCollectionId} and \"CollectionItemId\" = a.\"EntityId\")";
 
             return await _entityStore.GetEntities((await _connection.QueryAsync<APTripleEntity>(start)).Select(a => a.EntityId).ToList());
         }
@@ -125,6 +125,8 @@ namespace Kroeg.Server.Services
             var attributeMapping = new Dictionary<int, int>();
             foreach (var val in lookFor)
             {
+                if (val.Value == null) continue;
+
                 var reverseId = await _entityStore.ReverseAttribute(val.Key, false);
                 if (reverseId == null) return new List<APEntity>();
 
@@ -147,21 +149,21 @@ namespace Kroeg.Server.Services
             return await _entityStore.GetEntities((await _connection.QueryAsync<APTripleEntity>(start, new { Like = likeValue })).Select(a => a.EntityId).ToList());
         }
 
-        public async Task<List<APEntity>> FindRelevantObject(string authorId, string objectType, string objectId)
+        public async Task<List<APEntity>> FindRelevantObject(string authorId, string objectType, string objectId, APEntity inCollection = null)
         {
             return await _search(new Dictionary<string, string> {
                 ["rdf:type"] = objectType,
                 ["https://www.w3.org/ns/activitystreams#object"] = objectId,
                 ["https://www.w3.org/ns/activitystreams#actor"] = authorId
-            });
+            }, inCollection?.DbId);
         }
 
-        public async Task<List<APEntity>> FindRelevantObject(string objectType, string objectId)
+        public async Task<List<APEntity>> FindRelevantObject(string objectType, string objectId, APEntity inCollection = null)
         {
             return await _search(new Dictionary<string, string> {
                 ["rdf:type"] = objectType,
                 ["https://www.w3.org/ns/activitystreams#object"] = objectId
-            });
+            }, inCollection?.DbId);
         }
 
         public async Task<List<APEntity>> FindEntitiesWithFollowerId(string followerId)
