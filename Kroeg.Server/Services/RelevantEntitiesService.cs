@@ -10,6 +10,7 @@ using Kroeg.Server.Services.EntityStore;
 using System.Data;
 using System.Data.Common;
 using Dapper;
+using System.Collections;
 
 namespace Kroeg.Server.Services
 {
@@ -17,6 +18,60 @@ namespace Kroeg.Server.Services
     {
         private readonly DbConnection _connection;
         private readonly TripleEntityStore _entityStore;
+
+        public interface IQueryStatement
+        {
+            IEnumerable<string> RequiredProperties { get; }
+
+            string BuildSQL(Dictionary<string, int> map);
+        }
+
+        public class ContainsAnyStatement : IQueryStatement, IEnumerable<string>
+        {
+            public string Predicate { get; set; }
+            public List<string> Values { get; set; } = new List<string>();
+
+            public ContainsAnyStatement(string predicate)
+            {
+                Predicate = predicate;
+            }
+
+            public void Add(string val) => Values.Add(val);
+
+            public IEnumerable<string> RequiredProperties => Values.Concat(new string[] { Predicate });
+
+            public string BuildSQL(Dictionary<string, int> map) =>
+                $"exists(select 1 from \"Triples\" where \"PredicateId\" = {map[Predicate]} and \"AttributeId\" in ({string.Join(",", Values.Select(a => map[a].ToString()))}) and \"SubjectId\" = a.\"IdId\" and \"SubjectEntityId\" = a.\"EntityId\")";
+
+            IEnumerator<string> IEnumerable<string>.GetEnumerator() => Values.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => Values.GetEnumerator();
+        }
+
+        public class AllStatement : IQueryStatement, IEnumerable<IQueryStatement>
+        {
+            public List<IQueryStatement> Statements { get; } = new List<IQueryStatement>();
+
+            public void Add(IQueryStatement statement) => Statements.Add(statement);
+
+            public IEnumerable<string> RequiredProperties => Statements.SelectMany(a => a.RequiredProperties);
+            public string BuildSQL(Dictionary<string, int> map) => "(" + string.Join(" and ", Statements.Select(a => a.BuildSQL(map))) + ")";
+
+            IEnumerator<IQueryStatement> IEnumerable<IQueryStatement>.GetEnumerator() => Statements.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => Statements.GetEnumerator();
+        }
+
+        public class AnyStatement : IQueryStatement, IEnumerable<IQueryStatement>
+        {
+            public List<IQueryStatement> Statements { get; } = new List<IQueryStatement>();
+
+            public void Add(IQueryStatement statement) => Statements.Add(statement);
+
+            public IEnumerable<string> RequiredProperties => Statements.SelectMany(a => a.RequiredProperties);
+            public string BuildSQL(Dictionary<string, int> map) => "(" + string.Join(" or ", Statements.Select(a => a.BuildSQL(map))) + ")";
+
+            IEnumerator<IQueryStatement> IEnumerable<IQueryStatement>.GetEnumerator() => Statements.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => Statements.GetEnumerator();
+        }
 
         public RelevantEntitiesService(TripleEntityStore entityStore, DbConnection connection)
         {
@@ -62,6 +117,25 @@ namespace Kroeg.Server.Services
 
             var start = $"select a.* from \"TripleEntities\" a where ";
             start += string.Join(" and ", attributeMapping.Select(a => $"exists(select 1 from \"Triples\" where \"PredicateId\" = {a.Key} and \"AttributeId\" = {a.Value} and \"SubjectId\" = a.\"IdId\" and \"SubjectEntityId\" = a.\"EntityId\")"));
+
+            if (inCollectionId != null)
+                start += $" and exists(select 1 from \"CollectionItems\" where \"CollectionId\" = {inCollectionId} and \"CollectionItemId\" = a.\"EntityId\")";
+
+            return await _entityStore.GetEntities((await _connection.QueryAsync<APTripleEntity>(start)).Select(a => a.EntityId).ToList());
+        }
+
+        public async Task<List<APEntity>> Query(IQueryStatement statement, int? inCollectionId = null)
+        {
+            var attributeMapping = new Dictionary<string, int>();
+            foreach (var val in statement.RequiredProperties)
+            {
+                var id = await _entityStore.ReverseAttribute(val, true);
+
+                attributeMapping[val] = id.Value;
+            }
+
+            var start = $"select a.* from \"TripleEntities\" a where ";
+            start += statement.BuildSQL(attributeMapping);
 
             if (inCollectionId != null)
                 start += $" and exists(select 1 from \"CollectionItems\" where \"CollectionId\" = {inCollectionId} and \"CollectionItemId\" = a.\"EntityId\")";

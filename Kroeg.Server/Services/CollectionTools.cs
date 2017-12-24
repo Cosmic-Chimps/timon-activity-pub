@@ -62,15 +62,15 @@ namespace Kroeg.Server.Services
             "https://www.w3.org/ns/activitystreams#actor"
         };
 
-        private async Task<IEnumerable<CollectionItem>> _filterAudience(string user, bool isOwner, int dbId, int count, int under = int.MaxValue, int above = int.MinValue, List<string> typeFilter = null)
+        private async Task<IEnumerable<CollectionItem>> _filterAudience(string user, bool isOwner, int dbId, int count, int under = int.MaxValue, int above = int.MinValue, RelevantEntitiesService.IQueryStatement query = null)
         {
             var postfix = "order by \"CollectionItemId\" desc " + (count > 0 ? $"limit {count}" : "");
-            if (isOwner)
+            if (isOwner && query == null)
                 return await _connection.QueryAsync<CollectionItem>("select * from \"CollectionItems\" WHERE \"CollectionItemId\" < @Under and \"CollectionItemId\" > @Above and \"CollectionId\" = @DbId " + postfix, new { Under = under, Above = above, DbId = dbId });
 
             int? userId = null;
             if (user!= null) userId = await _entityStore.ReverseAttribute(user, false);
-            if (userId == null)
+            if (userId == null && query == null)
                 return await _connection.QueryAsync<CollectionItem>("select * from \"CollectionItems\" WHERE \"CollectionItemId\" < @Under and \"CollectionItemId\" > @Above and \"IsPublic\" = TRUE and \"CollectionId\" = @DbId " + postfix, new { Under = under, Above = above, DbId = dbId });
 
              var ids = new List<int>();
@@ -82,26 +82,24 @@ namespace Kroeg.Server.Services
              }
 
 
-            var typeIds = new List<int>();
-            var type = (await _entityStore.ReverseAttribute("rdf:type", true)).Value;
-            if (typeFilter != null)
+            var queryMap = new Dictionary<string, int>();
+            if (query != null)
             {
-                foreach (var typeId in typeFilter)
+                foreach (var typeId in query.RequiredProperties)
                 {
-                    var id = await _entityStore.ReverseAttribute(typeId, false);
-                    if (id.HasValue)
-                        typeIds.Add(id.Value);
+                    var id = await _entityStore.ReverseAttribute(typeId, true);
+                    queryMap[typeId] = id.Value;
                 }
             }
 
 
 // select c.* from "CollectionItems" c, "TripleEntities" e WHERE e."EntityId" = c."ElementId" and "CollectionItemId" < @Under and exists(select 1 from "Triples" where "PredicateId" = any(@Ids) and "AttributeId" = @UserId and "SubjectId" = e."IdId" and "SubjectEntityId" = e."EntityId" limit 1)
             return await _connection.QueryAsync<CollectionItem>(
-                "select c.* from \"CollectionItems\" c, \"TripleEntities\" e WHERE e.\"EntityId\" = c.\"ElementId\" and \"CollectionItemId\" < @Under and \"CollectionItemId\" > @Above and \"CollectionId\" = @DbId"
-                + " and exists(select 1 from \"Triples\" where \"PredicateId\" = any(@Ids) and \"AttributeId\" = @UserId and \"SubjectId\" = e.\"IdId\" and \"SubjectEntityId\" = e.\"EntityId\" limit 1) "
-                + (typeFilter != null ? "" : " and exists(select 1 from \"Triples\" where \"PredicateId\" = @TypeId and \"AttributeId\" = any(@TypeFilter) and \"SubjectId\" = e.\"IdId\" and \"SubjectEntityId\" = e.\"EntityId\" limit 1)")
+                "select c.* from \"CollectionItems\" c, \"TripleEntities\" a WHERE a.\"EntityId\" = c.\"ElementId\" and \"CollectionItemId\" < @Under and \"CollectionItemId\" > @Above and \"CollectionId\" = @DbId"
+                + (isOwner ? "" : userId == null ? " and c.\"IsPublic\" = true" : "and exists(select 1 from \"Triples\" where \"PredicateId\" = any(@Ids) and \"AttributeId\" = @UserId and \"SubjectId\" = a.\"IdId\" and \"SubjectEntityId\" = a.\"EntityId\" limit 1) ")
+                + (query == null ? " " : $" and {query.BuildSQL(queryMap)} ")
                  + "order by c.\"CollectionItemId\" desc " + (count > 0 ? $"limit {count}" : ""),
-                 new { Under = under, Above = above, Ids = ids, UserId = userId.Value, DbId = dbId, TypeId = type, TypeFilter = typeIds }
+                 new { Under = under, Above = above, Ids = ids, UserId = userId ?? 0, DbId = dbId }
             );
         }
 
@@ -110,7 +108,7 @@ namespace Kroeg.Server.Services
             public APEntity Entity { get; set; }
         }
 
-        public async Task<List<EntityCollectionItem>> GetItems(string id, int fromId = int.MaxValue, int toId = int.MinValue, int count = 10, List<string> typeFilter = null)
+        public async Task<List<EntityCollectionItem>> GetItems(string id, int fromId = int.MaxValue, int toId = int.MinValue, int count = 10, RelevantEntitiesService.IQueryStatement query = null)
         {
             var isOwner = false;
             var entity = await _entityStore.GetEntity(id, false);
@@ -118,7 +116,7 @@ namespace Kroeg.Server.Services
             if (entity != null && entity.Data["attributedTo"].Any(a => a.Id == user)) isOwner = true;
 
 
-            var entities = await _filterAudience(user, isOwner, entity.DbId, count, fromId, toId, typeFilter);
+            var entities = await _filterAudience(user, isOwner, entity.DbId, count, fromId, toId, query);
             return (await _entityStore.GetEntities(entities.Select(a => a.ElementId).ToList())).Zip(entities, (a, b) => new EntityCollectionItem { CollectionItemId = b.CollectionItemId, Entity = a }).ToList();
         }
 

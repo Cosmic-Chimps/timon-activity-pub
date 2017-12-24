@@ -151,6 +151,58 @@ namespace Kroeg.Server.Controllers
             };
         }
 
+        private async Task<Mastodon.Notification> _translateNotification(CollectionTools.EntityCollectionItem item)
+        {
+            var userId = User.FindFirst(JwtTokenSettings.ActorClaim).Value;
+            if (item.Entity.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Follow"))
+            {
+                return new Mastodon.Notification
+                {
+                    id = item.CollectionItemId.ToString(),
+                    type = "follow",
+                    created_at = DateTime.Parse((string) item.Entity.Data["published"].First().Primitive ?? DateTime.Now.ToString()),
+                    account = await _processAccount(await _entityStore.GetEntity(item.Entity.Data["actor"].First().Id, true)),
+                    status = null
+                };
+            }
+            else if (item.Entity.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Announce") || item.Entity.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Like"))
+            {
+                var note = await _entityStore.GetEntity(item.Entity.Data["object"].First().Id, true);
+                if (note == null || !note.Data["attributedTo"].Any(a => a.Id == userId)) return null;
+                
+                var status = await _translateNote(note, null);
+                if (status == null) return null;
+
+                return new Mastodon.Notification
+                {
+                    id = item.CollectionItemId.ToString(),
+                    type = item.Entity.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Announce") ? "reblog" : "favourite",
+                    created_at = DateTime.Parse((string) item.Entity.Data["published"].First().Primitive ?? DateTime.Now.ToString()),
+                    account = await _processAccount(await _entityStore.GetEntity(item.Entity.Data["actor"].First().Id, true)),
+                    status = status
+                };
+            }
+            else if (item.Entity.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Create"))
+            {
+                var note = await _entityStore.GetEntity(item.Entity.Data["object"].First().Id, true);
+                if (note == null) return null;
+                
+                var status = await _translateNote(note, null);
+                if (status == null) return null;
+
+                return new Mastodon.Notification
+                {
+                    id = item.CollectionItemId.ToString(),
+                    type = "mention",
+                    created_at = DateTime.Parse((string) item.Entity.Data["published"].First().Primitive ?? DateTime.Now.ToString()),
+                    account = await _processAccount(await _entityStore.GetEntity(item.Entity.Data["actor"].First().Id, true)),
+                    status = status
+                };
+            }
+
+            return null;
+        }
+
         [HttpPost("apps")]
         public IActionResult RegisterApplication(Mastodon.Application.Request request)
         {
@@ -268,18 +320,22 @@ namespace Kroeg.Server.Controllers
             return Json(new {});
         }
 
-        private async Task<IActionResult> _timeline(string id, string max_id, string since_id, int limit)
+        private delegate Task<T> _processItem<T>(CollectionTools.EntityCollectionItem item);
+
+        private async Task<IActionResult> _timeline<T>(string id, string max_id, string since_id, int limit, _processItem<T> process, RelevantEntitiesService.IQueryStatement query = null)
         {
             if (!int.TryParse(max_id, out var fromId)) fromId = int.MaxValue;
             if (!int.TryParse(since_id, out var toId)) toId = int.MinValue;
 
             limit = Math.Min(40, Math.Max(20, limit));
-            var parsed = new List<Mastodon.Status>();
+            var parsed = new List<T>();
             string links = null;
             while (parsed.Count < limit)
             {
                 var items = await _collectionTools.GetItems(id, fromId, toId, limit + 1,
-                    new List<string> { "https://www.w3.org/ns/activitystreams#Create", "https://www.w3.org/ns/activitystreams#Announce" });
+                    query ?? new RelevantEntitiesService.ContainsAnyStatement("rdf:type") {
+                        "https://www.w3.org/ns/activitystreams#Create", "https://www.w3.org/ns/activitystreams#Announce"
+                    });
                 if (items.Count == 0) break;
 
                 if (links == null)
@@ -292,7 +348,7 @@ namespace Kroeg.Server.Controllers
                         links += $", <{Request.Scheme}://{Request.Host.ToUriComponent()}{Request.Path}?max_id={item.CollectionItemId}>; rel=\"next\"";
                         break;
                     }
-                    var translated = await _translateStatus(item);
+                    var translated = await process(item);
                     if (translated != null) parsed.Add(translated);
 
                     toId = int.MinValue;
@@ -314,7 +370,42 @@ namespace Kroeg.Server.Controllers
             if (userId == null) return Unauthorized();
 
             var user = await _entityStore.GetEntity(userId, false);
-            return await _timeline(user.Data["inbox"].First().Id, max_id, since_id, limit);
+            return await _timeline(user.Data["inbox"].First().Id, max_id, since_id, limit, _translateStatus);
+        }
+
+        [HttpGet("notifications")]
+        public async Task<IActionResult> NotificationTimeline(string max_id, string since_id, int limit)
+        {
+            var userId = User.FindFirst(JwtTokenSettings.ActorClaim)?.Value;
+            if (userId == null) return Unauthorized();
+
+            var user = await _entityStore.GetEntity(userId, false);
+            return await _timeline(user.Data["inbox"].First().Id, max_id, since_id, limit, _translateNotification,
+                new RelevantEntitiesService.AnyStatement
+                {
+                    new RelevantEntitiesService.AllStatement
+                    {
+                        new RelevantEntitiesService.ContainsAnyStatement("rdf:type") { "https://www.w3.org/ns/activitystreams#Follow" },
+                        new RelevantEntitiesService.ContainsAnyStatement("https://www.w3.org/ns/activitystreams#object") { userId }
+                    },
+                    new RelevantEntitiesService.AllStatement
+                    {
+                        new RelevantEntitiesService.ContainsAnyStatement("rdf:type")
+                        {
+                            "https://www.w3.org/ns/activitystreams#Announce",
+                            "https://www.w3.org/ns/activitystreams#Like",
+                            "https://www.w3.org/ns/activitystreams#Create"
+                        },
+                        new RelevantEntitiesService.AnyStatement
+                        {
+                            new RelevantEntitiesService.ContainsAnyStatement("https://www.w3.org/ns/activitystreams#to") { userId },
+                            new RelevantEntitiesService.ContainsAnyStatement("https://www.w3.org/ns/activitystreams#cc") { userId },
+                            new RelevantEntitiesService.ContainsAnyStatement("https://www.w3.org/ns/activitystreams#bto") { userId },
+                            new RelevantEntitiesService.ContainsAnyStatement("https://www.w3.org/ns/activitystreams#bcc") { userId }
+                        }
+                    },
+                }
+            );
         }
     }
 }
