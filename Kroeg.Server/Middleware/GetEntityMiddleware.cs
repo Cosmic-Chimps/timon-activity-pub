@@ -80,6 +80,7 @@ namespace Kroeg.Server.Middleware
             {
                 context.Response.Headers.Add("Access-Control-Allow-Credentials", "true");
                 context.Response.Headers.Add("Access-Control-Allow-Headers", "Authorization");
+                context.Response.Headers.Add("Access-Control-Expose-Headers", "Link");
                 context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST");
                 context.Response.Headers.Add("Access-Control-Allow-Origin", context.Request.Headers["Origin"]);
                 context.Response.Headers.Add("Vary", "Origin");
