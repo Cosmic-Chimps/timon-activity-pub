@@ -94,7 +94,6 @@ namespace Kroeg.Server.Controllers
         [AllowAnonymous, HttpGet("templates")]
         public IActionResult Templates()
         {
-            Response.Headers.Add("Access-Control-Allow-Origin", "*");
             return Json(_templateService.Templates);
         }
 

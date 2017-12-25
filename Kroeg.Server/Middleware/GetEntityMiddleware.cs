@@ -76,15 +76,19 @@ namespace Kroeg.Server.Middleware
                 }
             }
 
-            /* && ConverterHelpers.GetBestMatch(_converters[0].MimeTypes, context.Request.Headers["Accept"]) != null */
-            if (context.Request.Method == "OPTIONS")
+            if (!context.Request.Path.ToUriComponent().StartsWith("/auth"))
             {
-                context.Response.StatusCode = 200;
                 context.Response.Headers.Add("Access-Control-Allow-Credentials", "true");
                 context.Response.Headers.Add("Access-Control-Allow-Headers", "Authorization");
                 context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST");
                 context.Response.Headers.Add("Access-Control-Allow-Origin", context.Request.Headers["Origin"]);
                 context.Response.Headers.Add("Vary", "Origin");
+            }
+
+            /* && ConverterHelpers.GetBestMatch(_converters[0].MimeTypes, context.Request.Headers["Accept"]) != null */
+            if (context.Request.Method == "OPTIONS")
+            {
+                context.Response.StatusCode = 200;
                 return;
             }
 
