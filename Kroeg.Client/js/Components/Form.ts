@@ -47,9 +47,9 @@ export class Form implements IComponent {
 
             if (Array.isArray(value)) {
                 resultJson[item] = [];
-                for (let it of (value as string[]))
-                    if (it.length > 0)
-                        (resultJson[item] as string[]).push(it);
+                for (let it of (value as any[]))
+                    if (typeof(it) !== 'string' || it.length > 0)
+                        (resultJson[item] as any[]).push(it);
             } else resultJson[item] = value;
         }
 
