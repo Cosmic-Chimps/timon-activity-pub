@@ -94,12 +94,23 @@ namespace Kroeg.Server.Controllers
                             : note.Data["to"].Any(a => a.Id == attributed.Data["followers"].First().Id) ? "private"
                             : "direct",
                 media_attachments = new string[] {},
-                mentions = new string[] {},
+                mentions = new List<Mastodon.Mention>(),
                 tags = new string[] {},
                 application = new Mastodon.Application { Name = "Kroeg", Website = "https://puckipedia.com/kroeg" },
                 language = null,
                 pinned = false
             };
+
+            foreach (var tag in note.Data["tag"])
+            {
+                var obj = tag.SubObject ?? (await _entityStore.GetEntity(tag.Id, true))?.Data;
+                if (obj != null && obj.Type.Contains("https://www.w3.org/ns/activitystreams#Mention"))
+                {
+                    var user = await _entityStore.GetEntity(obj["href"].First().Id, true);
+                    if (user == null) continue;
+                    status.mentions.Add(new Mastodon.Mention { id = Uri.EscapeDataString(user.Id), url = user.Id, username = (string) user.Data["preferredUsername"].FirstOrDefault().Primitive ?? user.Id, acct = user.Id });
+                }
+            }
 
             if (note.Data["inReplyTo"].Any())
             {
@@ -466,7 +477,6 @@ namespace Kroeg.Server.Controllers
                         new RelevantEntitiesService.ContainsAnyStatement("rdf:type")
                         {
                             "https://www.w3.org/ns/activitystreams#Announce",
-                            "https://www.w3.org/ns/activitystreams#Like",
                             "https://www.w3.org/ns/activitystreams#Create"
                         },
                         new RelevantEntitiesService.AnyStatement
@@ -477,6 +487,10 @@ namespace Kroeg.Server.Controllers
                             new RelevantEntitiesService.ContainsAnyStatement("https://www.w3.org/ns/activitystreams#bcc") { userId }
                         }
                     },
+                    new RelevantEntitiesService.ContainsAnyStatement("rdf:type")
+                    {
+                        "https://www.w3.org/ns/activitystreams#Like"
+                    }
                 }
             );
         }

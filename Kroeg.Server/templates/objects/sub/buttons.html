@@ -1,20 +1,29 @@
 <div>
-	<a class="btn btn-sm btn-primary" href="kroeg:newnote#reply={{AS.take('id')}}">reply</a>
-	<a class="btn btn-sm btn-primary" href="kroeg:announce#post={{AS.take('id')}}">announce</a>
-	<form data-endpoint="{{Renderer.loggedInAs.outbox}}" data-component="form" style="display: inline" x-if="Renderer.loggedInAs != null && !AS.has('c2s:likes')">
-		<input type="hidden" name="type" value="Like" />
-		<input type="hidden" name="actor" value="{{Renderer.loggedInAs.id}}" />
-		<input type="hidden" name="object" value="{{AS.take('id')}}" />
-		<input type="hidden" name="to" value="{{AS.take('attributedTo')}}" />
-		<input type="submit" class="btn btn-primary btn-sm" value="Like" />
-	</form>
-	<form data-endpoint="{{Renderer.loggedInAs.outbox}}" data-component="form" style="display: inline" x-if="Renderer.loggedInAs != null && AS.has('c2s:likes')">
-		<input type="hidden" name="type" value="Undo" />
-		<input type="hidden" name="actor" value="{{Renderer.loggedInAs.id}}" />
-		<input type="hidden" name="object" value="{{AS.take('c2s:likes')}}" />
-		<input type="hidden" name="to" value="{{AS.take('attributedTo')}}" />
-		<input type="submit" class="btn btn-primary btn-sm" value="Unlike" />
-	</form>
-	<a class="btn btn-sm btn-primary float-right" href="kroeg:remove#collection={{Data.collection}}&item={{AS.take('id')}}" x-if="Renderer.loggedInAs != null && (Data.collection||'') != ''">remove</a>
-	<a class="btn btn-sm btn-primary float-right" href="kroeg:add#item={{AS.take('id')}}" x-if="Renderer.loggedInAs != null">add</a>
+	<div x-if="Renderer.loggedInAs != null">
+		<a x-render-id="{{AS.take('replies', AS.take('id'))}}" class="btn btn-sm btn-primary" href="kroeg:newnote#reply={{AS.take('id')}}">{{AS.take('totalItems', '')}} repl{{AS.take('totalItems', 1) == 1 ? 'y' : 'ies'}}</a>
+		<a x-render-id="{{AS.take('shares', AS.take('id'))}}" class="btn btn-sm btn-primary" href="kroeg:announce#post={{AS.take('id')}}">{{AS.take('totalItems', '')}} boost{{AS.take('totalItems', 1) == 1 ? '' : 's'}}</a>
+		<form data-endpoint="{{Renderer.loggedInAs.outbox}}" data-component="form" style="display: inline" x-if="Renderer.loggedInAs != null && !AS.has('c2s:likes')" x-render-id="{{AS.take('likes', AS.take('id'))}}">
+			<input type="hidden" name="type" value="Like" />
+			<input type="hidden" name="actor" value="{{Renderer.loggedInAs.id}}" />
+			<input type="hidden" name="object" value="{{AS.take('id')}}" />
+			<input type="hidden" name="to" value="{{AS.take('attributedTo')}}" />
+			<input type="submit" class="btn btn-primary btn-sm" value="{{AS.take('totalItems', '')+(AS.has('totalItems')?' ':'')}}Like{{AS.take('totalItems',1) == 1 ? '' : 's'}}" />
+		</form>
+		<form data-endpoint="{{Renderer.loggedInAs.outbox}}" data-component="form" style="display: inline" x-if="Renderer.loggedInAs != null && AS.has('c2s:likes')">
+			<input type="hidden" name="type" value="Undo" />
+			<input type="hidden" name="actor" value="{{Renderer.loggedInAs.id}}" />
+			<input type="hidden" name="object" value="{{AS.take('c2s:likes')}}" />
+			<input type="hidden" name="to" value="{{AS.take('attributedTo')}}" />
+			<input type="submit" class="btn btn-primary btn-sm" value="Unlike" />
+		</form>
+		<a class="btn btn-sm btn-primary float-right" href="kroeg:remove#collection={{Data.collection}}&item={{AS.take('id')}}" x-if="Renderer.loggedInAs != null && (Data.collection||'') != ''">remove</a>
+		<a class="btn btn-sm btn-primary float-right" href="kroeg:add#item={{AS.take('id')}}" x-if="Renderer.loggedInAs != null">add</a>
+	</div>
+	<div x-if="Renderer.loggedInAs == null" style="padding-top: 1em">
+		<span x-render-id="{{AS.take('replies')}}" x-if="AS.has('replies')">{{AS.take('totalItems')}} repl{{AS.take('totalItems', 1) == 1 ? 'y' : 'ies'}}</span>
+		<span x-if="AS.has('replies') && AS.has('shares')"> / </span>
+		<span x-render-id="{{AS.take('shares')}}" x-if="AS.has('shares')">{{AS.take('totalItems')}} share{{AS.take('totalItems', 1) == 1 ? '' : 's'}}</span>
+		<span x-if="AS.has('likes') && AS.has('shares')"> / </span>
+		<span x-render-id="{{AS.take('likes')}}" x-if="AS.has('likes')">{{AS.take('totalItems')}} like{{AS.take('totalItems', 1) == 1 ? '' : 's'}}</span>
+	</div>
 </div>

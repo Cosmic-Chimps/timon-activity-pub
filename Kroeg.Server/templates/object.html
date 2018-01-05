@@ -14,4 +14,9 @@
 	</div>
 
 	<div data-component="renderhost" data-template="collection/full" data-id="{{AS.take('replies')}}" x-render-hide-reply="true" x-if="{{AS.has('replies')}}"></div>
+        <div class="list-group" x-if="AS.has('c2s:replies')">
+            <div class="list-group-item" x-for-in="AS.get('c2s:replies')">
+                <div x-render="objects/header/object" x-render-id="item" x-render-hide-reply="true"></div>
+            </div>
+        </div>
 </div>

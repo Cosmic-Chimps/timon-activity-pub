@@ -25,6 +25,7 @@ export class Session {
     private _user: ASObject;
     private _search: string;
 
+    public get token() { return this._token; }
     public get user() { return this._user; }
     public get outbox() { return this._outbox; }
     public get search() { return this._search; }

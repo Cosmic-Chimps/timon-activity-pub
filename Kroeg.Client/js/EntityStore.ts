@@ -2,8 +2,8 @@ import { Session } from "./Session";
 import { ASObject } from "./AS";
 import * as jsonld from "jsonld";
 
-
 export type ChangeHandler = (oldValue: ASObject, newValue: ASObject) => void;
+export type NotifyHandler = (id: string) => void;
 
 export class StoreActivityToken {
     public items: {[id: string]: ChangeHandler[]} = {};
@@ -12,6 +12,11 @@ export class StoreActivityToken {
         if (!(id in this.items)) this.items[id] = [];
         this.items[id].push(handler);
     }
+}
+
+export class NotifyToken {
+    public id: string;
+    public func: NotifyHandler;
 }
 
 let _documentStore: {[url: string]: jsonld.DocumentObject} = {};
@@ -45,11 +50,65 @@ export class EntityStore {
     private _cache: {[id: string]: ASObject} = {};
     private _get: {[id: string]: Promise<ASObject>} = {};
 
+    private _eventSources: {[id: string]: any} = {};
+    private _listeners: {[id: string]: NotifyHandler[]} = {};
+
     constructor(public session: Session) {
         if ("preload" in window) {
             let preload = (window as any).preload;
             for (let item in preload)
                 this._addToCache(item, preload[item]);
+        }
+
+        this._updateCounter();
+    }
+
+    public listenCollection(id: string, func: NotifyHandler): NotifyToken {
+       console.log(`Request for ${id}`);
+        if (!(id in this._eventSources)) {
+            console.log(`Listening to ${id}....`);
+            let newSource = this._eventSources[id] = new ((window as any).EventSource)(id + "?authorization=" + this.session.token);
+            newSource.addEventListener("message", (e: any) => this._handleSource(id, JSON.parse(e.data)));
+            this._listeners[id] = [];
+        }
+
+        this._listeners[id].push(func);
+        let token = new NotifyToken();
+        token.func = func;
+        token.id = id;
+        return token;
+    }
+
+    private _updateCounter() {
+        let gets = Object.keys(this._get);
+        let counter = "???";
+        if (gets.length == 0) {
+            counter = `Loaded ${Object.keys(this._cache).length} items in cache`;
+        } else if (gets.length == 1) {
+            counter = `Loading ${gets[0]}...`;
+        } else {
+            counter = `Loading ${gets.length} items...`;
+        }
+
+        this._addToCache("kroeg:storeState", {id: "kroeg:storeState", counter});
+    }
+
+    public unlisten(token: NotifyToken) {
+        console.log(`Unlisten to ${JSON.stringify(token)}`);
+        let id = token.id;
+        this._listeners[id].splice(this._listeners[id].indexOf(token.func), 1);
+
+        if (this._listeners[id].length == 0) {
+            this._eventSources[id].close();
+            delete this._eventSources[id];
+        }
+    }
+
+    private async _handleSource(id: string, data: ASObject) {
+        console.log(id, data);
+        data = await this._processGet(data.id, data);
+        for (let listener of this._listeners[id]) {
+            listener(data.id);
         }
     }
 
@@ -159,21 +218,25 @@ export class EntityStore {
         }
     }
 
-    private async _processGet(id: string): Promise<ASObject> {
+    private async _processGet(id: string, data?: ASObject): Promise<ASObject> {
         let processor = new jsonld.JsonLdProcessor();
         
-        let data = await this.session.getObject(id);
-        let context = {"@context": ["https://www.w3.org/ns/activitystreams", window.location.origin + "/render/context"] };
-        let flattened = await processor.flatten(data, context as any, { documentLoader: loadDocument, issuer: new jsonld.IdentifierIssuer("_:" + id + ":b") }) as any;
-        console.log(flattened);
+        this._updateCounter();
+        try {
+            if (data === undefined) data = await this.session.getObject(id);
+            let context = {"@context": ["https://www.w3.org/ns/activitystreams", window.location.origin + "/render/context"] };
+            let flattened = await processor.flatten(data, context as any, { documentLoader: loadDocument, issuer: new jsonld.IdentifierIssuer("_:" + id + ":b") }) as any;
+            console.log(flattened);
 
-        for (let item of flattened["@graph"]) {
-            this._addToCache(item["id"], item);
-        } 
-
-        delete this._get[id];
-        if (!(id in this._cache)) return this._cache[data.id];
-        return this._cache[id];
+            for (let item of flattened["@graph"]) {
+                this._addToCache(item["id"], item);
+            } 
+        } finally {
+            delete this._get[id];
+            this._updateCounter();
+            if (!(id in this._cache) && data !== undefined) return this._cache[data.id];
+            return this._cache[id];
+        }
     }
 
     public get(id: string, cache: boolean = true): Promise<ASObject> {

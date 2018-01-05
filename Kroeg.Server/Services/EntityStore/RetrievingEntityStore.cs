@@ -31,6 +31,14 @@ namespace Kroeg.Server.Services.EntityStore
             _context = contextAccessor?.HttpContext;
         }
 
+        private readonly HashSet<string> _collections = new HashSet<string>()
+        {
+            "https://www.w3.org/ns/activitystreams#OrderedCollection",
+            "https://www.w3.org/ns/activitystreams#OrderedCollectionPage",
+            "https://www.w3.org/ns/activitystreams#Collection",
+            "https://www.w3.org/ns/activitystreams#CollectionPage"
+        };
+
         public async Task<APEntity> GetEntity(string id, bool doRemote)
         {
             if (id == "https://www.w3.org/ns/activitystreams#Public")
@@ -48,6 +56,7 @@ namespace Kroeg.Server.Services.EntityStore
 
             APEntity entity = null;
             if (Bypass != null) entity = await Bypass.GetEntity(id, doRemote);
+            if (entity != null && !entity.IsOwner && entity.Data.Type.Any(_collections.Contains) && doRemote) entity = null;
 
             if (entity?.Type == "_:LazyLoad" && !doRemote) return null;
             if ((entity != null && entity.Type != "_:LazyLoad") || !doRemote) return entity;
@@ -60,7 +69,7 @@ namespace Kroeg.Server.Services.EntityStore
             if (loadUrl.StartsWith("tag:")) return null;
 
             var htc = new HttpClient();
-            htc.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\", application/activity+json, application/json, application/atom+xml, text/html");
+            htc.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/activity+json; application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\", application/json, application/atom+xml, text/html");
 
             if (_context != null)
             {

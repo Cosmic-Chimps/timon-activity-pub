@@ -1,5 +1,6 @@
 <div>
     <div x-if="AS.has('totalItems')"><b>Count: </b> {{AS.take('totalItems')+''}}</div>
+    <div class="list-group" data-id="{{AS.take('id')}}" x-if="Renderer.client && Renderer.loggedInAs" data-component="live" data-template="objects/header/object"></div>
     <div x-render="collection/page" x-render-id="AS.take('first')" x-if="AS.has('first')"></div>
     <div x-render="collection/page" x-render-id="AS.take('id')" x-if="AS.has('orderedItems') || AS.has('items')"></div>
 </div>

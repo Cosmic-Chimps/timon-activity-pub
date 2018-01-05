@@ -50,7 +50,7 @@ namespace Kroeg.Server.Services
 
         public async Task QueueDeliveryForEntity(APEntity entity, int collectionId, string ownedBy = null)
         {
-            var audienceInbox = await _buildAudienceInbox(entity.Data, forward: ownedBy, actor: false);
+            var audienceInbox = await _buildAudienceInbox(entity.Data, forward: ownedBy, actor: true);
             // Is public post?
             if (audienceInbox.Item2 && ownedBy == null)
             {

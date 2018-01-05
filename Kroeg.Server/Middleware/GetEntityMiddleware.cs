@@ -382,7 +382,7 @@ namespace Kroeg.Server.Middleware
                             {
                                 var stored = await _mainStore.GetEntity(item, false);
                                 var unflattened = await _flattener.Unflatten(_mainStore, stored);
-                                var serialized = unflattened.Serialize().ToString(Formatting.None);
+                                var serialized = unflattened.Serialize(true).ToString(Formatting.None);
                                 await context.Response.WriteAsync($"id: {item}\ndata: {serialized}\n\n");
                                 await context.Response.Body.FlushAsync();
                             }

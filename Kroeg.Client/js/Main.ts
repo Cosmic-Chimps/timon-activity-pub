@@ -100,10 +100,12 @@ export class Kroeg {
     private _update(id: string) {
         this._container.data = this._parseHash();
         this._container.id = id;
+        if (!id.startsWith("kroeg:"))
+	        this._entityStore.get(id, false);
     }
 
     private _handleClick(e: MouseEvent) {
-        if (e.button != 0 || !this.loggedIn) return;
+        if (e.button != 0) return;
         let target = e.target as Element;
         while (target != null && target.tagName != "A") target = target.parentElement;
         if (target == null) return;
@@ -111,11 +113,10 @@ export class Kroeg {
         let link = target as HTMLAnchorElement;
         if (link.href.length == 0 || link.href.startsWith("javascript:") || link.dataset["open"] == "ext") return;
 
-        e.preventDefault();
-        e.stopPropagation();
         let href = link.href.split('#')[0];
         let hash = link.href.split('#')[1];
         if (this._isRemote(href)) {
+            if (!this.loggedIn) return;
             href = window.location.toString().split('#')[0] + "#id=" + href + (hash ? ('&' + hash) : '');
         }
         let elem = link.parentElement;
@@ -125,6 +126,8 @@ export class Kroeg {
             }
 
         console.log(elem);
+        e.preventDefault();
+        e.stopPropagation();
         if (elem == null || link.dataset["open"] != "renderhost") {
             window.history.pushState({id: link.href.split('#')[0]}, document.title, href);
             this._update(link.href.split('#')[0]);

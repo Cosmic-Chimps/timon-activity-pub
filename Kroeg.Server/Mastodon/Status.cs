@@ -10,6 +10,14 @@ namespace Kroeg.Server.Mastodon
         [JsonProperty("descendants")] public List<Status> descendants { get; set; }
     }
 
+    public class Mention
+    {
+        [JsonProperty("url")] public string url { get; set; }
+        [JsonProperty("username")] public string username { get; set; }
+        [JsonProperty("acct")] public string acct { get; set; }
+        [JsonProperty("id")] public string id { get; set; }
+    }
+
     public class Status
     {
         [JsonProperty("id")] public string id { get; set; }
@@ -31,7 +39,7 @@ namespace Kroeg.Server.Mastodon
         [JsonProperty("spoiler_text")] public string spoiler_text { get; set; }
         [JsonProperty("visibility")] public string visibility { get; set; }
         [JsonProperty("media_attachments")] public string[] media_attachments { get; set; }
-        [JsonProperty("mentions")] public string[] mentions { get; set; }
+        [JsonProperty("mentions")] public List<Mention> mentions { get; set; }
         [JsonProperty("tags")] public string[] tags { get; set; }
         [JsonProperty("application")] public Application application { get; set; }
         [JsonProperty("language")] public string language { get; set; }

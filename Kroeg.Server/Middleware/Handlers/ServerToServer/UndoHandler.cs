@@ -30,7 +30,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
             var toFollowOrLike = await EntityStore.GetEntity(toUndo.Data["object"].Single().Id, true);
             if (toFollowOrLike == null || !toFollowOrLike.IsOwner) return true; // can't undo side effects.
             if ((toUndo.Type == "https://www.w3.org/ns/activitystreams#Follow" && Actor.Id != toFollowOrLike.Id)
-                || (toUndo.Type != "https://www.w3.org/ns/activitystreams#Follow" && toFollowOrLike.Data["attributedTo"].Single().Id != Actor.Id)) return true;
+                || (toUndo.Type != "https://www.w3.org/ns/activitystreams#Follow" && toFollowOrLike.Data["attributedTo"].SingleOrDefault()?.Id != Actor.Id)) return true;
 
             if (toUndo.Type == "https://www.w3.org/ns/activitystreams#Follow")
             {

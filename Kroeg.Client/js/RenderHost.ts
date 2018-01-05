@@ -8,6 +8,7 @@ import * as Wysiwyg from "./Components/Wysiwyg";
 import * as Form from "./Components/Form";
 import * as SubRenderhost from "./Components/SubRenderhost";
 import * as Emoji from "./Components/Emoji";
+import * as Live from "./Components/Live";
 
 export class RenderHost {
     private _lastResult: RenderResult;
@@ -24,7 +25,8 @@ export class RenderHost {
         wysiwyg: Wysiwyg.Wysiwyg,
         form: Form.Form,
         renderhost: SubRenderhost.SubRenderhost,
-        emoji: Emoji.Emoji
+        emoji: Emoji.Emoji,
+        live: Live.Live
     };
 
     public static registerComponent(name: string, type: IComponentType) {
