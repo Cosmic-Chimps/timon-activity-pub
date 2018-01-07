@@ -25,7 +25,7 @@ namespace Kroeg.Server.Middleware.Handlers.ServerToServer
         {
             if (MainObject.Type != "https://www.w3.org/ns/activitystreams#Accept") return true;
             var followObject = await EntityStore.GetEntity(MainObject.Data["object"].Single().Id, false);
-            if (followObject == null)
+            if (followObject == null || !followObject.IsOwner)
             {
                 followObject = (await _relevantEntities.FindRelevantObject(Actor.Id, "https://www.w3.org/ns/activitystreams#Follow", MainObject.Data["actor"].First().Id)).FirstOrDefault();
                 if (followObject != null)
