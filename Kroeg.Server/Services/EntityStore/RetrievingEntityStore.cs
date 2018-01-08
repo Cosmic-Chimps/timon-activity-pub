@@ -58,18 +58,8 @@ namespace Kroeg.Server.Services.EntityStore
             if (Bypass != null) entity = await Bypass.GetEntity(id, doRemote);
             if (entity != null && !entity.IsOwner && entity.Data.Type.Any(_collections.Contains) && doRemote) entity = null;
 
-            if (entity?.Type == "_:LazyLoad" && !doRemote) return null;
-            if ((entity != null && entity.Type != "_:LazyLoad") || !doRemote) return entity;
-
-            var loadUrl = id;
-
-            if (entity?.Type == "_:LazyLoad")
-                loadUrl = (string) entity.Data["href"].First().Primitive;
-
-            if (loadUrl.StartsWith("tag:")) return null;
-
             var htc = new HttpClient();
-            htc.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/activity+json; application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\", application/json, application/atom+xml, text/html");
+            htc.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/activity+json; application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\", application/json, text/html");
 
             if (_context != null)
             {
@@ -86,13 +76,7 @@ namespace Kroeg.Server.Services.EntityStore
             HttpResponseMessage response = null;
             try
             {
-                response = await htc.GetAsync(loadUrl);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    response = await htc.GetAsync(loadUrl + ".atom"); // hack!
-                    if (!response.IsSuccessStatusCode) return null;
-                }
+                response = await htc.GetAsync(id);
             }
             catch (TaskCanceledException)
             {
@@ -103,9 +87,10 @@ namespace Kroeg.Server.Services.EntityStore
                 return null;
             }
 
-            var converters = new List<IConverterFactory> { new AS2ConverterFactory(), new AtomConverterFactory(false) };
+            var converters = new List<IConverterFactory> { new AS2ConverterFactory() };
             tryAgain:
             ASObject data = null;
+            await response.Content.LoadIntoBufferAsync();
             foreach (var converter in converters)
             {
                 if (converter.CanParse && ConverterHelpers.GetBestMatch(converter.MimeTypes, response.Content.Headers.ContentType.ToString()) != null)
@@ -113,42 +98,12 @@ namespace Kroeg.Server.Services.EntityStore
                     try {
                         data = await converter.Build(_serviceProvider, null).Parse(await response.Content.ReadAsStreamAsync());
                         break;
-                    } catch (NullReferenceException) { /* nom */ }
+                    } catch (NullReferenceException e) { Console.WriteLine(e); /* nom */ }
                 }
             }
 
             if (data == null)
-            {
-                if (response.Headers.Contains("Link"))
-                {
-                    var split = string.Join(", ", response.Headers.GetValues("Link")).Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
-                    foreach (var spl in split)
-                    {
-                        var args = spl.Split(';').Select(a => a.Trim()).ToArray();
-                        if (args.Contains("rel=\"alternate\"") && args.Contains("type=\"application/atom+xml\""))
-                        {
-                            response = await htc.GetAsync(args[0].Substring(1, args[0].Length - 2));
-                            goto tryAgain;
-                        }
-                    }
-                }
-
-                try
-                {
-                    var links = (await response.Content.ReadAsStringAsync()).Split('\n');
-                    var alt = links.FirstOrDefault(a => a.Contains("application/atom+xml") && a.Contains("alternate"));
-                    if (alt == null) return null;
-                    var l = XDocument.Parse(alt + "</link>").Root;
-                        if (l.Attribute(XNamespace.None + "type")?.Value == "application/atom+xml")
-                        {
-                            response = await htc.GetAsync(l.Attribute(XNamespace.None + "href")?.Value);
-                            goto tryAgain;
-                        }
-                }
-                catch (Exception) { }
-
                 return null;
-            }
 
             // forces out the old lazy load, if used
             await _entityFlattener.FlattenAndStore(Bypass, data, false);

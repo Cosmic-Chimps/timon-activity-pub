@@ -12,7 +12,6 @@ using System.Xml.Linq;
 using Kroeg.ActivityStreams;
 using Kroeg.Server.Configuration;
 using Kroeg.Server.Models;
-using Kroeg.Server.OStatusCompat;
 using Kroeg.Server.Services.EntityStore;
 using Kroeg.Server.Tools;
 using Newtonsoft.Json;
@@ -278,7 +277,7 @@ namespace Kroeg.Server.Controllers
                 {
                     var temporaryStore = new StagingEntityStore(_entityStore);
                     resultEntity = await _entityFlattener.FlattenAndStore(temporaryStore, data, false);
-                    temporaryStore.TrimDown((new Uri(new Uri(userId), "/")).ToString());
+                    await temporaryStore.TrimDown((new Uri(new Uri(userId), "/")).ToString());
                     await temporaryStore.CommitChanges();
                 }
                 else

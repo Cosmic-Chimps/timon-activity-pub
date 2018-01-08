@@ -51,79 +51,6 @@ namespace Kroeg.Server.Controllers
             public List<WebfingerLink> links { get; set; }
         }
 
-        [HttpPost("hub")]
-        public async Task<IActionResult> ProcessPushRequest()
-        {
-            var userId = (string) HttpContext.Items["fullPath"];
-            var user = await _entityStore.GetEntity(userId, false);
-            if (user == null)
-                return StatusCode(400, "this is not a valid hub");
-
-            var callback = Request.Form["hub.callback"].First();
-            var mode = Request.Form["hub.mode"].First();
-            var topic = Request.Form["hub.topic"].First();
-            var lease_seconds = Request.Form["hub.lease_seconds"].FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(lease_seconds)) lease_seconds = "86400";
-            var secret = Request.Form["hub.secret"].FirstOrDefault();
-
-            if (mode != "unsubscribe" && mode != "subscribe")
-                return StatusCode(400, "bad hub.mode");
-
-            await _continueVerify(mode, callback, topic, lease_seconds, secret, user);
-            return Accepted();
-        }
-
-        private async Task _continueVerify(string mode, string callback, string topic, string lease_seconds, string secret, APEntity user)
-        {
-            await Task.Delay(2000);
-            var hc = new HttpClient();
-
-            var testurl = callback;
-            if (callback.Contains("?"))
-                testurl += "&";
-            else
-                testurl += "?";
-
-
-            string challenge = Guid.NewGuid().ToString();
-            testurl += $"hub.mode={mode}&hub.topic={Uri.EscapeDataString(topic)}&hub.lease_seconds={lease_seconds}&hub.challenge={Uri.EscapeDataString(challenge)}";
-
-            var result = await hc.GetAsync(testurl);
-            if (!result.IsSuccessStatusCode)
-                return;
-
-            if (await result.Content.ReadAsStringAsync() != challenge)
-                return;
-
-            WebsubSubscription subscription = await _connection.QueryFirstOrDefaultAsync<WebsubSubscription>("select * from \"WebsubSubscriptions\" where \"Callback\" = @Callback", new { Callback = callback });
-
-            if (subscription != null)
-            {
-                if (mode == "unsubscribe")
-                {
-                    await _connection.ExecuteAsync("delete from \"WebsubSubscriptions\" where \"Id\" = @Id", new { Id = subscription.Id });
-                }
-                else
-                {
-                    subscription.Expiry = DateTime.Now.AddSeconds(int.Parse(lease_seconds ?? "86400"));
-                    subscription.Secret = secret;
-                    await _connection.ExecuteAsync("update \"WebsubSubscriptions\" set \"Expiry\"=@Expiry, \"Secret\"=@Secret where \"Id\" = @Id", subscription);
-                }
-            }
-            else if (mode == "subscribe")
-            {
-                subscription = new WebsubSubscription()
-                {
-                    Callback = callback,
-                    Expiry = DateTime.Now.AddSeconds(int.Parse(lease_seconds ?? "86400")),
-                    Secret = secret,
-                    UserId = user.DbId
-                };
-
-                await _connection.ExecuteAsync("insert into \"WebsubSubscriptions\" (\"Callback\", \"Expiry\", \"Secret\", \"UserId\") values (@Callback, @Expiry, @Secret, @UserId)", subscription);
-            }
-        }
-
         [HttpGet("webfinger")]
         public async Task<IActionResult> WebFinger(string resource)
         {
@@ -135,9 +62,6 @@ namespace Kroeg.Server.Controllers
             if (items.Count == 0) return NotFound();
 
             var item = items.First();
-
-            var outbox = item.Data["outbox"].First().Id + $".atom?from_id={int.MaxValue}";
-            var inbox = item.Data["inbox"].First().Id;
 
             var result = new WebfingerResult()
             {
@@ -154,13 +78,6 @@ namespace Kroeg.Server.Controllers
 
                     new WebfingerLink
                     {
-                        rel = "http://schemas.google.com/g/2010#updates-from",
-                        type = "application/atom+xml",
-                        href = outbox
-                    },
-
-                    new WebfingerLink
-                    {
                         rel = "self",
                         type = "application/activity+json",
                         href = item.Id
@@ -171,12 +88,6 @@ namespace Kroeg.Server.Controllers
                         rel = "self",
                         type = "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
                         href = item.Id
-                    },
-
-                    new WebfingerLink
-                    {
-                        rel = "salmon",
-                        href = inbox
                     },
 
                     new WebfingerLink

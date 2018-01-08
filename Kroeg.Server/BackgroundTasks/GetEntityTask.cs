@@ -13,7 +13,6 @@ using Kroeg.Server.Middleware;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security.Claims;
 using System.Linq;
-using Kroeg.Server.Salmon;
 
 namespace Kroeg.Server.BackgroundTasks
 {

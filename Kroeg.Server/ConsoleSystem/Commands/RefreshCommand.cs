@@ -30,15 +30,9 @@ namespace Kroeg.Server.ConsoleSystem.Commands
             foreach (var loadUrl in args)
             {
                 var htc = new HttpClient();
-                htc.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\", application/activity+json, application/json, application/atom+xml, text/html");
+                htc.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\", application/activity+json, application/json, text/html");
 
                 var response = await htc.GetAsync(loadUrl);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    response = await htc.GetAsync(loadUrl + ".atom"); // hack!
-                    if (!response.IsSuccessStatusCode) continue;
-                }
 
                 var converter = new AS2ConverterFactory();
 

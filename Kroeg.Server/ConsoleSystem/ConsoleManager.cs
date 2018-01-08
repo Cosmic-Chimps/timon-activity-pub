@@ -8,7 +8,6 @@ using System.Threading;
 using Kroeg.ActivityStreams;
 using Kroeg.Server.BackgroundTasks;
 using Kroeg.Server.Configuration;
-using Kroeg.Server.OStatusCompat;
 using Kroeg.Server.Services;
 using Kroeg.Server.Services.EntityStore;
 using Kroeg.Server.Services.Notifiers;
@@ -144,8 +143,6 @@ namespace Kroeg.Server.ConsoleSystem
             _services.AddTransient<DeliveryService>();
             _services.AddTransient<RelevantEntitiesService>();
             _services.AddTransient<ActivityService>();
-            _services.AddTransient<AtomEntryParser>();
-            _services.AddTransient<AtomEntryGenerator>();
 
             _services.AddScoped<TripleEntityStore>();
             _services.AddScoped<CollectionTools>();

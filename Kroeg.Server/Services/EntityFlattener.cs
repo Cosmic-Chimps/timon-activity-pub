@@ -6,7 +6,6 @@ using Kroeg.Server.Models;
 using Kroeg.Server.Services.EntityStore;
 using Microsoft.AspNetCore.Http;
 using System;
-using Kroeg.Server.Salmon;
 using Kroeg.Server.Services;
 using Kroeg.Server.Configuration;
 

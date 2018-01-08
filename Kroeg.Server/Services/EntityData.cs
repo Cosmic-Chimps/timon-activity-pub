@@ -79,8 +79,7 @@ namespace Kroeg.Server.Tools
             typeof(UndoActivityHandler),
             typeof(BlockHandler),
             typeof(CreateActorHandler),
-            typeof(DeliveryHandler),
-            typeof(WebSubHandler)
+            typeof(DeliveryHandler)
         };
 
         [Obsolete("hardcoded single type")]

@@ -2,7 +2,7 @@
 
 ## Description
 This project contains most of the ActivityPub server. It starts up a simple pipeline, with MVC and static files. It also injects its own middleware, the [GetEntityMiddleware](Middleware/GetEntityMiddleware.cs).
-This middleware tries to read an entity from the database, based on the `Host` header (and rewrites `http` to `https` if `RewriteRequestScheme` is set in the config), and either calls into MVC to run the [RenderController](Controllers/RenderController.cs), or directly returns AS2 JSON (or OStatus-compatible ActivityStreams Atom).
+This middleware tries to read an entity from the database, based on the `Host` header (and rewrites `http` to `https` if `RewriteRequestScheme` is set in the config), and either calls into MVC to run the [RenderController](Controllers/RenderController.cs), or directly returns AS2 JSON.
 
 ## Using it
 To set up Kroeg and properly create an actor, set up with an `inbox`, `outbox`, and all the `Collection`s it should have, first ensure you have the dependencies installed:
@@ -27,6 +27,3 @@ Some tasks, like sending requests to WebSub targets or other ActivityPub servers
 ### Entity store
 All entities are requested via a simple interface: `IEntityStore`. All these entities should be flattened as far as possible (transient entities don't have to be, because those don't have IDs) with the `EntityFlattener`.
 When data comes in from an external source, the server doesn't directly push it into the database, but instead puts it in a `StagingEntityStore`. This entity store is used for the processing the request, and once the data appears to be fine, we just commit the changes into the actual database. There is no purging mechanism yet, so cached entities stay forever (and never get re-requested).
-
-### OStatus support
-OStatus support is done by translating the Atom XML into ActivityStreams2 JSON-LD and back at the very first and last moments.

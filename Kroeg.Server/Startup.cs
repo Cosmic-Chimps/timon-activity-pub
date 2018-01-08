@@ -12,7 +12,6 @@ using Kroeg.Server.BackgroundTasks;
 using Kroeg.Server.Configuration;
 using Kroeg.Server.Middleware;
 using Kroeg.Server.Models;
-using Kroeg.Server.OStatusCompat;
 using Kroeg.Server.Services;
 using Kroeg.Server.Services.EntityStore;
 using Kroeg.Server.Tools;
@@ -30,6 +29,7 @@ using System.Runtime.Loader;
 using System.Collections.Generic;
 using Kroeg.Server.Middleware.Handlers;
 using System.IO;
+using SharpRaven;
 
 namespace Kroeg.Server
 {
@@ -116,8 +116,6 @@ namespace Kroeg.Server
             services.AddTransient<DeliveryService>();
             services.AddTransient<RelevantEntitiesService>();
             services.AddTransient<ActivityService>();
-            services.AddTransient<AtomEntryParser>();
-            services.AddTransient<AtomEntryGenerator>();
 
             services.AddScoped<TripleEntityStore>();
             services.AddScoped<CollectionTools>();
@@ -186,7 +184,6 @@ namespace Kroeg.Server
             app.UseStaticFiles();
 
             app.UseDeveloperExceptionPage();
-            app.UseMiddleware<WebSubMiddleware>();
             app.UseMiddleware<GetEntityMiddleware>();
             app.UseMvc();
 

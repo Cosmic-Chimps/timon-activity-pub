@@ -15,7 +15,6 @@ using Kroeg.Server.Middleware.Handlers.ClientToServer;
 using Kroeg.Server.Middleware.Handlers.ServerToServer;
 using Kroeg.Server.Middleware.Handlers.Shared;
 using Kroeg.Server.Models;
-using Kroeg.Server.OStatusCompat;
 using Kroeg.Server.Salmon;
 using Kroeg.Server.Services;
 using Kroeg.Server.Services.EntityStore;
@@ -53,9 +52,7 @@ namespace Kroeg.Server.Middleware
             _next = next;
             _converters = new List<IConverterFactory>
             {
-                new AS2ConverterFactory(),
-                new SalmonConverterFactory(),
-                new AtomConverterFactory(true)
+                new AS2ConverterFactory()
             };
         }
 
@@ -113,15 +110,6 @@ namespace Kroeg.Server.Middleware
             {
                 context.Items.Add("fullPath", fullpath);
                 context.Request.Path = "/settings/uploadMedia";
-                await _next(context);
-                return;
-            }
-
-            if (context.Request.QueryString.Value == "?hub")
-            {
-                context.Items.Add("fullPath", fullpath);
-                context.Request.Path = "/.well-known/hub";
-                context.Request.QueryString = QueryString.Empty;
                 await _next(context);
                 return;
             }
@@ -255,7 +243,6 @@ namespace Kroeg.Server.Middleware
             internal readonly DbConnection _connection;
             private readonly EntityFlattener _flattener;
             private readonly IEntityStore _mainStore;
-            private readonly AtomEntryGenerator _entryGenerator;
             private readonly IServiceProvider _serviceProvider;
             private readonly EntityData _entityData;
             private readonly DeliveryService _deliveryService;
@@ -267,14 +254,13 @@ namespace Kroeg.Server.Middleware
             private readonly IAuthorizer _authorizer;
 
             public GetEntityHandler(DbConnection connection, EntityFlattener flattener, IEntityStore mainStore,
-                AtomEntryGenerator entryGenerator, IServiceProvider serviceProvider, DeliveryService deliveryService,
-                EntityData entityData, ClaimsPrincipal user, CollectionTools collectionTools, INotifier notifier, JwtTokenSettings tokenSettings,
+                IServiceProvider serviceProvider, DeliveryService deliveryService, EntityData entityData,
+                ClaimsPrincipal user, CollectionTools collectionTools, INotifier notifier, JwtTokenSettings tokenSettings,
                 SignatureVerifier verifier, IAuthorizer authorizer)
             {
                 _connection = connection;
                 _flattener = flattener;
                 _mainStore = mainStore;
-                _entryGenerator = entryGenerator;
                 _serviceProvider = serviceProvider;
                 _entityData = entityData;
                 _deliveryService = deliveryService;
@@ -581,7 +567,7 @@ namespace Kroeg.Server.Middleware
                 if (flattened == null)
                     flattened = await _flattener.FlattenAndStore(stagingStore, activity, false);
 
-                stagingStore.TrimDown(prefix); // remove all staging entities that may be faked
+                await stagingStore.TrimDown(prefix); // remove all staging entities that may be faked
 
                 var sentBy = activity["actor"].First().Id;
                 if (subject != null && sentBy != subject)

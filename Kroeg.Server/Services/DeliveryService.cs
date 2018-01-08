@@ -51,17 +51,9 @@ namespace Kroeg.Server.Services
         public async Task QueueDeliveryForEntity(APEntity entity, int collectionId, string ownedBy = null)
         {
             var audienceInbox = await _buildAudienceInbox(entity.Data, forward: ownedBy, actor: true);
-            // Is public post?
-            if (audienceInbox.Item2 && ownedBy == null)
-            {
-                await _queueWebsubDelivery(entity.Data["actor"].First().Id, collectionId, entity.Id);
-            }
 
             foreach (var target in audienceInbox.Item1)
                 await _queueInboxDelivery(target, entity);
-
-            foreach (var salmon in audienceInbox.Item3)
-                await _queueSalmonDelivery(salmon, entity);
         }
 
         public async Task<List<APEntity>> GetUsersForSharedInbox(ASObject objectToProcess)
@@ -115,7 +107,7 @@ namespace Kroeg.Server.Services
             return new HashSet<string>(targetIds);
         }
 
-        private async Task<Tuple<HashSet<string>, bool, HashSet<string>>> _buildAudienceInbox(ASObject @object, int depth = 3, string forward = null, bool actor = true)
+        private async Task<Tuple<HashSet<string>, bool>> _buildAudienceInbox(ASObject @object, int depth = 3, string forward = null, bool actor = true)
         {
             var targetIds = new List<string>();
 
@@ -132,7 +124,6 @@ namespace Kroeg.Server.Services
 
             var targets = new HashSet<string>();
             var stack = new Stack<Tuple<int, APEntity, bool>>();
-            var salmons = new HashSet<string>();
             foreach (var item in targetIds)
             {
                 var entity = await _store.GetEntity(item, false); if (entity == null) continue;
@@ -169,12 +160,10 @@ namespace Kroeg.Server.Services
 
                     if (data["inbox"].Any())
                         targets.Add(data["inbox"].First().Id);
-                    else if (data["_:salmonUrl"].Any())
-                        salmons.Add((string)data["_:salmonUrl"].First().Primitive);
                 }
             }
 
-            return new Tuple<HashSet<string>, bool, HashSet<string>>(targets, isPublic, salmons);
+            return new Tuple<HashSet<string>, bool>(targets, isPublic);
         }
 
         private async Task _queueInboxDelivery(string targetUrl, APEntity entity)
@@ -184,31 +173,6 @@ namespace Kroeg.Server.Services
                     ObjectId = entity.Id,
                     TargetInbox = targetUrl
                 }, _connection);
-        }
-
-        private async Task _queueSalmonDelivery(string targetUrl, APEntity entity)
-        {
-           await DeliverToSalmonTask.Make(new DeliverToSalmonData
-                {
-                    EntityId = entity.Id,
-                    SalmonUrl = targetUrl
-                }, _connection);
-        }
-
-        private async Task _queueWebsubDelivery(string userId, int collectionItem, string objectId)
-        {
-            var actor = await _store.GetEntity(userId, false);
-
-            foreach (var sub in await (_connection.QueryAsync<WebsubSubscription>("select * from \"WebsubSubscriptions\" where \"UserId\" = @UserId and \"Expiry\" > @Expiry", new { UserId = actor.DbId, Expiry = DateTime.Now })))
-            {
-                await DeliverToWebSubTask.Make(new DeliverToWebSubData
-                    {
-                        CollectionItem = collectionItem,
-                        ObjectId = objectId,
-                        SourceUserId = userId,
-                        Subscription = sub.Id
-                    }, _connection);
-            }
         }
     }
 }
