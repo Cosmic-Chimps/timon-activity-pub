@@ -18,6 +18,19 @@ namespace Kroeg.Server.Mastodon
         [JsonProperty("id")] public string id { get; set; }
     }
 
+    public class Emoji
+    {
+        [JsonProperty("shortcode")] public string shortcode { get; set; }
+        [JsonProperty("static_url")] public string static_url { get; set; }
+        [JsonProperty("url")] public string url { get; set; }
+    }
+
+    public class Tag
+    {
+        [JsonProperty("name")] public string name { get; set; }
+        [JsonProperty("url")] public string url { get; set; }
+    }
+
     public class Status
     {
         [JsonProperty("id")] public string id { get; set; }
@@ -29,7 +42,7 @@ namespace Kroeg.Server.Mastodon
         [JsonProperty("reblog")] public Status reblog { get; set; }
         [JsonProperty("content")] public string content { get; set; }
         [JsonProperty("created_at")] public DateTime created_at { get; set; }
-        [JsonProperty("emojis")] public string[] emojis { get; set; }
+        [JsonProperty("emojis")] public List<Emoji> emojis { get; set; }
         [JsonProperty("reblogs_count")] public int reblogs_count { get; set; }
         [JsonProperty("favourites_count")] public int favourites_count { get; set; }
         [JsonProperty("reblogged")] public bool reblogged { get; set; }
@@ -40,7 +53,7 @@ namespace Kroeg.Server.Mastodon
         [JsonProperty("visibility")] public string visibility { get; set; }
         [JsonProperty("media_attachments")] public string[] media_attachments { get; set; }
         [JsonProperty("mentions")] public List<Mention> mentions { get; set; }
-        [JsonProperty("tags")] public string[] tags { get; set; }
+        [JsonProperty("tags")] public List<Tag> tags { get; set; }
         [JsonProperty("application")] public Application application { get; set; }
         [JsonProperty("language")] public string language { get; set; }
         [JsonProperty("pinned")] public bool pinned { get; set; }

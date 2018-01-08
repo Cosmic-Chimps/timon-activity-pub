@@ -39,7 +39,10 @@ namespace Kroeg.Server.Controllers
 
                 followers_count = -1,
                 following_count = -1,
-                statuses_count = -1
+                statuses_count = -1,
+
+                avatar = "",
+                avatar_static = ""
             };
 
             if (entity.IsOwner) result.acct = result.username;
@@ -81,21 +84,21 @@ namespace Kroeg.Server.Controllers
                 reblog = null,
                 content = (string) note.Data["content"].First().Primitive,
                 created_at = DateTime.Parse((string) note.Data["published"].FirstOrDefault()?.Primitive ?? note.Updated.ToString()),
-                emojis = new string[] {},
+                emojis = new List<Mastodon.Emoji>(),
                 reblogs_count = 0,
                 favourites_count = 0,
                 reblogged = false,
                 favourited = false,
                 muted = false,
                 sensitive = note.Data["sensitive"].Any(a => (bool) a.Primitive),
-                spoiler_text = (string) note.Data["summary"].FirstOrDefault()?.Primitive,
+                spoiler_text = (string) note.Data["summary"].FirstOrDefault()?.Primitive ?? "",
                 visibility = note.Data["to"].Any(a => a.Id == "https://www.w3.org/ns/activitystreams#Public") ? "public"
                             : note.Data["cc"].Any(a => a.Id == "https://www.w3.org/ns/activitystreams#Public") ? "unlisted"
                             : note.Data["to"].Any(a => a.Id == attributed.Data["followers"].First().Id) ? "private"
                             : "direct",
                 media_attachments = new string[] {},
                 mentions = new List<Mastodon.Mention>(),
-                tags = new string[] {},
+                tags = new List<Mastodon.Tag>(),
                 application = new Mastodon.Application { Name = "Kroeg", Website = "https://puckipedia.com/kroeg" },
                 language = null,
                 pinned = false
@@ -109,6 +112,16 @@ namespace Kroeg.Server.Controllers
                     var user = await _entityStore.GetEntity(obj["href"].First().Id, true);
                     if (user == null) continue;
                     status.mentions.Add(new Mastodon.Mention { id = Uri.EscapeDataString(user.Id), url = user.Id, username = (string) user.Data["preferredUsername"].FirstOrDefault().Primitive ?? user.Id, acct = user.Id });
+                }
+                else if (obj != null && obj.Type.Contains("http://joinmastodon.org/ns#Emoji"))
+                {
+                    var emoji = obj["icon"].First().SubObject ?? (await _entityStore.GetEntity(obj["icon"].First().Id, false))?.Data;
+                    if (emoji == null) continue;
+                    status.emojis.Add(new Mastodon.Emoji { shortcode = ((string)obj["name"].FirstOrDefault()?.Primitive)?.Trim(':'), url = emoji["url"].FirstOrDefault()?.Id, static_url = emoji["url"].FirstOrDefault()?.Id });
+                }
+                else if (obj != null && obj.Type.Contains("https://www.w3.org/ns/activitystreams#Hashtag"))
+                {
+                    status.tags.Add(new Mastodon.Tag { name = ((string)obj["name"].FirstOrDefault()?.Primitive)?.TrimStart('#'), url = obj["href"].FirstOrDefault()?.Id });
                 }
             }
 
@@ -270,6 +283,27 @@ namespace Kroeg.Server.Controllers
             if (user == null) return NotFound();
 
             return Json(await _processAccount(user));
+        }
+
+        [HttpGet("accounts/{id}/statuses")]
+        public async Task<IActionResult> GetAccount(string id, string max_id, string since_id, int limit)
+        {
+            var userId = User.FindFirst(JwtTokenSettings.ActorClaim)?.Value;
+            if (userId == null) return Unauthorized();
+
+            id = Uri.UnescapeDataString(id);
+            var user = await _entityStore.GetEntity(id, true);
+            if (user == null) return NotFound();
+
+            var me = await _entityStore.GetEntity(userId, false);
+
+            return await _timeline(me.Data["inbox"].First().Id, max_id, since_id, limit, _translateStatus,
+                new RelevantEntitiesService.AllStatement
+                {
+                    new RelevantEntitiesService.ContainsAnyStatement("rdf:type") { "https://www.w3.org/ns/activitystreams#Create", "https://www.w3.org/ns/activitystreams#Announce" },
+                    new RelevantEntitiesService.ContainsAnyStatement("https://www.w3.org/ns/activitystreams#actor") { user.Id }
+                }
+            );
         }
 
         [HttpGet("statuses/{id}")]

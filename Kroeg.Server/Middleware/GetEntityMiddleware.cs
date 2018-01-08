@@ -392,7 +392,7 @@ namespace Kroeg.Server.Middleware
                     {
                         await ((NpgsqlConnection)_connection).WaitAsync(tokenSource.Token);
                     }
-                    catch (TaskCanceledException)
+                    catch (OperationCanceledException)
                     {
                         if (context.RequestAborted.IsCancellationRequested) break;
                     }

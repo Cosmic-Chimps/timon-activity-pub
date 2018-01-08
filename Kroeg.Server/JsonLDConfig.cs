@@ -43,7 +43,8 @@ namespace Kroeg.Server {
                     ["c2s:follows"] = new JObject { ["@type"] = "@id"},
                     ["c2s:announces"] = new JObject { ["@type"] = "@id"},
                     ["c2s:accepts"] = new JObject { ["@type"] = "@id"},
-                    ["c2s:rejects"] = new JObject { ["@type"] = "@id"}
+                    ["c2s:rejects"] = new JObject { ["@type"] = "@id"},
+                    ["c2s:replies"] = new JObject { ["@type"] = "@id"},
                 }
             );
 

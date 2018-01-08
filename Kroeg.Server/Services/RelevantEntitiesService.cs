@@ -153,6 +153,7 @@ namespace Kroeg.Server.Services
             var allObjectIds = _entityStore.FindAttributes(objects.Values.Select(a => a.Id).ToList()).Values.ToList();
             var actorId = (await _entityStore.ReverseAttribute(actor, true)).Value;
             var objectAttr = (await _entityStore.ReverseAttribute("https://www.w3.org/ns/activitystreams#object", true)).Value;
+            var inReplyToAttr = (await _entityStore.ReverseAttribute("https://www.w3.org/ns/activitystreams#inReplyTo", true)).Value;
             var actorAttr = (await _entityStore.ReverseAttribute("https://www.w3.org/ns/activitystreams#actor", true)).Value;
             var typeAttr = (await _entityStore.ReverseAttribute("rdf:type", true)).Value;
             var undoAttr = (await _entityStore.ReverseAttribute("https://www.w3.org/ns/activitystreams#Undo", true)).Value;
@@ -160,6 +161,9 @@ namespace Kroeg.Server.Services
             var query = "select a.* from \"TripleEntities\" a where a.\"IsOwner\" = TRUE" +
                 $" and exists(select 1 from \"Triples\" where \"PredicateId\" = @ActorAttr and \"AttributeId\" = @ActorId and \"SubjectId\" = a.\"IdId\" and \"SubjectEntityId\" = a.\"EntityId\")" +
                 $" and exists(select 1 from \"Triples\" where \"PredicateId\" = @ObjectAttr and \"AttributeId\" = any(@Ids) and \"SubjectId\" = a.\"IdId\" and \"SubjectEntityId\" = a.\"EntityId\")";
+
+            var replyQuery = "select a.* from \"TripleEntities\" a where" +
+                $" exists(select 1 from \"Triples\" where \"PredicateId\" = @ObjectAttr and \"AttributeId\" = any(@Ids) and \"SubjectId\" = a.\"IdId\" and \"SubjectEntityId\" = a.\"EntityId\")";
 
             var entityShapes = await _connection.QueryAsync<APTripleEntity>(query,
                 new {
@@ -176,16 +180,25 @@ namespace Kroeg.Server.Services
                     ObjectAttr = objectAttr,
                     Ids = entityShapes.Select(a => a.IdId).ToList()
                 });
-            var properEntities = await _entityStore.GetEntities(entityShapes.Concat(undoneShapes).Select(a => a.EntityId).ToList());
+
+            var replyShapes = await _connection.QueryAsync<APTripleEntity>(replyQuery,
+                new {
+                    ObjectAttr = inReplyToAttr,
+                    Ids = allObjectIds
+                });
+            Console.WriteLine(string.Join(", ", replyShapes.Select(a => a.EntityId.ToString())));
+
+            var properEntities = await _entityStore.GetEntities(entityShapes.Concat(undoneShapes).Concat(replyShapes).Select(a => a.EntityId).ToList());
             var undoneObjects = properEntities.Where(a => a.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Undo")).Select(a => a.Data["object"].First().Id).ToList();
 
             var intactObjects = properEntities.Where(a => !undoneObjects.Contains(a.Id)).ToList();
 
             foreach (var obj in intactObjects)
             {
-                if (!objects.ContainsKey(obj.Data["object"].First().Id)) continue;
+                var idToUse = obj.Data["actor"].Any() ? obj.Data["object"].First().Id : obj.Data["inReplyTo"].First().Id;
+                if (!objects.ContainsKey(idToUse)) continue;
 
-                var target = objects[obj.Data["object"].First().Id];
+                var target = objects[idToUse];
                 if (obj.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Like"))
                     target.Data["c2s:likes"].Add(ASTerm.MakeSubObject(obj.Data));
                 if (obj.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Follow"))
@@ -196,6 +209,8 @@ namespace Kroeg.Server.Services
                     target.Data["c2s:accepts"].Add(ASTerm.MakeSubObject(obj.Data));
                 if (obj.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Reject"))
                     target.Data["c2s:rejects"].Add(ASTerm.MakeSubObject(obj.Data));
+                if (obj.Data["inReplyTo"].Any())
+                    target.Data["c2s:replies"].Add(ASTerm.MakeSubObject(obj.Data));
             }
         }
 

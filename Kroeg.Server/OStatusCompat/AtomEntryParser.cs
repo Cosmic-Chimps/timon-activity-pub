@@ -29,7 +29,7 @@ namespace Kroeg.Server.OStatusCompat
 
             if (objectType == "Comment") objectType = "Note";
 
-            return "https://www.w3.org/ns/activitystreams#" + objectType;
+            return objectType;
         }
 
         private static readonly XNamespace Atom = "http://www.w3.org/2005/Atom";
@@ -386,6 +386,7 @@ namespace Kroeg.Server.OStatusCompat
         private string _getId(ASTerm term)
         {
             if (term.Primitive != null) return (string) term.Primitive;
+            if (term.Id != null) return term.Id;
             return term.SubObject.Id;
         }
 
@@ -470,7 +471,7 @@ namespace Kroeg.Server.OStatusCompat
         public async Task<ASObject> Parse(XDocument doc, bool translateSingleActivity, string targetUser)
         {
             if (doc.Root?.Name == Atom + "entry")
-                return (await _parseActivity(doc.Root, null, targetUser)).SubObject;
+                return (await _parseActivity(doc.Root, null, targetUser))?.SubObject;
             var feed = await _parseFeed(doc.Root, targetUser);
             if (feed["orderedItems"].Count == 1 && translateSingleActivity)
                 return feed["orderedItems"].First().SubObject;
