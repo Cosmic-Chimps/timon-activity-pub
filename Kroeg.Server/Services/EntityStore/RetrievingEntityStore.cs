@@ -57,6 +57,7 @@ namespace Kroeg.Server.Services.EntityStore
             APEntity entity = null;
             if (Bypass != null) entity = await Bypass.GetEntity(id, doRemote);
             if (entity != null && !entity.IsOwner && entity.Data.Type.Any(_collections.Contains) && doRemote) entity = null;
+            if (entity != null || !doRemote) return entity;
 
             var htc = new HttpClient();
             htc.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/activity+json; application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\", application/json, text/html");
