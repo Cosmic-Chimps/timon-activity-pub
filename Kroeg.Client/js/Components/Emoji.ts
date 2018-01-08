@@ -41,6 +41,7 @@ export class Emoji implements IComponent {
             if (emojo.name == name) {
                 let img = document.createElement("img");
                 img.classList.add("emoji");
+                img.alt = img.title = name;
                 img.src = AS.take(icon, 'url');
                 while (emojo.elem.firstChild) emojo.elem.removeChild(emojo.elem.firstChild);
                 emojo.elem.appendChild(img);
