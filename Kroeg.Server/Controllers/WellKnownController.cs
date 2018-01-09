@@ -93,7 +93,7 @@ namespace Kroeg.Server.Controllers
                     new WebfingerLink
                     {
                         rel = "http://ostatus.org/schema/1.0/subscribe",
-                        template = item.Id + "?subscribe&user={uri}"
+                        template = item.Id + "#id=%40{uri}"
                     }
                 }
             };
@@ -117,10 +117,10 @@ namespace Kroeg.Server.Controllers
 
             var domain = Request.Host.ToUriComponent();
 
-            return Ok("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+            return Content("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
 "<XRD xmlns=\"http://docs.oasis-open.org/ns/xri/xrd-1.0\">" +
 $" <Link rel=\"lrdd\" type=\"application/jrd+json\" template=\"https://{domain}/.well-known/webfinger?resource={{uri}}\"/>" +
-"</XRD>");
+"</XRD>", "application/xrd+xml");
         }
     }
 }

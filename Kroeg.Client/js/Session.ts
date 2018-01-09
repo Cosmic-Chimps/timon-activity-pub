@@ -56,7 +56,7 @@ export class Session {
 
     public async getObject(url: string): Promise<ASObject> {
         const requestHost = getHost(url);
-        if (requestHost != this._host && this._proxyUrl !== undefined) {
+        if ((url.startsWith("@") || requestHost != this._host) && this._proxyUrl !== undefined) {
             const parms = new URLSearchParams();
             parms.append("id", url);
             let requestInit: RequestInit = {

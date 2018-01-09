@@ -96,7 +96,7 @@ namespace Kroeg.Server.Controllers
                             : note.Data["cc"].Any(a => a.Id == "https://www.w3.org/ns/activitystreams#Public") ? "unlisted"
                             : note.Data["to"].Any(a => a.Id == attributed.Data["followers"].First().Id) ? "private"
                             : "direct",
-                media_attachments = new string[] {},
+                media_attachments = new List<Mastodon.Attachment>(),
                 mentions = new List<Mastodon.Mention>(),
                 tags = new List<Mastodon.Tag>(),
                 application = new Mastodon.Application { Name = "Kroeg", Website = "https://puckipedia.com/kroeg" },
@@ -122,6 +122,34 @@ namespace Kroeg.Server.Controllers
                 else if (obj != null && obj.Type.Contains("https://www.w3.org/ns/activitystreams#Hashtag"))
                 {
                     status.tags.Add(new Mastodon.Tag { name = ((string)obj["name"].FirstOrDefault()?.Primitive)?.TrimStart('#'), url = obj["href"].FirstOrDefault()?.Id });
+                }
+            }
+            int i = 0;
+
+            foreach (var tag in note.Data["attachment"])
+            {
+                var obj = tag.SubObject ?? (await _entityStore.GetEntity(tag.Id, true))?.Data;
+                if (obj == null) continue;
+
+                if (obj["mediaType"].Any() && obj["url"].Any())
+                {
+                    var mediaType = (string) obj["mediaType"].First().Primitive ?? "unknown";
+                    var url = (string) obj["url"].First().Id;
+                    var attachment = new Mastodon.Attachment
+                    {
+                        id = obj.Id ?? (note.Id + "#attachment/" + i.ToString()),
+                        type = mediaType.Split('/')[0],
+                        url = url,
+                        remote_url = url,
+                        preview_url = url,
+                        text_url = url,
+                        meta = new Dictionary<string, Mastodon.AttachmentMeta> {
+                            ["small"] = new Mastodon.AttachmentMeta { width = -1, height = -1, size = -1, aspect = -1 },
+                            ["original"] = new Mastodon.AttachmentMeta { width = -1, height = -1, size = -1, aspect = -1 }
+                        },
+                        description = (string) obj["name"].FirstOrDefault()?.Primitive
+                    };
+                    status.media_attachments.Add(attachment);
                 }
             }
 
