@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Kroeg.ActivityStreams;
 using Kroeg.Server.Models;
+using Kroeg.Server.Services;
 using Kroeg.Server.Tools;
 using Kroeg.Server.Middleware.Renderers;
 using System.Collections.Generic;
@@ -22,12 +23,14 @@ namespace Kroeg.Server.Services.EntityStore
         private readonly EntityFlattener _entityFlattener;
         private readonly IServiceProvider _serviceProvider;
         private readonly HttpContext _context;
+        private readonly KeyService _keyService;
 
-        public RetrievingEntityStore(IEntityStore next, EntityFlattener entityFlattener, IServiceProvider serviceProvider, IHttpContextAccessor contextAccessor)
+        public RetrievingEntityStore(IEntityStore next, EntityFlattener entityFlattener, IServiceProvider serviceProvider, KeyService keyService, IHttpContextAccessor contextAccessor)
         {
             Bypass = next;
             _entityFlattener = entityFlattener;
             _serviceProvider = serviceProvider;
+            _keyService = keyService;
             _context = contextAccessor?.HttpContext;
         }
 
@@ -60,7 +63,8 @@ namespace Kroeg.Server.Services.EntityStore
             if (entity != null || !doRemote) return entity;
 
             var htc = new HttpClient();
-            htc.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/activity+json; application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\", application/json, text/html");
+            var request = new HttpRequestMessage(HttpMethod.Get, id);
+            request.Headers.TryAddWithoutValidation("Accept", "application/activity+json; application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\", application/json, text/html");
 
             if (_context != null)
             {
@@ -70,14 +74,15 @@ namespace Kroeg.Server.Services.EntityStore
                 {
                     var jwt = await signatureVerifier.BuildJWS(user, id);
                     if (jwt != null)
-                        htc.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", jwt);
+                        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", jwt);
+                    request.Headers.TryAddWithoutValidation("Signature", await _keyService.BuildHTTPSignature(user.Id, request));
                 }
             }
 
             HttpResponseMessage response = null;
             try
             {
-                response = await htc.GetAsync(id);
+                response = await htc.SendAsync(request);
             }
             catch (TaskCanceledException)
             {

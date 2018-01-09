@@ -37,7 +37,7 @@ namespace Kroeg.Server.Middleware.Handlers.ClientToServer
             if (toUndo.Type == "https://www.w3.org/ns/activitystreams#Block")
             {
                 var blocksCollection = await EntityStore.GetEntity(userData["blocks"].Single().Id, false);
-                var blockedCollection = await EntityStore.GetEntity(blocksCollection.Data["_blocked"].Single().Id, false);
+                var blockedCollection = await EntityStore.GetEntity(blocksCollection.Data["blocked"].SingleOrDefault()?.Id, false);
 
                 await _collection.RemoveFromCollection(blocksCollection, toUndo);
 

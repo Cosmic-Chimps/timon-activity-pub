@@ -95,7 +95,7 @@ namespace Kroeg.Server.Services
 
 // select c.* from "CollectionItems" c, "TripleEntities" e WHERE e."EntityId" = c."ElementId" and "CollectionItemId" < @Under and exists(select 1 from "Triples" where "PredicateId" = any(@Ids) and "AttributeId" = @UserId and "SubjectId" = e."IdId" and "SubjectEntityId" = e."EntityId" limit 1)
             return await _connection.QueryAsync<CollectionItem>(
-                "select c.* from \"CollectionItems\" c, \"TripleEntities\" a WHERE a.\"EntityId\" = c.\"ElementId\" and \"CollectionItemId\" < @Under and \"CollectionItemId\" > @Above and \"CollectionId\" = @DbId"
+                "select c.* from \"CollectionItems\" c, \"TripleEntities\" a WHERE a.\"EntityId\" = c.\"ElementId\" and \"CollectionItemId\" < @Under and \"CollectionItemId\" > @Above and \"CollectionId\" = @DbId "
                 + (isOwner ? "" : userId == null ? " and c.\"IsPublic\" = true" : "and exists(select 1 from \"Triples\" where \"PredicateId\" = any(@Ids) and \"AttributeId\" = @UserId and \"SubjectId\" = a.\"IdId\" and \"SubjectEntityId\" = a.\"EntityId\" limit 1) ")
                 + (query == null ? " " : $" and {query.BuildSQL(queryMap)} ")
                  + "order by c.\"CollectionItemId\" desc " + (count > 0 ? $"limit {count}" : ""),

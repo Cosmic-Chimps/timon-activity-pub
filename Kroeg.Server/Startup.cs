@@ -129,7 +129,8 @@ namespace Kroeg.Server
                 var flattener = provider.GetRequiredService<EntityFlattener>();
                 var httpAccessor = provider.GetService<IHttpContextAccessor>();
                 var fakeEntityService = provider.GetService<FakeEntityService>();
-                var retrieving = new RetrievingEntityStore(triple, flattener, provider, httpAccessor);
+                var keyService = provider.GetService<KeyService>();
+                var retrieving = new RetrievingEntityStore(triple, flattener, provider, keyService, httpAccessor);
                 return new FakeEntityStore(fakeEntityService, retrieving);
             });
             services.AddSingleton<TemplateService>();

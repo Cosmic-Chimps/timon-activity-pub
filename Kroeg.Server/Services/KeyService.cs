@@ -1,6 +1,10 @@
 using System.Data;
 using System.Data.Common;
 using System.Threading.Tasks;
+using System.Net.Http;
+using Kroeg.Server.Salmon;
+using System.Text;
+using System;
 using Dapper;
 using Kroeg.Server.Models;
 
@@ -34,6 +38,37 @@ namespace Kroeg.Server.Services
 
             await _connection.ExecuteAsync("insert into \"SalmonKeys\" (\"EntityId\", \"PrivateKey\") values (@EntityId, @PrivateKey)", res);
             return res;
+        }
+
+        public async Task<string> BuildHTTPSignature(string ownerId, HttpRequestMessage message)
+        {
+            string[] headers = new string[] { "(request-target)", "date", "authorization", "content-type" };
+            var toSign = new StringBuilder();
+            foreach (var header in headers)
+            {
+                if (header == "(request-target)")
+                    toSign.Append($"{header}: {message.Method.Method.ToLower()} {message.RequestUri.PathAndQuery}\n");
+                else
+                {
+                    if (message.Headers.TryGetValues(header, out var vals))
+                        toSign.Append($"{header}: {string.Join(", ", vals)}\n");
+                    else if (message.Content != null && message.Content.Headers.TryGetValues(header, out var cvals))
+                        toSign.Append($"{header}: {string.Join(", ", cvals)}\n");
+                    else
+                        toSign.Append($"{header}: \n");
+                }
+            }
+
+            toSign.Remove(toSign.Length - 1, 1);
+
+            var key = await GetKey(ownerId);
+            var magic = new MagicKey(key.PrivateKey);
+            var signed = Convert.ToBase64String(magic.Sign(Encoding.UTF8.GetBytes(toSign.ToString())));
+
+            var ownerOrigin = new Uri(ownerId);
+            var keyId = ownerId + "#key";
+
+            return $"keyId=\"{keyId}\",algorithm=\"rsa-sha256\",headers=\"{string.Join(" ", headers)}\",signature=\"{signed}\"";
         }
     }
 }
