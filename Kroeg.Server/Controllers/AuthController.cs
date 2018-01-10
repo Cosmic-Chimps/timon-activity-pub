@@ -107,7 +107,7 @@ namespace Kroeg.Server.Controllers
             if (User.FindFirstValue(JwtTokenSettings.ActorClaim) == null) return Unauthorized();
 
             APEntity entity = null;
-            if (id.StartsWith('@'))
+            if (id != null && id.StartsWith('@'))
             {
                 id = id.Substring(1);
                 var spl = id.Split(new char[] { '@' } , 2);

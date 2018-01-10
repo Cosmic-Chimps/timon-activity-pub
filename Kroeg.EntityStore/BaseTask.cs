@@ -64,7 +64,7 @@ namespace Kroeg.EntityStore
 
         public static async Task Make(T data, DbConnection connection, DateTime? nextAttempt = null)
         {
-            var type = typeof(TR).FullName;
+            var type = typeof(TR).AssemblyQualifiedName;
 
             await connection.ExecuteAsync("insert into \"EventQueue\" (\"Action\", \"Added\", \"Data\", \"NextAttempt\", \"AttemptCount\") values (@Action, @Added, @Data, @NextAttempt, 0)",
                 new EventQueueItem

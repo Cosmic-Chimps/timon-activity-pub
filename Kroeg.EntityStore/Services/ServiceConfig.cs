@@ -24,8 +24,8 @@ namespace Kroeg.EntityStore.Services
         public string BasePath => (new Uri(BaseUri)).AbsolutePath;
 
 
-        public bool RewriteRequestScheme => _kroegSection["RewriteRequestScheme"] == "true";
-        public bool UnflattenRemotely => _kroegSection["UnflattenRemotely"] == "true";
+        public bool RewriteRequestScheme => _kroegSection["RewriteRequestScheme"] == "True";
+        public bool UnflattenRemotely => _kroegSection["UnflattenRemotely"] == "True";
 
         public static readonly List<Type> ServerToServerHandlers = new List<Type>();
         public static readonly List<Type> ClientToServerHandlers = new List<Type>();
