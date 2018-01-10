@@ -1,11 +1,13 @@
 <div>
 	<div x-if="Renderer.loggedInAs != null">
-		<a x-render-id="{{AS.take('replies', AS.take('id'))}}" class="btn btn-sm btn-primary" href="kroeg:newnote#reply={{AS.take('id')}}">{{AS.take('totalItems', '')}} repl{{AS.take('totalItems', 1) == 1 ? 'y' : 'ies'}}</a>
-		<a x-render-id="{{AS.take('shares', AS.take('id'))}}" class="btn btn-sm btn-primary" href="kroeg:announce#post={{AS.take('id')}}">{{AS.take('totalItems', '')}} boost{{AS.take('totalItems', 1) == 1 ? '' : 's'}}</a>
+		<a x-if="AS.has('replies')" x-render-id="{{AS.take('replies', AS.take('id'))}}" class="btn btn-sm btn-primary" href="kroeg:newnote#reply={{parent.take('id')}}">{{AS.take('totalItems', '')}} repl{{AS.take('totalItems', 1) == 1 ? 'y' : 'ies'}}</a>
+		<a x-if="!AS.has('replies')" class="btn btn-sm btn-primary" href="kroeg:newnote#reply={{AS.take('id')}}">reply</a>
+		<a x-if="AS.has('shares')" x-render-id="{{AS.take('shares', AS.take('id'))}}" class="btn btn-sm btn-primary" href="kroeg:announce#post={{parent.take('id')}}">{{AS.take('totalItems', '')}} boost{{AS.take('totalItems', 1) == 1 ? '' : 's'}}</a>
+		<a x-if="!AS.has('shares')" class="btn btn-sm btn-primary" href="kroeg:announce#post={{AS.take('id')}}">boost</a>
 		<form data-endpoint="{{Renderer.loggedInAs.outbox}}" data-component="form" style="display: inline" x-if="Renderer.loggedInAs != null && !AS.has('c2s:likes')" x-render-id="{{AS.take('likes', AS.take('id'))}}">
 			<input type="hidden" name="type" value="Like" />
 			<input type="hidden" name="actor" value="{{Renderer.loggedInAs.id}}" />
-			<input type="hidden" name="object" value="{{AS.take('id')}}" />
+			<input type="hidden" name="object" value="{{parent.take('id')}}" />
 			<input type="hidden" name="to" value="{{AS.take('attributedTo')}}" />
 			<input type="submit" class="btn btn-primary btn-sm" value="{{AS.take('totalItems', '')+(AS.has('totalItems')?' ':'')}}Like{{AS.take('totalItems',1) == 1 ? '' : 's'}}" />
 		</form>

@@ -41,7 +41,7 @@ export class RenderResult {
 }
 
 class _ASHandler {
-    constructor(private _regs: Registers) {}
+    constructor(private _regs: Registers, private _object: AS.ASObject) {}
 
     public get(name: string): any[] {
         return AS.get(this._regs.object, name);
@@ -50,22 +50,22 @@ class _ASHandler {
     public take(name: string, def?: any) {
         if (def === undefined)
             def = "";
-        if (!AS.has(this._regs.object, name)) return def;
+        if (!AS.has(this._object, name)) return def;
         let item = this.get(name)[0];
         if (item === null) return def;
         return item;
     }
 
     public has(name: string) {
-        return AS.has(this._regs.object, name);
+        return AS.has(this._object, name);
     }
 
     public contains(name: string, val: any) {
-        return AS.contains(this._regs.object, name, val);
+        return AS.contains(this._object, name, val);
     }
 
     public containsAny(name: string, val: any[]) {
-        return AS.containsAny(this._regs.object, name, val);
+        return AS.containsAny(this._object, name, val);
     }
 }
 
@@ -125,7 +125,7 @@ class Registers {
     public item: any;
     public depth: number;
     public Data: {[data: string]: string} = {};
-    public parent: AS.ASObject;
+    public parent: _ASHandler;
 }
 
 export class TemplateRenderer {
@@ -160,6 +160,7 @@ export class TemplateRenderer {
         if (!override && item.type == TemplateItemType.Text) return item.data;
 
         regs.object = data || {id: null};
+        regs.AS = new _ASHandler(regs, data || {id: null});
         return item.builder(regs);
     }
 
@@ -195,13 +196,19 @@ export class TemplateRenderer {
             }
 
             if ("x-render-id" in item.arguments)
-                renderId = this._parse(item.arguments["x-render-id"][0], data, regs, true) as string;
+                renderId = this._parse(item.arguments["x-render-id"][0], data, regs, true) as any;
 
             if (typeof renderId == "object")
             {
                 regs.Data = newData;
+                let oldParent = regs.parent;
+                regs.parent = new _ASHandler(regs, data);
+
                 let result = this._render(template, renderId as AS.ASObject, regs, renderResult, true, depth + 1, null, true);
+
                 regs.Data = oldData;
+                regs.parent = oldParent;
+                regs.AS = new _ASHandler(regs, data);
                 return result;
             }
 
@@ -281,10 +288,10 @@ export class TemplateRenderer {
 
     public render(template: string|TemplateItem, data: AS.ASObject, elem?: HTMLElement, ndata?: {[name: string]: string}, parent?: AS.ASObject): RenderResult {
         let regs = new Registers();
-        regs.AS = new _ASHandler(regs);
+        regs.AS = new _ASHandler(regs, data);
         regs.Renderer = new RendererInfo(this.entityStore.session);
         regs.Data = ndata || {};
-        regs.parent = parent;
+        regs.parent = new _ASHandler(regs, parent || data);
         regs.depth = 0;
 
         let renderResult = new RenderResult();

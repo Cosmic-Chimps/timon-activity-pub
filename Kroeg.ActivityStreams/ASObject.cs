@@ -100,7 +100,8 @@ namespace Kroeg.ActivityStreams
 
         public ASObject Clone()
         {
-            var o = new ASObject();
+            var o = new ASObject() { Id = Id };
+            o.Type.AddRange(Type);
             foreach (var kv in _terms)
             {
                 o._terms[kv.Key] = new List<ASTerm>(kv.Value.Select(a => a.Clone()));

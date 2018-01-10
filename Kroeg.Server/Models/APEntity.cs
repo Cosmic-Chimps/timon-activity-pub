@@ -36,6 +36,10 @@ namespace Kroeg.Server.Models
             };
         }
 
+        public APEntity Clone()
+        {
+            return new APEntity { Id = Id, Data = Data.Clone(), Type = Type, Updated = Updated, IsOwner = IsOwner, DbId = DbId };
+        }
 
         public static APEntity From(ASObject @object, bool isOwner = false)
         {

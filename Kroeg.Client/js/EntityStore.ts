@@ -22,6 +22,33 @@ export class NotifyToken {
 let _documentStore: {[url: string]: jsonld.DocumentObject} = {};
 let _promiseDocumentStore: {[url: string]: Promise<jsonld.DocumentObject>} = {};
 
+function _deflatten(obj: {[a: string]: any}): {[id: string]: {[a: string]: any}} {
+    var stack = [obj];
+    var result: {[id: string]: {[a: string]: any}} = {};
+    while (stack.length > 0) {
+        let item = stack.shift();
+        for (let key in item) {
+            if (key.startsWith("@")) continue;
+            for (let i in item[key]) {
+                if ("@id" in item[key][i] && Object.keys(item[key][i]).filter(a => !a.startsWith("@")).length > 0) {
+                    stack.push(item[key][i]);
+                    item[key][i] = {"@id": item[key][i]["@id"]};
+                } else if ("@list" in item[key][i]) {
+                    let list = item[key][i]["@list"]
+                    for (let j in list) {
+                        if ("@id" in list[j] && Object.keys(list[j]).filter(a => !a.startsWith("@")).length > 0) {
+                            stack.push(list[j]);
+                            list[j] = {"@id": list[j]["@id"]};
+                        }
+                    }
+                }
+            }
+        }
+        result[item["@id"]] = item;
+    }
+    return result;
+}
+
 async function _get(url: string): Promise<jsonld.DocumentObject> {
     let headers = new Headers();
     headers.append("Accept", "application/ld+json");
@@ -223,13 +250,15 @@ export class EntityStore {
         
         this._updateCounter();
         try {
+            if (id == null) return;
             if (data === undefined) data = await this.session.getObject(id);
             let context = {"@context": ["https://www.w3.org/ns/activitystreams", window.location.origin + "/render/context"] };
-            let flattened = await processor.flatten(data, context as any, { documentLoader: loadDocument, issuer: new jsonld.IdentifierIssuer("_:" + id + ":b") }) as any;
-            console.log(flattened);
+            let expanded = await processor.expand(data, { documentLoader: loadDocument }) as any;
+            let compacted = await processor.compact({"@graph": _deflatten(expanded[0])}, context as any, { documentLoader: loadDocument }) as any;
 
-            for (let item of flattened["@graph"]) {
-                this._addToCache(item["id"], item);
+            for (let item in compacted) {
+                if (item.startsWith("@")) continue;
+                this._addToCache(compacted[item].id, compacted[item]);
             } 
         } finally {
             delete this._get[id];

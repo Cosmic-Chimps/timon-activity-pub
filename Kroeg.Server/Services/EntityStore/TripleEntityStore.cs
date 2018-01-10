@@ -120,7 +120,7 @@ namespace Kroeg.Server.Services.EntityStore
         public async Task<APEntity> GetEntity(string id, bool doRemote)
         {
             if (id == null) return null;
-            if (_quickMap.ContainsKey(id)) return _quickMap[id];
+            if (_quickMap.ContainsKey(id)) return _quickMap[id].Clone();
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -136,7 +136,7 @@ namespace Kroeg.Server.Services.EntityStore
 
             _logger.LogWarning("Getting ID {id} took {time}", b.Id, stopwatch.Elapsed);
             _quickMap[id] = b;
-            return b;
+            return b.Clone();
         }
 
         public async Task<APEntity> GetEntity(int id)

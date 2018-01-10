@@ -66,9 +66,9 @@ namespace Kroeg.ActivityStreams
         public ASTerm Clone()
         {
             if (SubObject == null)
-                return new ASTerm { Primitive = Primitive, Language = Language };
+                return new ASTerm { Primitive = Primitive, Language = Language, Id = Id, Type = Type };
             else
-                return new ASTerm { SubObject = SubObject.Clone(), Language = Language };
+                return new ASTerm { SubObject = SubObject.Clone(), Language = Language, Id = Id, Type = Type };
         }
 
         public static ASTerm Parse(JObject obj)

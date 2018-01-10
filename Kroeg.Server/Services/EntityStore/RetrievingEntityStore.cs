@@ -24,6 +24,7 @@ namespace Kroeg.Server.Services.EntityStore
         private readonly IServiceProvider _serviceProvider;
         private readonly HttpContext _context;
         private readonly KeyService _keyService;
+	private RelevantEntitiesService _relevantEntities;
 
         public RetrievingEntityStore(IEntityStore next, EntityFlattener entityFlattener, IServiceProvider serviceProvider, KeyService keyService, IHttpContextAccessor contextAccessor)
         {
@@ -33,6 +34,8 @@ namespace Kroeg.Server.Services.EntityStore
             _keyService = keyService;
             _context = contextAccessor?.HttpContext;
         }
+
+	private RelevantEntitiesService _getRE() => _relevantEntities = _relevantEntities ?? _serviceProvider.GetService<RelevantEntitiesService>();
 
         private readonly HashSet<string> _collections = new HashSet<string>()
         {
@@ -53,12 +56,20 @@ namespace Kroeg.Server.Services.EntityStore
                 var ent = APEntity.From(aso);
                 return ent;
             }
+            string origin = id;
             try {
-                if ((new Uri(id)).Host == "localhost") return await Bypass.GetEntity(id, doRemote);
+                var uri = new Uri(id);
+                if (uri.Host == "localhost") return await Bypass.GetEntity(id, doRemote);
+                origin = uri.GetLeftPart(UriPartial.Authority);
             } catch (UriFormatException) { /* nom */ }
 
             APEntity entity = null;
             if (Bypass != null) entity = await Bypass.GetEntity(id, doRemote);
+/*            if (entity == null)
+            {
+                var possibilities = (await _getRE().Query(new RelevantEntitiesService.ContainsAnyStatement("https://www.w3.org/ns/activitystreams#url") { id })).Where(a => Uri.IsWellFormedUriString(a.Id, UriKind.Absolute) && (new Uri(a.Id)).GetLeftPart(UriPartial.Authority) == origin).ToList();
+                if (possibilities.Count == 1) entity = possibilities.First();
+            }*/
             if (entity != null && !entity.IsOwner && entity.Data.Type.Any(_collections.Contains) && doRemote) entity = null;
             if (entity != null || !doRemote) return entity;
 
