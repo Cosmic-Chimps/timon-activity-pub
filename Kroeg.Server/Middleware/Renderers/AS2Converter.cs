@@ -1,4 +1,4 @@
-﻿using Kroeg.Server.Services.EntityStore;
+﻿using Kroeg.EntityStore.Store;
 using Kroeg.Server.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using System;

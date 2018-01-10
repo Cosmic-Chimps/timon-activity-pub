@@ -9,7 +9,7 @@ using Kroeg.ActivityStreams;
 using Kroeg.Server.BackgroundTasks;
 using Kroeg.Server.Configuration;
 using Kroeg.Server.Services;
-using Kroeg.Server.Services.EntityStore;
+using Kroeg.EntityStore.Store;
 using Kroeg.Server.Services.Notifiers;
 using Kroeg.Server.Services.Template;
 using Kroeg.Server.Tools;
@@ -68,7 +68,7 @@ namespace Kroeg.Server.ConsoleSystem
         private async void _do()
         {
             var provider = _services.BuildServiceProvider();
-            var sevc = provider.GetService<EntityData>();
+            var sevc = provider.GetService<ServerConfig>();
             await ActivityStreams.ASObject.SetContext(JsonLDConfig.GetContext(true), sevc.BaseUri + "render/context");
 
 
@@ -129,7 +129,8 @@ namespace Kroeg.Server.ConsoleSystem
             
             _services.AddSingleton(tokenSettings);
 
-            _services.AddSingleton(new EntityData(_configuration.GetSection("Kroeg"))
+            _services.AddSingleton(new ServerConfig(_configuration.GetSection("Kroeg")));
+            _services.AddSingleton(a => new URLService(a.GetService<ServerConfig>())
             {
                 EntityNames = _configuration.GetSection("EntityNames")
             });
@@ -142,7 +143,6 @@ namespace Kroeg.Server.ConsoleSystem
 
             _services.AddTransient<DeliveryService>();
             _services.AddTransient<RelevantEntitiesService>();
-            _services.AddTransient<ActivityService>();
 
             _services.AddScoped<TripleEntityStore>();
             _services.AddScoped<CollectionTools>();

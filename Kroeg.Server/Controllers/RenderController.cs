@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Kroeg.Server.Models;
-using Kroeg.Server.Services.EntityStore;
+using Kroeg.EntityStore.Store;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Kroeg.Server.Services.Template;

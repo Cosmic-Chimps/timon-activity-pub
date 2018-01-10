@@ -8,7 +8,7 @@ using Kroeg.Server.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Kroeg.ActivityStreams;
-using Kroeg.Server.Services.EntityStore;
+using Kroeg.EntityStore.Store;
 using Kroeg.Server.Tools;
 using Kroeg.Server.Salmon;
 using System.IdentityModel.Tokens.Jwt;
@@ -38,7 +38,7 @@ namespace Kroeg.Server.Controllers
     {
         private readonly DbConnection _connection;
         private readonly IEntityStore _entityStore;
-        private readonly EntityData _entityData;
+        private readonly ServerConfig _entityData;
         private readonly JwtTokenSettings _tokenSettings;
         private readonly SignInManager<APUser> _signInManager;
         private readonly IServiceProvider _provider;
@@ -48,7 +48,7 @@ namespace Kroeg.Server.Controllers
         private readonly RelevantEntitiesService _relevantEntities;
         private readonly CollectionTools _collectionTools;
 
-        public AdminController(DbConnection connection, IEntityStore entityStore, EntityData entityData, JwtTokenSettings tokenSettings, SignInManager<APUser> signInManager, IServiceProvider provider, IConfigurationRoot configuration, EntityFlattener flattener, UserManager<APUser> userManager, RelevantEntitiesService relevantEntities, CollectionTools collectionTools)
+        public AdminController(DbConnection connection, IEntityStore entityStore, ServerConfig entityData, JwtTokenSettings tokenSettings, SignInManager<APUser> signInManager, IServiceProvider provider, IConfigurationRoot configuration, EntityFlattener flattener, UserManager<APUser> userManager, RelevantEntitiesService relevantEntities, CollectionTools collectionTools)
         {
             _connection = connection;
             _entityStore = entityStore;

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.Net.Http;
 using Kroeg.Server.Models;
-using Kroeg.Server.Services.EntityStore;
+using Kroeg.EntityStore.Store;
 using Kroeg.Server.Tools;
 using Kroeg.Server.Services;
 using System.Data;
@@ -22,12 +22,12 @@ namespace Kroeg.Server.Controllers
     public class WellKnownController : Controller
     {
         private readonly IEntityStore _entityStore;
-        private readonly EntityData _entityData;
+        private readonly ServerConfig _entityData;
         private readonly RelevantEntitiesService _relevantEntities;
         private readonly KeyService _keyService;
         private readonly DbConnection _connection;
 
-        public WellKnownController(IEntityStore entityStore, EntityData entityData, RelevantEntitiesService relevantEntities, KeyService keyService, DbConnection connection)
+        public WellKnownController(IEntityStore entityStore, ServerConfig entityData, RelevantEntitiesService relevantEntities, KeyService keyService, DbConnection connection)
         {
             _entityStore = entityStore;
             _entityData = entityData;

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Dapper;
 using Kroeg.Server.Middleware.Renderers;
 using Kroeg.Server.Models;
-using Kroeg.Server.Services.EntityStore;
+using Kroeg.EntityStore.Store;
 using Kroeg.Server.Tools;
 
 namespace Kroeg.Server.ConsoleSystem.Commands

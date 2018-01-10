@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Kroeg.Server.Configuration;
 using Kroeg.Server.Models;
 using Kroeg.Server.Services;
-using Kroeg.Server.Services.EntityStore;
+using Kroeg.EntityStore.Store;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Kroeg.Server.Controllers

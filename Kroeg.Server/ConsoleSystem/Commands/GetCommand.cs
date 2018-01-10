@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using Kroeg.Server.Services.EntityStore;
+using Kroeg.EntityStore.Store;
 
 namespace Kroeg.Server.ConsoleSystem.Commands
 {

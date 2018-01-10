@@ -12,7 +12,7 @@ using System.Xml.Linq;
 using Kroeg.ActivityStreams;
 using Kroeg.Server.Configuration;
 using Kroeg.Server.Models;
-using Kroeg.Server.Services.EntityStore;
+using Kroeg.EntityStore.Store;
 using Kroeg.Server.Tools;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.DataProtection;
@@ -46,7 +46,7 @@ namespace Kroeg.Server.Controllers
         private readonly JwtTokenSettings _tokenSettings;
         private readonly EntityFlattener _entityFlattener;
         private readonly IEntityStore _entityStore;
-        private readonly EntityData _entityConfiguration;
+        private readonly ServerConfig _entityConfiguration;
         private readonly IDataProtector _dataProtector;
         private readonly IConfigurationRoot _configuration;
         private readonly DeliveryService _deliveryService;
@@ -55,7 +55,7 @@ namespace Kroeg.Server.Controllers
         private readonly CollectionTools _collectionTools;
         private readonly RelevantEntitiesService _relevantEntities;
 
-        public AuthController(DbConnection connection, UserManager<APUser> userManager, SignInManager<APUser> signInManager, JwtTokenSettings tokenSettings, EntityFlattener entityFlattener, IEntityStore entityStore, EntityData entityConfiguration, IDataProtectionProvider dataProtectionProvider, IConfigurationRoot configuration, DeliveryService deliveryService, SignatureVerifier verifier, IServiceProvider provider, CollectionTools collectionTools, RelevantEntitiesService relevantEntities)
+        public AuthController(DbConnection connection, UserManager<APUser> userManager, SignInManager<APUser> signInManager, JwtTokenSettings tokenSettings, EntityFlattener entityFlattener, IEntityStore entityStore, ServerConfig entityConfiguration, IDataProtectionProvider dataProtectionProvider, IConfigurationRoot configuration, DeliveryService deliveryService, SignatureVerifier verifier, IServiceProvider provider, CollectionTools collectionTools, RelevantEntitiesService relevantEntities)
         {
             _connection = connection;
             _userManager = userManager;
@@ -266,7 +266,7 @@ namespace Kroeg.Server.Controllers
             var reader = new StreamReader(Request.Body);
             var data = ASObject.Parse(await reader.ReadToEndAsync());
 
-            if (!_entityConfiguration.IsActivity(data)) return StatusCode(403, "Not an activity?");
+            if (!EntityData.IsActivity(data)) return StatusCode(403, "Not an activity?");
 
             await _connection.OpenAsync();
 

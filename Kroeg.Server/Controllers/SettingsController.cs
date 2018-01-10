@@ -8,7 +8,7 @@ using Kroeg.Server.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Kroeg.ActivityStreams;
-using Kroeg.Server.Services.EntityStore;
+using Kroeg.EntityStore.Store;
 using Kroeg.Server.Tools;
 using Kroeg.Server.Salmon;
 using System.IdentityModel.Tokens.Jwt;
@@ -30,6 +30,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Data;
 using Dapper;
 using System.Data.Common;
+using Kroeg.ActivityPub;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -63,7 +64,7 @@ namespace Kroeg.Server.Controllers
         }
 
         private readonly IEntityStore _entityStore;
-        private readonly EntityData _entityData;
+        private readonly ServerConfig _entityData;
         private readonly JwtTokenSettings _tokenSettings;
         private readonly SignInManager<APUser> _signInManager;
         private readonly IServiceProvider _provider;
@@ -75,7 +76,7 @@ namespace Kroeg.Server.Controllers
         private readonly TemplateService _templateService;
         private readonly DbConnection _connection;
 
-        public SettingsController(DbConnection connection, IEntityStore entityStore, EntityData entityData, JwtTokenSettings tokenSettings, SignInManager<APUser> signInManager, IServiceProvider provider, IConfigurationRoot configuration, EntityFlattener flattener, UserManager<APUser> userManager, RelevantEntitiesService relevantEntities, CollectionTools collectionTools, TemplateService templateService)
+        public SettingsController(DbConnection connection, IEntityStore entityStore, ServerConfig entityData, JwtTokenSettings tokenSettings, SignInManager<APUser> signInManager, IServiceProvider provider, IConfigurationRoot configuration, EntityFlattener flattener, UserManager<APUser> userManager, RelevantEntitiesService relevantEntities, CollectionTools collectionTools, TemplateService templateService)
         {
             _connection = connection;
             _entityStore = entityStore;
@@ -192,7 +193,7 @@ namespace Kroeg.Server.Controllers
             var @object = Request.Form["object"];
             var file = Request.Form.Files["file"];
 
-            var handler = ActivatorUtilities.CreateInstance<GetEntityMiddleware.GetEntityHandler>(_provider, User);
+            var handler = ActivatorUtilities.CreateInstance<GetEntityHandler>(_provider, User);
             var obj = ASObject.Parse(@object);
             var mainObj = obj;
             if (obj["object"].Any())

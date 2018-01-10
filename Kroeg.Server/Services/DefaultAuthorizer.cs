@@ -7,9 +7,9 @@ namespace Kroeg.Server.Services
 {
     public class DefaultAuthorizer : IAuthorizer
     {
-        private readonly EntityData _entityData;
+        private readonly ServerConfig _entityData;
 
-        public DefaultAuthorizer(EntityData entityData)
+        public DefaultAuthorizer(ServerConfig entityData)
         {
             _entityData = entityData;
         }
@@ -19,7 +19,7 @@ namespace Kroeg.Server.Services
             if (entity.Type == "_blocks" && !entity.Data["attributedTo"].Any(a => a.Id == userId)) return false;
             if (entity.Type == "_blocked") return false;
             if (entity.Type == "https://www.w3.org/ns/activitystreams#OrderedCollection" || entity.Type == "https://www.w3.org/ns/activitystreams#Collection" || entity.Type.StartsWith("_")) return true;
-            if (_entityData.IsActor(entity.Data)) return true;
+            if (EntityData.IsActor(entity.Data)) return true;
 
             var audience = DeliveryService.GetAudienceIds(entity.Data);
             return (

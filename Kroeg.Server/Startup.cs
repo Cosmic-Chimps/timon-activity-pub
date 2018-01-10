@@ -13,7 +13,7 @@ using Kroeg.Server.Configuration;
 using Kroeg.Server.Middleware;
 using Kroeg.Server.Models;
 using Kroeg.Server.Services;
-using Kroeg.Server.Services.EntityStore;
+using Kroeg.EntityStore.Store;
 using Kroeg.Server.Tools;
 using Kroeg.Server.Services.Notifiers;
 using Microsoft.AspNetCore.Http;
@@ -29,7 +29,10 @@ using System.Runtime.Loader;
 using System.Collections.Generic;
 using Kroeg.Server.Middleware.Handlers;
 using System.IO;
-using SharpRaven;
+using Kroeg.Server.Middleware.Handlers.Shared;
+using Kroeg.Server.Middleware.Handlers.ServerToServer;
+using Kroeg.Server.Middleware.Handlers.ClientToServer;
+using Kroeg.Server.Middleware.Renderers;
 
 namespace Kroeg.Server
 {
@@ -103,8 +106,9 @@ namespace Kroeg.Server
             };
             services.AddSingleton(tokenSettings);
 
-            services.AddSingleton(new EntityData(Configuration.GetSection("Kroeg"))
-            {
+            services.AddSingleton(new ServerConfig(Configuration.GetSection("Kroeg")));
+
+            services.AddSingleton<URLService>(a => new URLService(a.GetService<ServerConfig>()) {
                 EntityNames = Configuration.GetSection("EntityNames")
             });
 
@@ -115,7 +119,6 @@ namespace Kroeg.Server
 
             services.AddTransient<DeliveryService>();
             services.AddTransient<RelevantEntitiesService>();
-            services.AddTransient<ActivityService>();
 
             services.AddScoped<TripleEntityStore>();
             services.AddScoped<CollectionTools>();
@@ -165,10 +168,45 @@ namespace Kroeg.Server
                 }
             }
 
+            ServerConfig.ClientToServerHandlers.AddRange(new Type[] {
+                typeof(ObjectWrapperHandler),
+                typeof(ActivityMissingFieldsHandler),
+                typeof(CreateActivityHandler),
+                // commit changes before modifying collections
+                typeof(UpdateDeleteActivityHandler),
+                typeof(CommitChangesHandler),
+                typeof(AcceptRejectFollowHandler),
+                typeof(FollowLikeHandler),
+                typeof(AddRemoveActivityHandler),
+                typeof(UndoActivityHandler),
+                typeof(BlockHandler),
+                typeof(CreateActorHandler),
+                typeof(DeliveryHandler)
+            });
+
+            ServerConfig.ServerToServerHandlers.AddRange(new Type[] {
+                typeof(VerifyOwnershipHandler),
+                typeof(DeleteHandler),
+                typeof(FollowResponseHandler),
+                typeof(LikeFollowAnnounceHandler),
+                typeof(AddRemoveActivityHandler),
+                typeof(UndoHandler),
+                typeof(CreateHandler),
+                typeof(DeliveryHandler)
+            });
+
+            ServerConfig.Converters.AddRange(new IConverterFactory[]
+            {
+                new AS2ConverterFactory()
+            });
+
             foreach (var extra in Configuration.GetSection("Kroeg").GetSection("Filters").GetChildren())
             {
                 if (typeMap.ContainsKey(extra.Value))
-                    EntityData.ExtraFilters.Add(typeMap[extra.Value]);
+                {
+                    ServerConfig.ClientToServerHandlers.Add(typeMap[extra.Value]);
+                    ServerConfig.ServerToServerHandlers.Add(typeMap[extra.Value]);
+                }
             }
 
             services.AddScoped<DatabaseManager>();
@@ -196,7 +234,7 @@ namespace Kroeg.Server
                 ActivatorUtilities.CreateInstance<BackgroundTaskQueuer>(serviceProvider);
             }
 
-            var sevc = app.ApplicationServices.GetRequiredService<EntityData>();
+            var sevc = app.ApplicationServices.GetRequiredService<ServerConfig>();
             await ActivityStreams.ASObject.SetContext(JsonLDConfig.GetContext(true), sevc.BaseUri + "render/context");
         }
     }

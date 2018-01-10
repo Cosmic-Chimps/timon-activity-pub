@@ -5,7 +5,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Kroeg.Server.Middleware.Handlers;
 using Kroeg.Server.Models;
-using Kroeg.Server.Services.EntityStore;
+using Kroeg.EntityStore.Store;
 
 
 namespace Kroeg.TestFilter

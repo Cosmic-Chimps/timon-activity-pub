@@ -12,7 +12,7 @@ using System.Xml.Linq;
 using Kroeg.ActivityStreams;
 using Kroeg.Server.Configuration;
 using Kroeg.Server.Models;
-using Kroeg.Server.Services.EntityStore;
+using Kroeg.EntityStore.Store;
 using Kroeg.Server.Tools;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.DataProtection;
