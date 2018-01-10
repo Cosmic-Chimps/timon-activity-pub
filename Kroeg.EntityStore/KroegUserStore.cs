@@ -4,10 +4,10 @@ using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
-using Kroeg.Server.Models;
+using Kroeg.EntityStore.Models;
 using Microsoft.AspNetCore.Identity;
 
-namespace Kroeg.Server.Services
+namespace Kroeg.EntityStore
 {
     public class KroegUserStore : IUserStore<APUser>, IUserPasswordStore<APUser>, IRoleStore<IdentityRole>
     {

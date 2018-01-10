@@ -8,9 +8,8 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
 using Kroeg.EntityStore.Store;
-using Kroeg.Server.Middleware.Renderers;
 
-namespace Kroeg.Server.Tools
+namespace Kroeg.EntityStore.Services
 {
     public class ServerConfig
     {

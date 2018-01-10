@@ -6,13 +6,10 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using Kroeg.ActivityStreams;
-using Kroeg.Server.BackgroundTasks;
 using Kroeg.Server.Configuration;
-using Kroeg.Server.Services;
+
 using Kroeg.EntityStore.Store;
-using Kroeg.Server.Services.Notifiers;
 using Kroeg.Server.Services.Template;
-using Kroeg.Server.Tools;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +17,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using Npgsql.Logging;
+using Kroeg.EntityStore.Services;
+using Kroeg.EntityStore;
+using Kroeg.EntityStore.Notifier;
+using Kroeg.EntityStore.Salmon;
+using Kroeg.ActivityPub.Services;
+using Kroeg.Services;
 
 namespace Kroeg.Server.ConsoleSystem
 {
@@ -157,7 +160,7 @@ namespace Kroeg.Server.ConsoleSystem
                 var httpAccessor = new _nullHttpContextAccessor();
                 var fakeEntityService = provider.GetService<FakeEntityService>();
                 var keyService = provider.GetService<KeyService>();
-                var retrieving = new RetrievingEntityStore(triple, flattener, provider, keyService, httpAccessor);
+                var retrieving = new EntityStore.Store.RetrievingEntityStore(triple, flattener, provider, keyService, httpAccessor);
                 return new FakeEntityStore(fakeEntityService, retrieving);
             });
             _services.AddTransient<TemplateService>();

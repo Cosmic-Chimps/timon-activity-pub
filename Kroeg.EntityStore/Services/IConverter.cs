@@ -7,9 +7,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Kroeg.Server.Models;
+using Kroeg.EntityStore.Models;
 
-namespace Kroeg.Server.Middleware.Renderers
+namespace Kroeg.EntityStore.Services
 {
     public interface IConverterFactory
     {

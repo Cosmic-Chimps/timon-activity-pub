@@ -1,5 +1,4 @@
 ﻿using Kroeg.EntityStore.Store;
-using Kroeg.Server.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -7,12 +6,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Kroeg.ActivityStreams;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json.Linq;
 using System.IO;
-using Kroeg.Server.Models;
-using Newtonsoft.Json;
+using Kroeg.EntityStore.Models;
+using Kroeg.EntityStore.Services;
 
-namespace Kroeg.Server.Middleware.Renderers
+namespace Kroeg.ActivityPub
 {
     public class AS2ConverterFactory : IConverterFactory
     {

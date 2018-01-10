@@ -9,7 +9,7 @@ using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
 using Kroeg.EntityStore.Store;
 
-namespace Kroeg.Server.Tools
+namespace Kroeg.EntityStore.Services
 {
     public static class EntityData
     {

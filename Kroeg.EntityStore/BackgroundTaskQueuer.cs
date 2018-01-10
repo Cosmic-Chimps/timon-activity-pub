@@ -3,17 +3,17 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Kroeg.Server.Models;
+using Kroeg.EntityStore.Models;
 using Microsoft.Extensions.Logging;
-using Kroeg.Server.Services;
 using System.Data;
 using Dapper;
 using Dapper.Contrib.Extensions;
 using System.Data.Common;
 using Npgsql;
 using Microsoft.Extensions.Configuration;
+using Kroeg.EntityStore.Notifier;
 
-namespace Kroeg.Server.BackgroundTasks
+namespace Kroeg.EntityStore
 {
     public class BackgroundTaskQueuer
     {

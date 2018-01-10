@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using Kroeg.Server.Models;
+using Kroeg.EntityStore.Models;
 
 namespace Kroeg.EntityStore.Store
 {

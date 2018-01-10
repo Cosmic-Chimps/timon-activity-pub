@@ -4,16 +4,15 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Kroeg.ActivityStreams;
-using Kroeg.Server.Models;
-using Kroeg.Server.Services;
+using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
-using Kroeg.Server.Tools;
-using Kroeg.Server.Salmon;
 using System.Data;
 using Dapper;
 using System.Data.Common;
+using Kroeg.Services;
+using Kroeg.EntityStore.Services;
 
-namespace Kroeg.Server.Middleware.Handlers.ClientToServer
+namespace Kroeg.ActivityPub.ClientToServer
 {
     public class CreateActorHandler : BaseHandler
     {

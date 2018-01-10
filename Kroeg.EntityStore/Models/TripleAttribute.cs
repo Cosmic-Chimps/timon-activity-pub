@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Kroeg.Server.Models
+namespace Kroeg.EntityStore.Models
 {
     public class TripleAttribute
     {

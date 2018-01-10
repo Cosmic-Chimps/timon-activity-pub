@@ -6,11 +6,9 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Dapper;
-using Kroeg.Server.Middleware.Renderers;
-using Kroeg.Server.Models;
-using Kroeg.Server.Services;
+using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
-using Kroeg.Server.Tools;
+using Kroeg.ActivityPub.Services;
 
 namespace Kroeg.Server.ConsoleSystem.Commands
 {
@@ -18,10 +16,9 @@ namespace Kroeg.Server.ConsoleSystem.Commands
     {
         private readonly TripleEntityStore _entityStore;
         private readonly NpgsqlConnection _connection;
-        private readonly EntityFlattener _entityFlattener;
         private readonly IServiceProvider _provider;
 
-        public CalculateVisibilityCommand(TripleEntityStore entityStore, NpgsqlConnection connection, EntityFlattener entityFlattener, IServiceProvider provider)
+        public CalculateVisibilityCommand(TripleEntityStore entityStore, NpgsqlConnection connection, IServiceProvider provider)
         {
             _entityStore = entityStore;
             _connection = connection;

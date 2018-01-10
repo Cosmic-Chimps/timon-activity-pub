@@ -4,8 +4,8 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Kroeg.ActivityStreams;
-using Kroeg.Server.Models;
-using Kroeg.Server.Services;
+using Kroeg.EntityStore.Models;
+using Kroeg.Services;
 using Microsoft.AspNetCore.Http;
 
 namespace Kroeg.EntityStore.Store

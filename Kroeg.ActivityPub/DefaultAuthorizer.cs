@@ -1,9 +1,11 @@
 using System.Linq;
 using System.Threading.Tasks;
-using Kroeg.Server.Models;
-using Kroeg.Server.Tools;
+using Kroeg.ActivityPub.Services;
+using Kroeg.EntityStore.Models;
+using Kroeg.EntityStore.Services;
+using Kroeg.Services;
 
-namespace Kroeg.Server.Services
+namespace Kroeg.ActivityPub
 {
     public class DefaultAuthorizer : IAuthorizer
     {

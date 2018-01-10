@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Kroeg.Server.Middleware.Handlers;
-using Kroeg.Server.Models;
+using Kroeg.Services;
+using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
 
 

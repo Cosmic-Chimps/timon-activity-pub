@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using Kroeg.Server.Models;
+using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
@@ -8,7 +8,7 @@ using System.Linq;
 using System;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
-using Kroeg.Server.Services;
+using Kroeg.EntityStore.Services;
 
 namespace Kroeg.Server.Controllers
 {

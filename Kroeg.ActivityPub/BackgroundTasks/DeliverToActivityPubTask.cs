@@ -1,22 +1,21 @@
-﻿using System;
+﻿using Kroeg.EntityStore;
+using Kroeg.EntityStore.Models;
+using Kroeg.EntityStore.Salmon;
+using Kroeg.EntityStore.Services;
+using Kroeg.EntityStore.Store;
+using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
+using System;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using Kroeg.Server.Models;
-using Kroeg.Server.Tools;
-using Newtonsoft.Json;
-using Kroeg.Server.Services;
-using Kroeg.ActivityStreams;
-using Kroeg.Server.Middleware;
-using Microsoft.Extensions.DependencyInjection;
-using System.Security.Claims;
-using System.Linq;
-using Kroeg.Server.Salmon;
-using Kroeg.EntityStore.Store;
-using Kroeg.ActivityPub;
+using Kroeg.Services;
+using Kroeg.ActivityPub.Services;
 
-namespace Kroeg.Server.BackgroundTasks
+namespace Kroeg.ActivityPub.BackgroundTasks
 {
     public class DeliverToActivityPubData
     {

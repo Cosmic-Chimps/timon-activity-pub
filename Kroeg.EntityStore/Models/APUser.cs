@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
-namespace Kroeg.Server.Models
+namespace Kroeg.EntityStore.Models
 {
     public class APUser
     {

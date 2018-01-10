@@ -1,33 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Kroeg.Server.Models;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
+using Kroeg.EntityStore.Models;
 using Kroeg.ActivityStreams;
 using Kroeg.EntityStore.Store;
-using Kroeg.Server.Tools;
-using Kroeg.Server.Salmon;
-using System.IdentityModel.Tokens.Jwt;
 using Kroeg.Server.Configuration;
-using Microsoft.AspNetCore.Http.Authentication;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Http;
-using Kroeg.Server.Middleware;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
-using Kroeg.Server.Services;
-using Newtonsoft.Json.Linq;
-using Kroeg.Server.Middleware.Handlers.ClientToServer;
-using Kroeg.Server.Middleware.Handlers.Shared;
 using System.IO;
-using System.Data;
 using Dapper;
 using System.Data.Common;
+using Kroeg.EntityStore.Services;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 

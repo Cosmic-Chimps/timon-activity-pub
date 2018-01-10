@@ -6,7 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 
-namespace Kroeg.Server.Tools
+namespace Kroeg.EntityStore
 {
     public class ASN1
     {

@@ -1,5 +1,5 @@
 ﻿using Kroeg.ActivityStreams;
-using Kroeg.Server.Models;
+using Kroeg.EntityStore.Models;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System;
@@ -12,7 +12,7 @@ using System.Data.Common;
 using Dapper;
 using System.Collections;
 
-namespace Kroeg.Server.Services
+namespace Kroeg.EntityStore.Services
 {
     public class RelevantEntitiesService
     {

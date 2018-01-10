@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Kroeg.Server.Models;
-using Kroeg.Server.Services;
+using Kroeg.EntityStore.Models;
+using Kroeg.EntityStore.Services;
 using Kroeg.EntityStore.Store;
-using Kroeg.Server.Tools;
+using Kroeg.Services;
 
-namespace Kroeg.Server.Middleware.Handlers.ClientToServer
+namespace Kroeg.ActivityPub.ClientToServer
 {
     public class AcceptRejectFollowHandler : BaseHandler
     {

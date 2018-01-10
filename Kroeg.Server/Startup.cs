@@ -8,14 +8,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Kroeg.Server.BackgroundTasks;
 using Kroeg.Server.Configuration;
 using Kroeg.Server.Middleware;
-using Kroeg.Server.Models;
-using Kroeg.Server.Services;
+using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
-using Kroeg.Server.Tools;
-using Kroeg.Server.Services.Notifiers;
 using Microsoft.AspNetCore.Http;
 using Kroeg.Server.Services.Template;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -27,12 +23,17 @@ using System.Data.Common;
 using Npgsql.Logging;
 using System.Runtime.Loader;
 using System.Collections.Generic;
-using Kroeg.Server.Middleware.Handlers;
+using Kroeg.Services;
 using System.IO;
-using Kroeg.Server.Middleware.Handlers.Shared;
-using Kroeg.Server.Middleware.Handlers.ServerToServer;
-using Kroeg.Server.Middleware.Handlers.ClientToServer;
-using Kroeg.Server.Middleware.Renderers;
+using Kroeg.ActivityPub.Shared;
+using Kroeg.ActivityPub.ServerToServer;
+using Kroeg.ActivityPub.ClientToServer;
+using Kroeg.ActivityPub;
+using Kroeg.EntityStore;
+using Kroeg.EntityStore.Services;
+using Kroeg.EntityStore.Notifier;
+using Kroeg.EntityStore.Salmon;
+using Kroeg.ActivityPub.Services;
 
 namespace Kroeg.Server
 {

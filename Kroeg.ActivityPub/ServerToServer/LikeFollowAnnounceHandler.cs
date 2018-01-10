@@ -1,19 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Kroeg.Server.Models;
-using Kroeg.Server.Services;
+using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
-using Kroeg.Server.Tools;
 using Kroeg.ActivityStreams;
 using Microsoft.Extensions.DependencyInjection;
 using System.Data.Common;
-using Kroeg.ActivityPub;
-using Kroeg.Server.BackgroundTasks;
+using Kroeg.Services;
+using Kroeg.EntityStore.Services;
+using Kroeg.ActivityPub.BackgroundTasks;
 
-namespace Kroeg.Server.Middleware.Handlers.ServerToServer
+namespace Kroeg.ActivityPub.ServerToServer
 {
     public class LikeFollowAnnounceHandler : BaseHandler
     {

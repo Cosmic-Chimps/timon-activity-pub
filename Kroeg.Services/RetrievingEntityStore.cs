@@ -1,10 +1,7 @@
 ﻿using System.Net.Http;
 using System.Threading.Tasks;
 using Kroeg.ActivityStreams;
-using Kroeg.Server.Models;
-using Kroeg.Server.Services;
-using Kroeg.Server.Tools;
-using Kroeg.Server.Middleware.Renderers;
+using Kroeg.EntityStore.Models;
 using System.Collections.Generic;
 using System;
 using System.Linq;
@@ -12,6 +9,9 @@ using System.Xml.Linq;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using Microsoft.Extensions.DependencyInjection;
+using Kroeg.EntityStore.Services;
+using Kroeg.EntityStore.Salmon;
+using Kroeg.Services;
 
 namespace Kroeg.EntityStore.Store
 {

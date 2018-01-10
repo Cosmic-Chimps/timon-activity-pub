@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Kroeg.Server.Models
+namespace Kroeg.EntityStore.Models
 {
     public class WebSubClient
     {

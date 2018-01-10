@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Kroeg.Server.Models;
+using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
+using Kroeg.Services;
 
-namespace Kroeg.Server.Middleware.Handlers.ServerToServer
+namespace Kroeg.ActivityPub.ServerToServer
 {
     public class VerifyOwnershipHandler : BaseHandler
     {

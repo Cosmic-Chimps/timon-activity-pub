@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace Kroeg.Server.Mastodon
+namespace Kroeg.Mastodon
 {
     public class Application
     {

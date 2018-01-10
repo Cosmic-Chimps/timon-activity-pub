@@ -1,5 +1,4 @@
-﻿using Kroeg.Server.Models;
-using Kroeg.Server.Services;
+﻿using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
 using System;
 using System.Collections.Generic;
@@ -7,8 +6,10 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Kroeg.ActivityStreams;
+using Kroeg.Services;
+using Kroeg.EntityStore.Services;
 
-namespace Kroeg.Server.Middleware.Handlers.ServerToServer
+namespace Kroeg.ActivityPub.ServerToServer
 {
     public class FollowResponseHandler : BaseHandler
     {

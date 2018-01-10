@@ -8,7 +8,7 @@ using Dapper;
 using Newtonsoft.Json;
 using Npgsql;
 
-namespace Kroeg.Server.Services.Notifiers
+namespace Kroeg.EntityStore.Notifier
 {
     public class LocalNotifier : INotifier
     {

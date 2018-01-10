@@ -3,17 +3,16 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using Kroeg.ActivityStreams;
-using Kroeg.Server.Models;
+using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
-using Kroeg.Server.Tools;
 using System;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
-using System.Data;
 using Dapper;
 using System.Data.Common;
+using Kroeg.EntityStore.Notifier;
 
-namespace Kroeg.Server.Services
+namespace Kroeg.EntityStore.Services
 {
     public class CollectionTools
     {

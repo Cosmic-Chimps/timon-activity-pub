@@ -3,22 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Kroeg.ActivityStreams;
-using Kroeg.Server.BackgroundTasks;
-using Kroeg.Server.Models;
+using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
-using Kroeg.Server.Tools;
-using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
-using Microsoft.IdentityModel.Tokens;
-using System.Net.Http;
-using System.Security.Cryptography;
-using System.Security.Claims;
-using System.IdentityModel.Tokens.Jwt;
-using System.Data;
-using Dapper;
 using System.Data.Common;
+using Kroeg.EntityStore.Services;
+using Kroeg.ActivityPub.BackgroundTasks;
 
-namespace Kroeg.Server.Services
+namespace Kroeg.ActivityPub.Services
 {
     public class DeliveryService
     {

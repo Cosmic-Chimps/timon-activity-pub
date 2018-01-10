@@ -2,13 +2,12 @@ using System.Data;
 using System.Data.Common;
 using System.Threading.Tasks;
 using System.Net.Http;
-using Kroeg.Server.Salmon;
 using System.Text;
 using System;
 using Dapper;
-using Kroeg.Server.Models;
+using Kroeg.EntityStore.Models;
 
-namespace Kroeg.Server.Services
+namespace Kroeg.EntityStore.Salmon
 {
     public class KeyService
     {

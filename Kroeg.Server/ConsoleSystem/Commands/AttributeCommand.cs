@@ -2,7 +2,7 @@ using System;
 using System.Data.Common;
 using System.Threading.Tasks;
 using Dapper;
-using Kroeg.Server.Models;
+using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
 
 namespace Kroeg.Server.ConsoleSystem.Commands

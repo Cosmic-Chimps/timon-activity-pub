@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
-using Kroeg.Server.Models;
+using Kroeg.EntityStore.Models;
 
-namespace Kroeg.Server.Services
+namespace Kroeg.Services
 {
     public interface IAuthorizer
     {

@@ -10,17 +10,18 @@ using System.Threading.Tasks;
 using Kroeg.ActivityStreams;
 using Kroeg.EntityStore.Store;
 using Kroeg.Server.Configuration;
-using Kroeg.Server.Middleware.Handlers;
-using Kroeg.Server.Models;
-using Kroeg.Server.Services;
-using Kroeg.Server.Tools;
+using Kroeg.Services;
+using Kroeg.EntityStore.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Npgsql;
 using System.Net.WebSockets;
 using System.Text;
-using Kroeg.Server.Middleware.Handlers.Shared;
+using Kroeg.ActivityPub.Shared;
+using Kroeg.EntityStore.Services;
+using Kroeg.EntityStore.Notifier;
+using Kroeg.ActivityPub.Services;
 
 namespace Kroeg.ActivityPub
 {

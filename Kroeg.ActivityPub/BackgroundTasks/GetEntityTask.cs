@@ -1,20 +1,10 @@
 ﻿using System;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
 using System.Threading.Tasks;
-using Kroeg.Server.Models;
-using Kroeg.Server.Tools;
-using Newtonsoft.Json;
-using Kroeg.Server.Services;
-using Kroeg.ActivityStreams;
-using Kroeg.Server.Middleware;
-using Microsoft.Extensions.DependencyInjection;
-using System.Security.Claims;
-using System.Linq;
+using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
+using Kroeg.EntityStore;
 
-namespace Kroeg.Server.BackgroundTasks
+namespace Kroeg.ActivityPub.BackgroundTasks
 {
     public class GetEntityTask : BaseTask<string, GetEntityTask>
     {

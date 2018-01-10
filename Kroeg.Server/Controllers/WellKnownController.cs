@@ -1,18 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
-using System.Net.Http;
-using Kroeg.Server.Models;
 using Kroeg.EntityStore.Store;
-using Kroeg.Server.Tools;
-using Kroeg.Server.Services;
-using System.Data;
-using Dapper;
 using System.Data.Common;
+using Kroeg.EntityStore.Services;
+using Kroeg.EntityStore.Salmon;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -99,7 +92,7 @@ namespace Kroeg.Server.Controllers
             };
 
             var salmon = await _keyService.GetKey(item.Id);
-            var magicKey = new Salmon.MagicKey(salmon.PrivateKey);
+            var magicKey = new MagicKey(salmon.PrivateKey);
 
             result.links.Add(new WebfingerLink
                 {

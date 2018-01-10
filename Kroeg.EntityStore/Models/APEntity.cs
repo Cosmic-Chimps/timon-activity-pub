@@ -4,7 +4,7 @@ using System.Linq;
 using Kroeg.ActivityStreams;
 using System;
 
-namespace Kroeg.Server.Models
+namespace Kroeg.EntityStore.Models
 {
     public class APEntity
     {

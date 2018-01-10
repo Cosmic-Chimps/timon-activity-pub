@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Kroeg.Server.Models
+namespace Kroeg.EntityStore.Models
 {
     public class JWKEntry
     {

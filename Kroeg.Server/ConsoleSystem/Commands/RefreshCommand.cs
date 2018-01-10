@@ -5,10 +5,10 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Dapper;
-using Kroeg.Server.Middleware.Renderers;
-using Kroeg.Server.Models;
+using Kroeg.ActivityPub;
+using Kroeg.EntityStore.Models;
+using Kroeg.EntityStore.Services;
 using Kroeg.EntityStore.Store;
-using Kroeg.Server.Tools;
 
 namespace Kroeg.Server.ConsoleSystem.Commands
 {

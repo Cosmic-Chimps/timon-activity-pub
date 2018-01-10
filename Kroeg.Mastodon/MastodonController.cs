@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Kroeg.Server.Configuration;
-using Kroeg.Server.Models;
-using Kroeg.Server.Services;
+using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
 using Microsoft.AspNetCore.Mvc;
+using Kroeg.EntityStore.Services;
 
-namespace Kroeg.Server.Controllers
+namespace Kroeg.Mastodon
 {
     [Route("/api/v1/")]
     public class MastodonController : Controller
@@ -24,9 +24,9 @@ namespace Kroeg.Server.Controllers
             _collectionTools = collectionTools;
         }
 
-        private async Task<Mastodon.Account> _processAccount(APEntity entity)
+        private async Task<Account> _processAccount(APEntity entity)
         {
-            var result = new Mastodon.Account
+            var result = new Account
             {
                 id = Uri.EscapeDataString(entity.Id),
                 username = (string) entity.Data["preferredUsername"].FirstOrDefault()?.Primitive ?? entity.Id,
@@ -67,14 +67,14 @@ namespace Kroeg.Server.Controllers
             return result;         
         }
 
-        private async Task<Mastodon.Status> _translateNote(APEntity note, string id)
+        private async Task<Status> _translateNote(APEntity note, string id)
         {
             if (note == null) return null;
             if (note.Type != "https://www.w3.org/ns/activitystreams#Note") return null;
 
             var attributed = await _entityStore.GetEntity(note.Data["attributedTo"].First().Id, true);
 
-            var status = new Mastodon.Status
+            var status = new Status
             {
                 id = id ?? Uri.EscapeDataString(note.Id),
                 uri = note.Id,
@@ -84,7 +84,7 @@ namespace Kroeg.Server.Controllers
                 reblog = null,
                 content = (string) note.Data["content"].First().Primitive,
                 created_at = DateTime.Parse((string) note.Data["published"].FirstOrDefault()?.Primitive ?? note.Updated.ToString()),
-                emojis = new List<Mastodon.Emoji>(),
+                emojis = new List<Emoji>(),
                 reblogs_count = 0,
                 favourites_count = 0,
                 reblogged = false,
@@ -96,10 +96,10 @@ namespace Kroeg.Server.Controllers
                             : note.Data["cc"].Any(a => a.Id == "https://www.w3.org/ns/activitystreams#Public") ? "unlisted"
                             : note.Data["to"].Any(a => a.Id == attributed.Data["followers"].First().Id) ? "private"
                             : "direct",
-                media_attachments = new List<Mastodon.Attachment>(),
-                mentions = new List<Mastodon.Mention>(),
-                tags = new List<Mastodon.Tag>(),
-                application = new Mastodon.Application { Name = "Kroeg", Website = "https://puckipedia.com/kroeg" },
+                media_attachments = new List<Attachment>(),
+                mentions = new List<Mention>(),
+                tags = new List<Tag>(),
+                application = new Application { Name = "Kroeg", Website = "https://puckipedia.com/kroeg" },
                 language = null,
                 pinned = false
             };
@@ -111,17 +111,17 @@ namespace Kroeg.Server.Controllers
                 {
                     var user = await _entityStore.GetEntity(obj["href"].First().Id, true);
                     if (user == null) continue;
-                    status.mentions.Add(new Mastodon.Mention { id = Uri.EscapeDataString(user.Id), url = user.Id, username = (string) user.Data["preferredUsername"].FirstOrDefault().Primitive ?? user.Id, acct = user.Id });
+                    status.mentions.Add(new Mention { id = Uri.EscapeDataString(user.Id), url = user.Id, username = (string) user.Data["preferredUsername"].FirstOrDefault().Primitive ?? user.Id, acct = user.Id });
                 }
                 else if (obj != null && obj.Type.Contains("http://joinmastodon.org/ns#Emoji"))
                 {
                     var emoji = obj["icon"].First().SubObject ?? (await _entityStore.GetEntity(obj["icon"].First().Id, false))?.Data;
                     if (emoji == null) continue;
-                    status.emojis.Add(new Mastodon.Emoji { shortcode = ((string)obj["name"].FirstOrDefault()?.Primitive)?.Trim(':'), url = emoji["url"].FirstOrDefault()?.Id, static_url = emoji["url"].FirstOrDefault()?.Id });
+                    status.emojis.Add(new Emoji { shortcode = ((string)obj["name"].FirstOrDefault()?.Primitive)?.Trim(':'), url = emoji["url"].FirstOrDefault()?.Id, static_url = emoji["url"].FirstOrDefault()?.Id });
                 }
                 else if (obj != null && obj.Type.Contains("https://www.w3.org/ns/activitystreams#Hashtag"))
                 {
-                    status.tags.Add(new Mastodon.Tag { name = ((string)obj["name"].FirstOrDefault()?.Primitive)?.TrimStart('#'), url = obj["href"].FirstOrDefault()?.Id });
+                    status.tags.Add(new Tag { name = ((string)obj["name"].FirstOrDefault()?.Primitive)?.TrimStart('#'), url = obj["href"].FirstOrDefault()?.Id });
                 }
             }
             int i = 0;
@@ -135,7 +135,7 @@ namespace Kroeg.Server.Controllers
                 {
                     var mediaType = (string) obj["mediaType"].First().Primitive ?? "unknown";
                     var url = (string) obj["url"].First().Id;
-                    var attachment = new Mastodon.Attachment
+                    var attachment = new Attachment
                     {
                         id = obj.Id ?? (note.Id + "#attachment/" + i.ToString()),
                         type = mediaType.Split('/')[0],
@@ -143,9 +143,9 @@ namespace Kroeg.Server.Controllers
                         remote_url = url,
                         preview_url = url,
                         text_url = url,
-                        meta = new Dictionary<string, Mastodon.AttachmentMeta> {
-                            ["small"] = new Mastodon.AttachmentMeta { width = -1, height = -1, size = -1, aspect = -1 },
-                            ["original"] = new Mastodon.AttachmentMeta { width = -1, height = -1, size = -1, aspect = -1 }
+                        meta = new Dictionary<string, AttachmentMeta> {
+                            ["small"] = new AttachmentMeta { width = -1, height = -1, size = -1, aspect = -1 },
+                            ["original"] = new AttachmentMeta { width = -1, height = -1, size = -1, aspect = -1 }
                         },
                         description = (string) obj["name"].FirstOrDefault()?.Primitive
                     };
@@ -163,7 +163,7 @@ namespace Kroeg.Server.Controllers
             return status;
         }
 
-        private async Task<Mastodon.Status> _translateStatus(CollectionTools.EntityCollectionItem item)
+        private async Task<Status> _translateStatus(CollectionTools.EntityCollectionItem item)
         {
             var isCreate = item.Entity.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Create");
             var isAnnounce = item.Entity.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Announce");
@@ -174,7 +174,7 @@ namespace Kroeg.Server.Controllers
 
             if (isCreate) return inner;
 
-            return new Mastodon.Status
+            return new Status
             {
                 id = item.CollectionItemId.ToString(),
                 uri = inner.uri,
@@ -203,12 +203,12 @@ namespace Kroeg.Server.Controllers
             };
         }
 
-        private async Task<Mastodon.Notification> _translateNotification(CollectionTools.EntityCollectionItem item)
+        private async Task<Notification> _translateNotification(CollectionTools.EntityCollectionItem item)
         {
             var userId = User.FindFirst(JwtTokenSettings.ActorClaim).Value;
             if (item.Entity.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Follow"))
             {
-                return new Mastodon.Notification
+                return new Notification
                 {
                     id = item.CollectionItemId.ToString(),
                     type = "follow",
@@ -225,7 +225,7 @@ namespace Kroeg.Server.Controllers
                 var status = await _translateNote(note, null);
                 if (status == null) return null;
 
-                return new Mastodon.Notification
+                return new Notification
                 {
                     id = item.CollectionItemId.ToString(),
                     type = item.Entity.Data.Type.Contains("https://www.w3.org/ns/activitystreams#Announce") ? "reblog" : "favourite",
@@ -242,7 +242,7 @@ namespace Kroeg.Server.Controllers
                 var status = await _translateNote(note, null);
                 if (status == null) return null;
 
-                return new Mastodon.Notification
+                return new Notification
                 {
                     id = item.CollectionItemId.ToString(),
                     type = "mention",
@@ -256,9 +256,9 @@ namespace Kroeg.Server.Controllers
         }
 
         [HttpPost("apps")]
-        public IActionResult RegisterApplication(Mastodon.Application.Request request)
+        public IActionResult RegisterApplication(Application.Request request)
         {
-            return Json(new Mastodon.Application.Response
+            return Json(new Application.Response
             {
                 Id = "1",
                 ClientId = "id",
@@ -274,7 +274,7 @@ namespace Kroeg.Server.Controllers
 
             var user = await _entityStore.GetEntity(userId, false);
             var parsed = await _processAccount(user);
-            parsed.source = new Mastodon.Account.Source {
+            parsed.source = new Account.Source {
                 privacy = "public",
                 sensitive = false,
                 note = parsed.note
@@ -291,7 +291,7 @@ namespace Kroeg.Server.Controllers
 
             var user = await _entityStore.GetEntity(userId, false);
             var parsed = await _processAccount(user);
-            parsed.source = new Mastodon.Account.Source {
+            parsed.source = new Account.Source {
                 privacy = "public",
                 sensitive = false,
                 note = parsed.note
@@ -378,7 +378,7 @@ namespace Kroeg.Server.Controllers
                 item.Entity = await _entityStore.GetEntity(item.Entity.Data["object"].First().Id, true);
 
             if (item == null) return NotFound();
-            var res = new Mastodon.Context { ancestors = new List<Mastodon.Status>(), descendants = new List<Mastodon.Status>() };
+            var res = new Context { ancestors = new List<Status>(), descendants = new List<Status>() };
             while (item.Entity.Data["inReplyTo"].Any())
             {
                 var replyPost = await _entityStore.GetEntity(item.Entity.Data["inReplyTo"].First().Id, false);

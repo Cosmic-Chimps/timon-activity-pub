@@ -1,7 +1,6 @@
 ﻿using Kroeg.ActivityStreams;
-using Kroeg.Server.Models;
+using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
-using Kroeg.Server.Tools;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -18,8 +17,9 @@ using System.Threading.Tasks;
 using System.Data;
 using Dapper;
 using System.Data.Common;
+using Kroeg.EntityStore;
 
-namespace Kroeg.Server.Services
+namespace Kroeg.Services
 {
     public class SignatureVerifier
     {
@@ -40,6 +40,7 @@ namespace Kroeg.Server.Services
 
             if (!parameters.ContainsKey("keyId") || !parameters.ContainsKey("algorithm") || !parameters.ContainsKey("signature")) return new Tuple<bool, string>(false, null);
             if (!parameters.ContainsKey("headers")) parameters["headers"] = "date";
+
             var key = await _entityStore.GetEntity(parameters["keyId"], true);
             if (key == null) return new Tuple<bool, string>(false, null);
 

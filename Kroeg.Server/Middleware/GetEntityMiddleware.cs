@@ -1,43 +1,16 @@
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 using Kroeg.ActivityStreams;
-using Kroeg.Server.Configuration;
-using Kroeg.Server.Middleware.Handlers;
-using Kroeg.Server.Middleware.Handlers.ClientToServer;
-using Kroeg.Server.Middleware.Handlers.ServerToServer;
-using Kroeg.Server.Middleware.Handlers.Shared;
-using Kroeg.Server.Models;
-using Kroeg.Server.Salmon;
-using Kroeg.Server.Services;
+using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
-using Kroeg.Server.Tools;
 using Microsoft.Extensions.DependencyInjection;
-using Kroeg.Server.Middleware.Renderers;
-using System.Threading;
-using System.Security.Claims;
-using System.Collections.Concurrent;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using System.Net.WebSockets;
-using System.Security.Cryptography.X509Certificates;
-using System.Security.Cryptography;
 using Microsoft.Extensions.Primitives;
 using Microsoft.EntityFrameworkCore.Storage;
-using System.Data;
-using System.Transactions;
-using System.Data.Common;
-using Kroeg.Server.BackgroundTasks;
-using Npgsql;
 using Kroeg.ActivityPub;
+using Kroeg.EntityStore.Services;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 

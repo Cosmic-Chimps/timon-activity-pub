@@ -4,7 +4,7 @@ using System.Data.Common;
 using System.Linq;
 using Dapper;
 
-namespace Kroeg.Server.Services
+namespace Kroeg.EntityStore
 {
     public class DatabaseManager
     {

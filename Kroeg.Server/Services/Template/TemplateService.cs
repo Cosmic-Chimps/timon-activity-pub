@@ -1,18 +1,14 @@
-﻿using Kroeg.Server.Models;
+﻿using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
-using Kroeg.Server.Tools;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Jint;
 using Kroeg.ActivityStreams;
 using HtmlAgilityPack;
-using Jint.Parser.Ast;
 using System.Text.RegularExpressions;
 
 namespace Kroeg.Server.Services.Template

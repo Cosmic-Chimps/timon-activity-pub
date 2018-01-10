@@ -7,9 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Kroeg.ActivityStreams;
 using System.Collections.Generic;
-using Kroeg.Server.Tools;
 
-namespace Kroeg.Server.Salmon
+namespace Kroeg.EntityStore.Salmon
 {
     public class MagicKey
     {

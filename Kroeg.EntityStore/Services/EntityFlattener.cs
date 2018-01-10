@@ -2,13 +2,12 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Kroeg.ActivityStreams;
-using Kroeg.Server.Models;
+using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
 using Microsoft.AspNetCore.Http;
 using System;
-using Kroeg.Server.Services;
 
-namespace Kroeg.Server.Tools
+namespace Kroeg.EntityStore.Services
 {
     public class EntityFlattener
     {

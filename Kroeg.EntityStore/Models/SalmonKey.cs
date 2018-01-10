@@ -1,4 +1,4 @@
-﻿namespace Kroeg.Server.Models
+﻿namespace Kroeg.EntityStore.Models
 {
     public class SalmonKey
     {

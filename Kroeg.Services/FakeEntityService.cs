@@ -2,11 +2,11 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Kroeg.ActivityStreams;
-using Kroeg.Server.Models;
-using Kroeg.Server.Salmon;
-using Kroeg.Server.Tools;
+using Kroeg.EntityStore.Models;
+using Kroeg.EntityStore.Salmon;
+using Kroeg.EntityStore.Services;
 
-namespace Kroeg.Server.Services
+namespace Kroeg.Services
 {
     public class FakeEntityService
     {

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kroeg.ActivityStreams\Kroeg.ActivityStreams.csproj" />
+    <ProjectReference Include="..\Kroeg.EntityStore\Kroeg.EntityStore.csproj" />
+    <ProjectReference Include="..\Kroeg.Services\Kroeg.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+      <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="*" />
+      <PackageReference Include="Newtonsoft.Json" Version="*" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+</Project>

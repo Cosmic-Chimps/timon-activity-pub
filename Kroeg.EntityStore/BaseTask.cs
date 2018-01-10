@@ -2,13 +2,13 @@
 using Newtonsoft.Json;
 using System;
 using System.Threading.Tasks;
-using Kroeg.Server.Models;
+using Kroeg.EntityStore.Models;
 using System.Data;
 using Dapper;
 using System.Transactions;
 using System.Data.Common;
 
-namespace Kroeg.Server.BackgroundTasks
+namespace Kroeg.EntityStore
 {
     public abstract class BaseTask
     {
@@ -21,13 +21,17 @@ namespace Kroeg.Server.BackgroundTasks
 
         public static async Task Go(DbConnection connection, EventQueueItem item, IServiceProvider provider, DbTransaction transaction)
         {
-            var type = Type.GetType("Kroeg.Server.BackgroundTasks." + item.Action);
-
-            var resolved = (BaseTask)ActivatorUtilities.CreateInstance(provider, type, item);
+            var type = Type.GetType(item.Action);
+            BaseTask resolved = null;
 
             try
             {
-                await resolved.Go();
+                if (type != null)
+                {
+                    resolved = (BaseTask)ActivatorUtilities.CreateInstance(provider, type, item);
+                    await resolved.Go();
+                }
+
                 await connection.ExecuteAsync("DELETE from \"EventQueue\" where \"Id\" = @Id", new { Id = item.Id });
 
                 transaction.Commit();
@@ -60,7 +64,7 @@ namespace Kroeg.Server.BackgroundTasks
 
         public static async Task Make(T data, DbConnection connection, DateTime? nextAttempt = null)
         {
-            var type = typeof(TR).FullName.Replace("Kroeg.Server.BackgroundTasks.", "");
+            var type = typeof(TR).FullName;
 
             await connection.ExecuteAsync("insert into \"EventQueue\" (\"Action\", \"Added\", \"Data\", \"NextAttempt\", \"AttemptCount\") values (@Action, @Added, @Data, @NextAttempt, 0)",
                 new EventQueueItem

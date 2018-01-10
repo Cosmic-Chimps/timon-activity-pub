@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Kroeg.Server.Models;
+using Kroeg.EntityStore.Models;
 using Kroeg.EntityStore.Store;
 
-namespace Kroeg.Server.Middleware.Handlers
+namespace Kroeg.Services
 {
     public abstract class BaseHandler
     {
