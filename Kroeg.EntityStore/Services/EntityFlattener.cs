@@ -83,7 +83,8 @@ namespace Kroeg.EntityStore.Services
             "https://www.w3.org/ns/activitystreams#following", "https://www.w3.org/ns/activitystreams#followers",
             "https://www.w3.org/ns/activitystreams#partOf", "https://www.w3.org/ns/activitystreams#jwks",
             "https://www.w3.org/ns/activitystreams#uploadMedia", "https://puckipedia.com/kroeg/ns#settingsEndpoint",
-            "https://www.w3.org/ns/activitystreams#href", "https://puckipedia.com/kroeg/ns#relevantObjects"
+            "https://www.w3.org/ns/activitystreams#href", "https://puckipedia.com/kroeg/ns#relevantObjects",
+            "https://www.w3.org/ns/activitystreams#attributedTo"
         };
 
         private static readonly HashSet<string> UnflattenIfOwner = new HashSet<string>

@@ -57,7 +57,7 @@ export class RenderHost {
         if (this._storeActivityToken != null)
             this.store.deregister(this._storeActivityToken);
 
-        if (reload) this._dom.innerHTML = '<span class="renderhost_loading">🍺</span>';        
+        if (reload) this._dom.innerHTML = '<span class="renderhost_loading">🍺</span> ' + this._id;
 
         const handlers: {[name: string]: (oldValue: ASObject, newValue: ASObject) => void} = {};
         handlers[this._id] = this._reupdate.bind(this);
