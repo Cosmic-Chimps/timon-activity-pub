@@ -18,70 +18,68 @@ using Kroeg.EntityStore.Services;
 
 namespace Kroeg.Server.Controllers
 {
-    [Route("admin"), Authorize("admin")]
-    public class AdminController : Controller
+  [Route("admin"), Authorize("admin")]
+  public class AdminController : Controller
+  {
+    private readonly DbConnection _connection;
+    private readonly IEntityStore _entityStore;
+    private readonly JwtTokenSettings _tokenSettings;
+    private readonly SignInManager<APUser> _signInManager;
+    private readonly IServiceProvider _provider;
+    private readonly IConfiguration _configuration;
+    private readonly EntityFlattener _flattener;
+    private readonly UserManager<APUser> _userManager;
+    private readonly RelevantEntitiesService _relevantEntities;
+    private readonly CollectionTools _collectionTools;
+
+    public AdminController(DbConnection connection, IEntityStore entityStore, JwtTokenSettings tokenSettings, SignInManager<APUser> signInManager, IServiceProvider provider, IConfiguration configuration, EntityFlattener flattener, UserManager<APUser> userManager, RelevantEntitiesService relevantEntities, CollectionTools collectionTools)
     {
-        private readonly DbConnection _connection;
-        private readonly IEntityStore _entityStore;
-        private readonly ServerConfig _entityData;
-        private readonly JwtTokenSettings _tokenSettings;
-        private readonly SignInManager<APUser> _signInManager;
-        private readonly IServiceProvider _provider;
-        private readonly IConfigurationRoot _configuration;
-        private readonly EntityFlattener _flattener;
-        private readonly UserManager<APUser> _userManager;
-        private readonly RelevantEntitiesService _relevantEntities;
-        private readonly CollectionTools _collectionTools;
-
-        public AdminController(DbConnection connection, IEntityStore entityStore, ServerConfig entityData, JwtTokenSettings tokenSettings, SignInManager<APUser> signInManager, IServiceProvider provider, IConfigurationRoot configuration, EntityFlattener flattener, UserManager<APUser> userManager, RelevantEntitiesService relevantEntities, CollectionTools collectionTools)
-        {
-            _connection = connection;
-            _entityStore = entityStore;
-            _entityData = entityData;
-            _tokenSettings = tokenSettings;
-            _signInManager = signInManager;
-            _provider = provider;
-            _configuration = configuration;
-            _flattener = flattener;
-            _userManager = userManager;
-            _relevantEntities = relevantEntities;
-            _collectionTools = collectionTools;
-        }
-
-        [HttpGet("")]
-        public IActionResult Index() => View();
-
-        [HttpGet("complete")]
-        public async Task<IActionResult> Autocomplete(string id)
-        {
-            _connection.Open();
-            
-            var attributes = await _connection.QueryAsync<TripleAttribute>("select * from \"TripleAttributes\" where \"Uri\" like @str limit 10", new { str = id + "%" });
-            return Json(attributes.Select(a => a.Uri).ToList());
-        }
-
-        [HttpGet("entity")]
-        public async Task<IActionResult> GetEntity(string id)
-        {
-            var entity = await _entityStore.GetEntity(id, true);
-            if (entity == null) return NotFound();
-
-            return Content(entity.Data.Serialize().ToString(), "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"");
-        }
-
-        [HttpPost("entity")]
-        public async Task<IActionResult> PostEntity(string id)
-        {
-            string data;
-            using (var reader = new StreamReader(Request.Body))
-                data = await reader.ReadToEndAsync();
-            var entity = await _entityStore.GetEntity(id, true);
-            if (entity == null) return NotFound();
-
-            entity.Data = ASObject.Parse(data);
-            await _entityStore.StoreEntity(entity);
-
-            return Ok();
-        }
+      _connection = connection;
+      _entityStore = entityStore;
+      _tokenSettings = tokenSettings;
+      _signInManager = signInManager;
+      _provider = provider;
+      _configuration = configuration;
+      _flattener = flattener;
+      _userManager = userManager;
+      _relevantEntities = relevantEntities;
+      _collectionTools = collectionTools;
     }
+
+    [HttpGet("")]
+    public IActionResult Index() => View();
+
+    [HttpGet("complete")]
+    public async Task<IActionResult> Autocomplete(string id)
+    {
+      _connection.Open();
+
+      var attributes = await _connection.QueryAsync<TripleAttribute>("select * from \"TripleAttributes\" where \"Uri\" like @str limit 10", new { str = id + "%" });
+      return Json(attributes.Select(a => a.Uri).ToList());
+    }
+
+    [HttpGet("entity")]
+    public async Task<IActionResult> GetEntity(string id)
+    {
+      var entity = await _entityStore.GetEntity(id, true);
+      if (entity == null) return NotFound();
+
+      return Content(entity.Data.Serialize().ToString(), "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"");
+    }
+
+    [HttpPost("entity")]
+    public async Task<IActionResult> PostEntity(string id)
+    {
+      string data;
+      using (var reader = new StreamReader(Request.Body))
+        data = await reader.ReadToEndAsync();
+      var entity = await _entityStore.GetEntity(id, true);
+      if (entity == null) return NotFound();
+
+      entity.Data = ASObject.Parse(data);
+      await _entityStore.StoreEntity(entity);
+
+      return Ok();
+    }
+  }
 }

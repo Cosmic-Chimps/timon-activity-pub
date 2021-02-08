@@ -1,16 +1,17 @@
 @keyframes rotating {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+  from {
+    transform: rotate(0deg);
   }
 
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .renderhost_loading {
-    animation: rotating 0.5s linear infinite;
-    display: inline-block;
-    font-size: 20px;
+  animation: rotating 0.5s linear infinite;
+  display: inline-block;
+  font-size: 20px;
 }
 
 .nopad {
@@ -36,97 +37,99 @@
 
 /* Emoji by Twemoji - https://github.com/twitter/twemoji */
 img.emoji {
-    height: 1em;
-    width: 1em;
-    margin: 0 .05em 0 .1em;
-    vertical-align: -0.1em;
- }
+  height: 1em;
+  width: 1em;
+  margin: 0 .05em 0 .1em;
+  vertical-align: -0.1em;
+}
 
 .kroeg-attachments {
-    clear: both;
+  clear: both;
 }
 
 .kroeg-attachments img {
-    width: 100%;
-    max-width: 480px;
+  width: 100%;
+  max-width: 480px;
 }
 
 /** START userpicker **/
 .kroeg-taggy {
-    -webkit-appearance: textfield;
-    -moz-appearance: textfield;
-    appearance: textfield;
+  -webkit-appearance: textfield;
+  -moz-appearance: textfield;
+  appearance: textfield;
 
-    display: inline-flex;
-    padding: 1px;
-    height: 30px;
-    box-sizing: content-box;
-    font: 14px sans-serif;
-    text-align: left;
-    position: relative;
-    line-height: 30px;
+  display: inline-flex;
+  padding: 1px;
+  height: 30px;
+  box-sizing: content-box;
+  font: 14px sans-serif;
+  text-align: left;
+  position: relative;
+  line-height: 30px;
 }
 
 .kroeg-taggy-tags {
-    display: block;
-    height: 30px;
-    float: left;
+  display: block;
+  height: 30px;
+  float: left;
 }
+
 .kroeg-taggy-tags::after {
   content: '\a0';
 }
 
 .kroeg-taggy-tag {
-    border-radius: 2px;
-    background: #eee;
-    border: rgb(0, 68, 255);
-    display: inline-block;
-    margin: 2.5px 5px;
-    line-height: 25px;
-    height: 25px;
-    position: relative;
-    cursor: default;
-    padding-right: 5px;
+  border-radius: 2px;
+  background: #eee;
+  border: rgb(0, 68, 255);
+  display: inline-block;
+  margin: 2.5px 5px;
+  line-height: 25px;
+  height: 25px;
+  position: relative;
+  cursor: default;
+  padding-right: 5px;
 }
 
 .kroeg-taggy-tag-error {
-    background: #f00;
+  background: #f00;
 }
 
 .kroeg-taggy-tag-ok {
-    background: rgb(124, 246, 255);
+  background: rgb(124, 246, 255);
 }
 
 .kroeg-taggy-tag img {
-    border-radius: 100%;
-    width: 15px;
-    height: 15px;
-    position: absolute;
-    top: 5px;
-    left: 5px;
+  border-radius: 100%;
+  width: 15px;
+  height: 15px;
+  position: absolute;
+  top: 5px;
+  left: 5px;
 }
 
 .kroeg-taggy-imgtag span {
-    padding-left: 25px;
+  padding-left: 25xpx;
 }
 
 .kroeg-taggy-input {
-    display: inline-block;
-    position: relative;
-    height: 30px;
-    flex-grow: 1;
+  display: inline-block;
+  position: relative;
+  height: 30px;
+  flex-grow: 1;
 }
 
 .kroeg-taggy input {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    padding: 0;
-    border: 0;
-    font: 14px sans-serif;
-    height: 30px;
-    width: 100%;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding: 0;
+  border: 0;
+  font: 14px sans-serif;
+  height: 30px;
+  width: 100%;
 }
+
 /** END userpicker **/
 
 /** START wysiwyg **/
@@ -139,9 +142,10 @@ img.emoji {
   box-shadow: 2px 0 0 black;
 }
 
-[contenteditable=true]:empty:before{
+[contenteditable=true]:empty:before {
   content: attr(data-placeholder);
-  display: block; /* For Firefox */
+  display: block;
+  /* For Firefox */
 }
 
 .kroeg-wysiwyg-area span.mention {
@@ -150,4 +154,10 @@ img.emoji {
   padding: 2px;
   border-radius: 2px;
 }
+
 /** END wysiwyg **/
+
+
+.list-group-item {
+  cursor: pointer;
+}

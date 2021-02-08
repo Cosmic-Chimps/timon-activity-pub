@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
-    <DebugType>portable</DebugType>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Asn1" Version="*" />
@@ -10,7 +9,6 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="*" />
     <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="*" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="*" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="*" />
     <PackageReference Include="Microsoft.AspNetCore.WebSockets" Version="*" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="*" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="*" />
@@ -21,6 +19,11 @@
     <PackageReference Include="Npgsql" Version="*" />
     <PackageReference Include="HtmlAgilityPack" Version="*" />
     <PackageReference Include="Jint" Version="*" />
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="5.0.3"/>
+    <PackageReference Include="Microsoft.TypeScript.MSBuild" Version="4.1.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="*" />

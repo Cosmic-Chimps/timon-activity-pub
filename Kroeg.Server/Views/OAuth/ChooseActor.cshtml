@@ -13,7 +13,7 @@
 <div class="container">
     <div class="row">
         <div class="col-md-6 push-md-3">
-            <br/>
+            <br />
             <div class="jumbotron">
                 <h1>An application wants access to <b>@Model.Actor.Data["name"].First().Primitive</b></h1>
                 <form asp-controller="OAuth" asp-action="VerifyAuthorize" method="post">
@@ -26,7 +26,8 @@
                             {
                                 <option value="604800">1 week</option>
                             }
-                            <option value="@Model.Expiry" selected>Maximum (@(TimeSpan.FromSeconds(Model.Expiry).ToString()))</option>
+                            <option value="@Model.Expiry" selected>Maximum
+                                (@(TimeSpan.FromSeconds(Model.Expiry).ToString()))</option>
                         </select>
                     </div><br />
                     <input type="hidden" asp-for="ResponseType" value="@Model.ResponseType" />
@@ -34,7 +35,8 @@
                     <input type="hidden" asp-for="State" value="@Model.State" />
                     <input type="hidden" asp-for="ActorID" value="@Model.Actor.Id" />
 
-                    <input class="btn btn-primary" type="submit" name="Accept" value="Give access" /> <input class="btn btn-danger" type="submit" name="Deny" value="Deny access" />
+                    <input class="btn btn-primary" type="submit" name="Accept" value="Give access" /> <input
+                        class="btn btn-danger" type="submit" name="Deny" value="Deny access" />
                 </form>
             </div>
         </div>
@@ -42,7 +44,7 @@
 
     <div class="row">
         <div class="col-md-6 push-md-3" style="text-align: right;">
-            <small>Instance of <a href="https://github.com/puckipedia/Kroeg">Kroeg</a></small>
+            <small>Instance of <a href="https://github.com/jjchiw/Kroeg">Kroeg</a></small>
         </div>
     </div>
 </div>

@@ -16,17 +16,19 @@
                 <h1>Log in</h1>
                 <h4><a href="register">Register here</a></h4>
                 <form asp-controller="Auth" asp-action="DoLogin" method="post">
-                    <label asp-for="Username">Username: </label> <input class="form-control" asp-for="Username" type="text" /><br />
-                    <label asp-for="Password">Password: </label> <input class="form-control" asp-for="Password" type="password" /><br />
+                    <label asp-for="Username">Username: </label> <input class="form-control" asp-for="Username"
+                        type="text" /><br />
+                    <label asp-for="Password">Password: </label> <input class="form-control" asp-for="Password"
+                        type="password" /><br />
                     <input type="hidden" name="Redirect" value="@Model.Redirect" />
-                    <input type="submit" value="Submit" class="btn btn-default" />
+                    <input type="submit" value="Submit" class="btn btn-primary btn-block" />
                 </form>
             </div>
         </div>
     </div>
     <div class="row">
         <div class="col-md-6 push-md-3" style="text-align: right;">
-            <small>Instance of <a href="https://github.com/puckipedia/Kroeg">Kroeg</a></small>
+            <small>Instance of <a href="https://github.com/jjchiw/Kroeg">Kroeg</a></small>
         </div>
     </div>
 </div>

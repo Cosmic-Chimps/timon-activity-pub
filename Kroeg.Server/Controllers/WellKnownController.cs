@@ -11,56 +11,54 @@ using Kroeg.EntityStore.Salmon;
 
 namespace Kroeg.Server.Controllers
 {
-    [Route(".well-known")]
-    public class WellKnownController : Controller
+  [Route(".well-known")]
+  public class WellKnownController : Controller
+  {
+    private readonly IEntityStore _entityStore;
+    private readonly RelevantEntitiesService _relevantEntities;
+    private readonly KeyService _keyService;
+    private readonly DbConnection _connection;
+
+    public WellKnownController(IEntityStore entityStore, RelevantEntitiesService relevantEntities, KeyService keyService, DbConnection connection)
     {
-        private readonly IEntityStore _entityStore;
-        private readonly ServerConfig _entityData;
-        private readonly RelevantEntitiesService _relevantEntities;
-        private readonly KeyService _keyService;
-        private readonly DbConnection _connection;
+      _entityStore = entityStore;
+      _relevantEntities = relevantEntities;
+      _keyService = keyService;
+      _connection = connection;
+    }
 
-        public WellKnownController(IEntityStore entityStore, ServerConfig entityData, RelevantEntitiesService relevantEntities, KeyService keyService, DbConnection connection)
-        {
-            _entityStore = entityStore;
-            _entityData = entityData;
-            _relevantEntities = relevantEntities;
-            _keyService = keyService;
-            _connection = connection;
-        }
+    public class WebfingerLink
+    {
+      public string rel { get; set; }
+      public string type { get; set; }
+      public string href { get; set; }
+      public string template { get; set; }
+    }
 
-        public class WebfingerLink
-        {
-            public string rel { get; set; }
-            public string type { get; set; }
-            public string href { get; set; }
-            public string template { get; set; }
-        }
+    public class WebfingerResult
+    {
+      public string subject { get; set; }
+      public List<string> aliases { get; set; }
+      public List<WebfingerLink> links { get; set; }
+    }
 
-        public class WebfingerResult
-        {
-            public string subject { get; set; }
-            public List<string> aliases { get; set; }
-            public List<WebfingerLink> links { get; set; }
-        }
+    [HttpGet("webfinger")]
+    public async Task<IActionResult> WebFinger(string resource)
+    {
+      if (!resource.StartsWith("acct:")) return Unauthorized();
 
-        [HttpGet("webfinger")]
-        public async Task<IActionResult> WebFinger(string resource)
-        {
-            if (!resource.StartsWith("acct:")) return Unauthorized();
+      var username = resource.Split(':')[1].Split('@');
 
-            var username = resource.Split(':')[1].Split('@');
+      var items = await _relevantEntities.FindEntitiesWithPreferredUsername(username[0]);
+      if (items.Count == 0) return NotFound();
 
-            var items = await _relevantEntities.FindEntitiesWithPreferredUsername(username[0]);
-            if (items.Count == 0) return NotFound();
+      var item = items.First();
 
-            var item = items.First();
-
-            var result = new WebfingerResult()
-            {
-                subject = resource,
-                aliases = new List<string>() { item.Id },
-                links = new List<WebfingerLink>
+      var result = new WebfingerResult()
+      {
+        subject = resource,
+        aliases = new List<string>() { item.Id },
+        links = new List<WebfingerLink>
                 {
                     new WebfingerLink
                     {
@@ -89,31 +87,31 @@ namespace Kroeg.Server.Controllers
                         template = item.Id + "#id=%40{uri}"
                     }
                 }
-            };
+      };
 
-            var salmon = await _keyService.GetKey(item.Id);
-            var magicKey = new MagicKey(salmon.PrivateKey);
+      var salmon = await _keyService.GetKey(item.Id);
+      var magicKey = new MagicKey(salmon.PrivateKey);
 
-            result.links.Add(new WebfingerLink
-                {
-                    rel = "magic-public-key",
-                    href = "data:application/magic-public-key," + magicKey.PublicKey
-                });
+      result.links.Add(new WebfingerLink
+      {
+        rel = "magic-public-key",
+        href = "data:application/magic-public-key," + magicKey.PublicKey
+      });
 
-            return Json(result);
-        }
+      return Json(result);
+    }
 
-        [HttpGet("host-meta")]
-        public IActionResult GetHostMeta()
-        {
-            Response.ContentType = "application/xrd+xml";
+    [HttpGet("host-meta")]
+    public IActionResult GetHostMeta()
+    {
+      Response.ContentType = "application/xrd+xml";
 
-            var domain = Request.Host.ToUriComponent();
+      var domain = Request.Host.ToUriComponent();
 
-            return Content("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+      return Content("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
 "<XRD xmlns=\"http://docs.oasis-open.org/ns/xri/xrd-1.0\">" +
 $" <Link rel=\"lrdd\" type=\"application/jrd+json\" template=\"https://{domain}/.well-known/webfinger?resource={{uri}}\"/>" +
 "</XRD>", "application/xrd+xml");
-        }
     }
+  }
 }

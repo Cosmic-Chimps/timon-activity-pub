@@ -2,39 +2,54 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using System;
+using Microsoft.Extensions.Logging;
 using System.Linq;
+using Kroeg.EntityStore.Services;
 
 namespace Kroeg.Server
 {
-    public class Program
+  public class Program
+  {
+    public static void Main(string[] args)
     {
-        public static void Main(string[] args)
-        {
-            if (args.Contains("console"))
-            {
-                ConsoleSystem.ConsoleManager.Do();
-                return;
-            }
+      if (args.Contains("console"))
+      {
+        ConsoleSystem.ConsoleManager.Do();
+        return;
+      }
 
-            var config = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json")
-                .Build();
+      var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
 
-            var listenOn = new Uri(args.Length == 0 ? "http://0.0.0.0:5000/" : args[0]);
-            var builder = new UriBuilder(listenOn);
-            var bur = config.GetSection("Kroeg");
-            builder.Path = (new Uri(config.GetSection("Kroeg")["BaseUri"])).AbsolutePath ?? "/";
+      var config = new ConfigurationBuilder()
+          .SetBasePath(Directory.GetCurrentDirectory())
+          .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+          .AddJsonFile($"appsettings.{environment}.json", optional: true)
+          .AddEnvironmentVariables()
+          .Build();
 
-            var host = new WebHostBuilder()
-                .UseKestrel()
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseIISIntegration()
-                .UseStartup<Startup>()
-                .UseUrls(new string[] { builder.Uri.ToString() })
-                .Build();
+      var listenOn = new Uri(args.Length == 0 ? "http://0.0.0.0:5000/" : args[0]);
+      var builder = new UriBuilder(listenOn);
 
-            host.Run();
-        }
+      var serverConfig = new ServerConfig(config.GetSection("Kroeg"));
+      builder.Path = serverConfig.BasePath;
+
+      var host = new WebHostBuilder()
+          .UseKestrel()
+          .UseContentRoot(Directory.GetCurrentDirectory())
+          .UseIISIntegration()
+          .UseStartup<Startup>(ctx =>
+          {
+            return new Startup(config, serverConfig);
+          })
+          .UseUrls(new string[] { builder.Uri.ToString() })
+          .ConfigureLogging((hostingContext, logging) =>
+          {
+            logging.AddConsole();
+
+          })
+          .Build();
+
+      host.Run();
     }
+  }
 }

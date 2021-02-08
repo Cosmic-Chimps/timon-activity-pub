@@ -9,16 +9,29 @@
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
 <div class="container">
+    <div class="row">&nbsp;</div>
     <div class="row">
-        <div class="col-md-4">
-            <input type="text" class="form-control" id="search" placeholder="Find entity..." />
-            <ul class="list-group" id="autocomplete">
-                @*<a class="list-group-item list-group-item-action" href="@Url.Action("NewActor")">New</a>*@
-            </ul>
+        <div class="col-md-6">
+            <form>
+                <div class="row">
+                    <div class="col-md-8"><input type="text" class="form-control" id="search"
+                            placeholder="Find entity..." />
+                        <ul class="list-group" id="autocomplete"></ul>
+                    </div>
+                    <div class="col-md-4"><button type="submit" id="update-entity" class="btn btn-primary">Update
+                            entity</button>
+                    </div>
+                </div>
+            </form>
+
+
+            @* <ul class="list-group" id="autocomplete">
+                @* <a class="list-group-item list-group-item-action" href="@Url.Action("NewActor")">New</a>
+                </ul>
+                <input type="submit" id="update-entity" value="Update entity" class="btn btn-primary btn-block" /> *@
         </div>
-        <div class="col-md-8">
+        <div class="col-md-6">
             <pre id="entity-container"></pre>
-            <input type="submit" id="update-entity" value="Update entity" />
         </div>
     </div>
 </div>

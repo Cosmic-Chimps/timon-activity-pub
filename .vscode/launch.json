@@ -10,7 +10,7 @@
         "request": "launch",
         "preLaunchTask": "build",
         // If you have changed target frameworks, make sure to update the program path.
-        "program": "${workspaceRoot}/Kroeg.JsonLD.Tester/bin/Debug/netcoreapp2.0/Kroeg.JsonLD.Tester.dll",
+        "program": "${workspaceRoot}/Kroeg.JsonLD.Tester/bin/Debug/net5.0/Kroeg.JsonLD.Tester.dll",
         "args": [],
         "cwd": "${workspaceRoot}/Kroeg.JsonLD.Tester",
         // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
@@ -19,24 +19,28 @@
         "internalConsoleOptions": "openOnSessionStart"
     },
     {
-        "name": "Launch Kroeg.Server",
+        "name": ".NET Core Launch (web)",
         "type": "coreclr",
         "request": "launch",
         "preLaunchTask": "build",
         // If you have changed target frameworks, make sure to update the program path.
-        "program": "${workspaceRoot}/Kroeg.Server/bin/Debug/netcoreapp2.0/Kroeg.Server.dll",
+        "program": "${workspaceFolder}/Kroeg.Server/bin/Debug/net5.0/Kroeg.Server.dll",
         "args": [],
-        "cwd": "${workspaceRoot}/Kroeg.Server",
-        // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
-        "console": "internalConsole",
+        "cwd": "${workspaceFolder}/Kroeg.Server",
         "stopAtEntry": false,
-        "internalConsoleOptions": "openOnSessionStart"
-    },
-        {
-            "name": ".NET Core Attach",
-            "type": "coreclr",
-            "request": "attach",
-            "processId": "${command:pickProcess}"
+        // Enable launching a web browser when ASP.NET Core starts. For more information: https://aka.ms/VSCode-CS-LaunchJson-WebBrowser
+        "env": {
+            "ASPNETCORE_ENVIRONMENT": "Development"
+        },
+        "sourceFileMap": {
+            "/Views": "${workspaceFolder}/Views"
         }
+    },
+    {
+        "name": ".NET Core Attach",
+        "type": "coreclr",
+        "request": "attach",
+        "processId": "${command:pickProcess}"
+    }
     ]
 }

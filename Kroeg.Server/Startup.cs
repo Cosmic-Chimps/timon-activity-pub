@@ -34,142 +34,144 @@ using Kroeg.EntityStore.Services;
 using Kroeg.EntityStore.Notifier;
 using Kroeg.EntityStore.Salmon;
 using Kroeg.ActivityPub.Services;
+using Microsoft.Extensions.Hosting;
 
 namespace Kroeg.Server
 {
-    public class Startup
+  public class Startup
+  {
+    public IConfiguration Configuration { get; }
+    readonly IServerConfig _serverConfig;
+
+    public Startup(IConfiguration configuration, IServerConfig serverConfig)
     {
-        public Startup(IHostingEnvironment env)
+      Configuration = configuration;
+      _serverConfig = serverConfig;
+    }
+
+
+
+    // This method gets called by the runtime. Use this method to add services to the container.
+    public void ConfigureServices(IServiceCollection services)
+    {
+      // Add framework services.
+      services.AddMvc();
+
+
+      services.AddScoped<NpgsqlConnection>((svc) => new NpgsqlConnection(Configuration.GetConnectionString("Default")));
+      services.AddScoped<DbConnection, NpgsqlConnection>((svc) => svc.GetService<NpgsqlConnection>());
+
+      services.AddTransient<IUserStore<APUser>, KroegUserStore>();
+      services.AddTransient<IUserPasswordStore<APUser>, KroegUserStore>();
+      services.AddTransient<IRoleStore<IdentityRole>, KroegUserStore>();
+
+      services.AddIdentity<APUser, IdentityRole>()
+          .AddDefaultTokenProviders();
+
+      services.AddAuthorization(options =>
+      {
+        options.AddPolicy("admin", policy => policy.RequireClaim("admin"));
+        options.AddPolicy("pass", policy => policy.AddAuthenticationSchemes(IdentityConstants.ApplicationScheme).RequireAuthenticatedUser());
+      });
+
+      services.Configure<IdentityOptions>(options =>
+      {
+        options.Password.RequireDigit = false;
+        options.Password.RequiredLength = 0;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireLowercase = false;
+      });
+
+      var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration.GetSection("Kroeg")["TokenSigningKey"]));
+      var tokenSettings = new JwtTokenSettings
+      {
+        Audience = Configuration.GetSection("Kroeg")["BaseUri"],
+        Issuer = Configuration.GetSection("Kroeg")["BaseUri"],
+        ExpiryTime = TimeSpan.FromDays(30),
+        Credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256),
+        ValidationParameters = new TokenValidationParameters
         {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(env.ContentRootPath)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
-                .AddEnvironmentVariables();
-            Configuration = builder.Build();
+          ValidateIssuerSigningKey = true,
+          IssuerSigningKey = signingKey,
+
+          ValidateIssuer = true,
+          ValidIssuer = Configuration.GetSection("Kroeg")["BaseUri"],
+
+          ValidateAudience = true,
+          ValidAudience = Configuration.GetSection("Kroeg")["BaseUri"],
+
+          ValidateLifetime = true,
+          ClockSkew = TimeSpan.Zero
         }
+      };
+      services.AddSingleton(tokenSettings);
 
-        public IConfigurationRoot Configuration { get; }
+      services.AddSingleton<IServerConfig>(_serverConfig);
+      services.AddSingleton<IConfiguration>(Configuration);
 
-        // This method gets called by the runtime. Use this method to add services to the container.
-        public void ConfigureServices(IServiceCollection services)
+      services.AddSingleton<URLService>();
+
+      services.AddScoped<INotifier, LocalNotifier>();
+
+      services.AddSingleton(Configuration);
+      services.AddTransient<IAuthorizer, DefaultAuthorizer>();
+
+      services.AddTransient<DeliveryService>();
+      services.AddTransient<RelevantEntitiesService>();
+
+      services.AddScoped<TripleEntityStore>();
+      services.AddScoped<CollectionTools>();
+      services.AddScoped<FakeEntityService>();
+      services.AddScoped<EntityFlattener>();
+      services.AddScoped<KeyService>();
+
+      services.AddScoped<IEntityStore>((provider) =>
+      {
+        var triple = provider.GetRequiredService<TripleEntityStore>();
+        var flattener = provider.GetRequiredService<EntityFlattener>();
+        var httpAccessor = provider.GetService<IHttpContextAccessor>();
+        var fakeEntityService = provider.GetService<FakeEntityService>();
+        var keyService = provider.GetService<KeyService>();
+        var retrieving = new RetrievingEntityStore(triple, flattener, provider, keyService, httpAccessor);
+        return new FakeEntityStore(fakeEntityService, retrieving);
+      });
+      services.AddSingleton<TemplateService>();
+      services.AddTransient<SignatureVerifier>();
+
+      services.AddAuthentication(o =>
+      {
+        o.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        o.DefaultChallengeScheme = IdentityConstants.ApplicationScheme;
+        o.DefaultSignInScheme = IdentityConstants.ApplicationScheme;
+      })
+          .AddJwtBearer((options) =>
+          {
+            options.TokenValidationParameters = tokenSettings.ValidationParameters;
+
+            options.Audience = Configuration.GetSection("Kroeg")["BaseUri"];
+            options.ClaimsIssuer = Configuration.GetSection("Kroeg")["BaseUri"];
+          });
+
+      services.ConfigureApplicationCookie((options) =>
+      {
+        options.Cookie.Name = "Kroeg.Auth";
+        options.LoginPath = "/auth/login";
+      });
+
+      var typeMap = new Dictionary<string, Type>();
+
+      foreach (var module in Configuration.GetSection("Kroeg").GetSection("Modules").GetChildren())
+      {
+        var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(Directory.GetCurrentDirectory(), module.Value));
+        foreach (var type in assembly.GetTypes())
         {
-            // Add framework services.
-            services.AddMvc();
+          if (type.IsSubclassOf(typeof(BaseHandler)))
+            typeMap[type.FullName] = type;
+        }
+      }
 
-
-            services.AddScoped<NpgsqlConnection>((svc) => new NpgsqlConnection(Configuration.GetConnectionString("Default")));
-            services.AddScoped<DbConnection, NpgsqlConnection>((svc) => svc.GetService<NpgsqlConnection>());
-
-            services.AddTransient<IUserStore<APUser>, KroegUserStore>();
-            services.AddTransient<IUserPasswordStore<APUser>, KroegUserStore>();
-            services.AddTransient<IRoleStore<IdentityRole>, KroegUserStore>();
-
-            services.AddIdentity<APUser, IdentityRole>()
-                .AddDefaultTokenProviders();
-
-            services.AddAuthorization(options =>
-            {
-                options.AddPolicy("admin", policy => policy.RequireClaim("admin"));
-                options.AddPolicy("pass", policy => policy.AddAuthenticationSchemes(IdentityConstants.ApplicationScheme).RequireAuthenticatedUser());
-            });
-
-            services.Configure<IdentityOptions>(options =>
-            {
-                options.Password.RequireDigit = false;
-                options.Password.RequiredLength = 0;
-                options.Password.RequireNonAlphanumeric = false;
-                options.Password.RequireUppercase = false;
-                options.Password.RequireLowercase = false;
-            });
-            
-            var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration.GetSection("Kroeg")["TokenSigningKey"]));
-            var tokenSettings = new JwtTokenSettings
-            {
-                Audience =Configuration.GetSection("Kroeg")["BaseUri"],
-                Issuer = Configuration.GetSection("Kroeg")["BaseUri"],
-                ExpiryTime = TimeSpan.FromDays(30),
-                Credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256),
-                ValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = signingKey,
-
-                    ValidateIssuer = true,
-                    ValidIssuer = Configuration.GetSection("Kroeg")["BaseUri"],
-
-                    ValidateAudience = true,
-                    ValidAudience = Configuration.GetSection("Kroeg")["BaseUri"],
-
-                    ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero
-                }
-            };
-            services.AddSingleton(tokenSettings);
-
-            services.AddSingleton(new ServerConfig(Configuration.GetSection("Kroeg")));
-
-            services.AddSingleton<URLService>(a => new URLService(a.GetService<ServerConfig>()) {
-                EntityNames = Configuration.GetSection("EntityNames")
-            });
-
-            services.AddScoped<INotifier, LocalNotifier>();
-
-            services.AddSingleton(Configuration);
-            services.AddTransient<IAuthorizer, DefaultAuthorizer>();
-
-            services.AddTransient<DeliveryService>();
-            services.AddTransient<RelevantEntitiesService>();
-
-            services.AddScoped<TripleEntityStore>();
-            services.AddScoped<CollectionTools>();
-            services.AddScoped<FakeEntityService>();
-            services.AddScoped<EntityFlattener>();
-            services.AddScoped<KeyService>();
-
-            services.AddScoped<IEntityStore>((provider) =>
-            {
-                var triple = provider.GetRequiredService<TripleEntityStore>();
-                var flattener = provider.GetRequiredService<EntityFlattener>();
-                var httpAccessor = provider.GetService<IHttpContextAccessor>();
-                var fakeEntityService = provider.GetService<FakeEntityService>();
-                var keyService = provider.GetService<KeyService>();
-                var retrieving = new RetrievingEntityStore(triple, flattener, provider, keyService, httpAccessor);
-                return new FakeEntityStore(fakeEntityService, retrieving);
-            });
-            services.AddSingleton<TemplateService>();
-            services.AddTransient<SignatureVerifier>();
-
-            services.AddAuthentication(o => {
-                o.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                o.DefaultChallengeScheme = IdentityConstants.ApplicationScheme;
-                o.DefaultSignInScheme = IdentityConstants.ApplicationScheme;
-            })
-                .AddJwtBearer((options) => {
-                    options.TokenValidationParameters = tokenSettings.ValidationParameters;
-
-                    options.Audience =Configuration.GetSection("Kroeg")["BaseUri"];
-                    options.ClaimsIssuer = Configuration.GetSection("Kroeg")["BaseUri"];
-                });
-            
-            services.ConfigureApplicationCookie((options) => {
-                options.Cookie.Name = "Kroeg.Auth";
-                options.LoginPath = "/auth/login";
-            });
-
-            var typeMap = new Dictionary<string, Type>();
-
-            foreach (var module in Configuration.GetSection("Kroeg").GetSection("Modules").GetChildren())
-            {
-                var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(Directory.GetCurrentDirectory(), module.Value));
-                foreach (var type in assembly.GetTypes())
-                {
-                    if (type.IsSubclassOf(typeof(BaseHandler)))
-                        typeMap[type.FullName] = type;
-                }
-            }
-
-            ServerConfig.ClientToServerHandlers.AddRange(new Type[] {
+      ServerConfig.ClientToServerHandlers.AddRange(new Type[] {
                 typeof(ObjectWrapperHandler),
                 typeof(ActivityMissingFieldsHandler),
                 typeof(CreateActivityHandler),
@@ -185,7 +187,7 @@ namespace Kroeg.Server
                 typeof(DeliveryHandler)
             });
 
-            ServerConfig.ServerToServerHandlers.AddRange(new Type[] {
+      ServerConfig.ServerToServerHandlers.AddRange(new Type[] {
                 typeof(VerifyOwnershipHandler),
                 typeof(DeleteHandler),
                 typeof(FollowResponseHandler),
@@ -196,47 +198,57 @@ namespace Kroeg.Server
                 typeof(DeliveryHandler)
             });
 
-            ServerConfig.Converters.AddRange(new IConverterFactory[]
-            {
+      ServerConfig.Converters.AddRange(new IConverterFactory[]
+      {
                 new AS2ConverterFactory()
-            });
+      });
 
-            foreach (var extra in Configuration.GetSection("Kroeg").GetSection("Filters").GetChildren())
-            {
-                if (typeMap.ContainsKey(extra.Value))
-                {
-                    ServerConfig.ClientToServerHandlers.Add(typeMap[extra.Value]);
-                    ServerConfig.ServerToServerHandlers.Add(typeMap[extra.Value]);
-                }
-            }
-
-            services.AddScoped<DatabaseManager>();
-        }
-
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public async void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+      foreach (var extra in Configuration.GetSection("Kroeg").GetSection("Filters").GetChildren())
+      {
+        if (typeMap.ContainsKey(extra.Value))
         {
-            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-            loggerFactory.AddDebug(LogLevel.Trace);
-
-            app.UseAuthentication();
-            app.UseWebSockets();
-            app.UseStaticFiles();
-
-            app.UseDeveloperExceptionPage();
-            app.UseMiddleware<GetEntityMiddleware>();
-            app.UseMvc();
-
-            app.ApplicationServices.GetRequiredService<DatabaseManager>().EnsureExists();
-
-            for (int i = 0; i < int.Parse(Configuration.GetSection("Kroeg")["BackgroundThreads"]); i++)
-            {
-                var serviceProvider = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope().ServiceProvider;
-                ActivatorUtilities.CreateInstance<BackgroundTaskQueuer>(serviceProvider);
-            }
-
-            var sevc = app.ApplicationServices.GetRequiredService<ServerConfig>();
-            await ActivityStreams.ASObject.SetContext(JsonLDConfig.GetContext(true), sevc.BaseUri + "render/context");
+          ServerConfig.ClientToServerHandlers.Add(typeMap[extra.Value]);
+          ServerConfig.ServerToServerHandlers.Add(typeMap[extra.Value]);
         }
+      }
+
+      services.AddScoped<DatabaseManager>();
     }
+
+    // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+    public async void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
+    {
+      app.UseWebSockets();
+      app.UseStaticFiles();
+
+      app.UseAuthentication();
+
+      app.UseMiddleware<GetEntityMiddleware>();
+
+      app.UseRouting();
+
+      app.UseAuthorization();
+
+      if (env.IsDevelopment())
+      {
+        app.UseDeveloperExceptionPage();
+      }
+
+      app.UseEndpoints(endpoints =>
+      {
+        endpoints.MapControllers();
+      });
+
+      app.ApplicationServices.GetRequiredService<DatabaseManager>().EnsureExists();
+
+      for (int i = 0; i < int.Parse(Configuration.GetSection("Kroeg")["BackgroundThreads"]); i++)
+      {
+        var serviceProvider = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope().ServiceProvider;
+        ActivatorUtilities.CreateInstance<BackgroundTaskQueuer>(serviceProvider);
+      }
+
+      var sevc = app.ApplicationServices.GetRequiredService<IServerConfig>();
+      await ActivityStreams.ASObject.SetContext(JsonLDConfig.GetContext(true), sevc.BaseUri + "render/context");
+    }
+  }
 }

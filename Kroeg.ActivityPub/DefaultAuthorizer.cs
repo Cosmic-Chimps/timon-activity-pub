@@ -7,28 +7,36 @@ using Kroeg.Services;
 
 namespace Kroeg.ActivityPub
 {
-    public class DefaultAuthorizer : IAuthorizer
+  public class DefaultAuthorizer : IAuthorizer
+  {
+    public bool VerifyAccess(APEntity entity, string userId)
     {
-        private readonly ServerConfig _entityData;
+      if (entity.Type == "_blocks" && !entity.Data["attributedTo"].Any(a => a.Id == userId))
+      {
+        return false;
+      }
 
-        public DefaultAuthorizer(ServerConfig entityData)
-        {
-            _entityData = entityData;
-        }
+      if (entity.Type == "_blocked")
+      {
+        return false;
+      }
 
-        public async Task<bool> VerifyAccess(APEntity entity, string userId)
-        {
-            if (entity.Type == "_blocks" && !entity.Data["attributedTo"].Any(a => a.Id == userId)) return false;
-            if (entity.Type == "_blocked") return false;
-            if (entity.Type == "https://www.w3.org/ns/activitystreams#OrderedCollection" || entity.Type == "https://www.w3.org/ns/activitystreams#Collection" || entity.Type.StartsWith("_")) return true;
-            if (EntityData.IsActor(entity.Data)) return true;
+      if (entity.Type == "https://www.w3.org/ns/activitystreams#OrderedCollection" || entity.Type == "https://www.w3.org/ns/activitystreams#Collection" || entity.Type.StartsWith("_"))
+      {
+        return true;
+      }
 
-            var audience = DeliveryService.GetAudienceIds(entity.Data);
-            return (
-                entity.Data["attributedTo"].Concat(entity.Data["actor"]).Any(a => a.Id == userId)
-                || audience.Contains("https://www.w3.org/ns/activitystreams#Public")
-                || (userId != null  && audience.Contains(userId))
-                );
-        }
+      if (EntityData.IsActor(entity.Data))
+      {
+        return true;
+      }
+
+      var audience = DeliveryService.GetAudienceIds(entity.Data);
+      return (
+          entity.Data["attributedTo"].Concat(entity.Data["actor"]).Any(a => a.Id == userId)
+          || audience.Contains("https://www.w3.org/ns/activitystreams#Public")
+          || (userId != null && audience.Contains(userId))
+          );
     }
+  }
 }
