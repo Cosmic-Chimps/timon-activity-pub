@@ -284,11 +284,20 @@ namespace Kroeg.Server.Controllers
     public async Task<IActionResult> SharedInbox()
     {
       var userId = await _verifier.Verify(Request.Scheme + "://" + Request.Host.ToUriComponent() + Request.Path, HttpContext);
-      if (userId == null) return Unauthorized();
-      var reader = new StreamReader(Request.Body);
-      var data = ASObject.Parse(await reader.ReadToEndAsync());
 
-      if (!EntityData.IsActivity(data)) return StatusCode(403, "Not an activity?");
+      if (userId == null)
+      {
+        return Unauthorized();
+      }
+
+      var reader = new StreamReader(Request.Body);
+      var content = await reader.ReadToEndAsync();
+      var data = ASObject.Parse(content);
+
+      if (!EntityData.IsActivity(data))
+      {
+        return StatusCode(403, "Not an activity?");
+      }
 
       await _connection.OpenAsync();
 
@@ -301,10 +310,20 @@ namespace Kroeg.Server.Controllers
         temporaryStore.TrimDown((new Uri(new Uri(userId), "/")).ToString());
         await temporaryStore.CommitChanges();
       }
+      else if (data["actor"].Any((a) => a.SubObject.Id == userId))
+      {
+        var temporaryStore = new StagingEntityStore(_entityStore);
+        resultEntity = await _entityFlattener.FlattenAndStore(temporaryStore, data, false);
+        temporaryStore.TrimDown((new Uri(new Uri(userId), "/")).ToString());
+        await temporaryStore.CommitChanges();
+      }
       else
       {
         resultEntity = await _entityStore.GetEntity(data.Id, true);
-        if (resultEntity == null) return StatusCode(202);
+        if (resultEntity == null)
+        {
+          return StatusCode(202);
+        }
         data = resultEntity.Data;
       }
 

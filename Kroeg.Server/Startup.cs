@@ -145,13 +145,13 @@ namespace Kroeg.Server
         o.DefaultChallengeScheme = IdentityConstants.ApplicationScheme;
         o.DefaultSignInScheme = IdentityConstants.ApplicationScheme;
       })
-          .AddJwtBearer((options) =>
-          {
-            options.TokenValidationParameters = tokenSettings.ValidationParameters;
+          .AddJwtBearer("Bearer", (options) =>
+           {
+             options.TokenValidationParameters = tokenSettings.ValidationParameters;
 
-            options.Audience = Configuration.GetSection("Kroeg")["BaseUri"];
-            options.ClaimsIssuer = Configuration.GetSection("Kroeg")["BaseUri"];
-          });
+             options.Audience = Configuration.GetSection("Kroeg")["BaseUri"];
+             options.ClaimsIssuer = Configuration.GetSection("Kroeg")["BaseUri"];
+           });
 
       services.ConfigureApplicationCookie((options) =>
       {
@@ -218,10 +218,10 @@ namespace Kroeg.Server
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public async void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
     {
+      app.UseAuthentication();
+
       app.UseWebSockets();
       app.UseStaticFiles();
-
-      app.UseAuthentication();
 
       app.UseMiddleware<GetEntityMiddleware>();
 
