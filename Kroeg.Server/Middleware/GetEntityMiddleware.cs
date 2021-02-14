@@ -11,6 +11,8 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.EntityFrameworkCore.Storage;
 using Kroeg.ActivityPub;
 using Kroeg.EntityStore.Services;
+using System.IO;
+using System.Text;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -91,7 +93,7 @@ namespace Kroeg.Server.Middleware
       IConverter readConverter = null;
       IConverter writeConverter = null;
       bool needRead = context.Request.Method == "POST";
-      var target = fullpath;
+      var target = fullpath.Replace("127.0.0.1", "localhost");
       APEntity targetEntity = null;
       targetEntity = await store.GetEntity(target, false);
 
@@ -103,6 +105,10 @@ namespace Kroeg.Server.Middleware
 
       if (targetEntity == null)
       {
+        // using var ms = new MemoryStream();
+        // await context.Request.Body.CopyToAsync(ms);
+        // var x = Encoding.UTF8.GetString(ms.ToArray());
+        // System.Console.WriteLine(x);
         await _next(context);
         return;
       }

@@ -27,6 +27,8 @@ using Kroeg.ActivityPub.BackgroundTasks;
 using Kroeg.Services;
 using Kroeg.ActivityPub.Services;
 using Microsoft.Extensions.Logging;
+using Dapr;
+using Kroeg.Server.Tos.Request;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -84,31 +86,10 @@ namespace Kroeg.Server.Controllers
       _log = log;
     }
 
-    public class LoginViewModel
-    {
-      public string Username { get; set; }
-      public string Password { get; set; }
-      public string Redirect { get; set; }
-    }
-
-    public class RegisterViewModel
-    {
-      public string Username { get; set; }
-      public string Password { get; set; }
-      public string VerifyPassword { get; set; }
-      public string Email { get; set; }
-      public string Redirect { get; set; }
-    }
-
-    public class ChosenActorModel
-    {
-      public string ActorID { get; set; }
-    }
-
     [HttpGet("login")]
     public IActionResult Login(string returnUrl)
     {
-      return View(new LoginViewModel { Redirect = returnUrl });
+      return View(new LoginRequest { Redirect = returnUrl });
     }
 
     [HttpGet("logout")]
@@ -155,7 +136,7 @@ namespace Kroeg.Server.Controllers
     }
 
     [HttpPost("login"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> DoLogin(LoginViewModel model)
+    public async Task<IActionResult> DoLogin(LoginRequest model)
     {
       var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, false, false);
 
@@ -169,11 +150,11 @@ namespace Kroeg.Server.Controllers
     public IActionResult Register()
     {
       if (!_configuration.GetSection("Kroeg").GetValue<bool>("CanRegister")) return NotFound();
-      return View(new RegisterViewModel { });
+      return View(new RegisterRequest { });
     }
 
     [HttpPost("register"), ValidateAntiForgeryToken]
-    public async Task<IActionResult> DoRegister(RegisterViewModel model)
+    public async Task<IActionResult> DoRegister(RegisterRequest model)
     {
       if (!_configuration.GetSection("Kroeg").GetValue<bool>("CanRegister")) return NotFound();
       var apuser = new APUser
@@ -250,7 +231,6 @@ namespace Kroeg.Server.Controllers
 
       trans.Commit();
       return RedirectToActionPermanent("Index", "Settings");
-
     }
 
     private static string AppendToUri(string uri, string query)

@@ -27,7 +27,7 @@ namespace Kroeg.Server
           .AddEnvironmentVariables()
           .Build();
 
-      var listenOn = new Uri(args.Length == 0 ? "http://0.0.0.0:5000/" : args[0]);
+      var listenOn = new Uri(args.Length == 0 ? "http://0.0.0.0:5010/" : args[0]);
       var builder = new UriBuilder(listenOn);
 
       var serverConfig = new ServerConfig(config.GetSection("Kroeg"));

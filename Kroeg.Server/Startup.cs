@@ -213,6 +213,8 @@ namespace Kroeg.Server
       }
 
       services.AddScoped<DatabaseManager>();
+
+      services.AddControllers().AddDapr();
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -234,8 +236,11 @@ namespace Kroeg.Server
         app.UseDeveloperExceptionPage();
       }
 
+      app.UseCloudEvents();
+
       app.UseEndpoints(endpoints =>
       {
+        endpoints.MapSubscribeHandler();
         endpoints.MapControllers();
       });
 

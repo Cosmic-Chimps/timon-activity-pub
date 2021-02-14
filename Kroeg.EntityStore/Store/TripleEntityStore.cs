@@ -13,6 +13,8 @@ using System.Data.Common;
 using System.Diagnostics;
 using Npgsql;
 using Microsoft.Extensions.Configuration;
+using Dapr.Client;
+using Kroeg.EntityStore.Messages;
 
 namespace Kroeg.EntityStore.Store
 {
@@ -22,6 +24,7 @@ namespace Kroeg.EntityStore.Store
     private readonly DbConnection _attributeConnection;
 
     private readonly ILogger _logger;
+    private readonly DaprClient _daprClient;
 
     private static Dictionary<int, string> _attributeMapping = new Dictionary<int, string>();
     private static Dictionary<string, int> _inverseAttributeMapping = new Dictionary<string, int>();
@@ -31,11 +34,12 @@ namespace Kroeg.EntityStore.Store
 
     private static JsonLD.API _api = new JsonLD.API(null);
 
-    public TripleEntityStore(DbConnection connection, ILogger<TripleEntityStore> logger, IConfiguration configuration)
+    public TripleEntityStore(DbConnection connection, ILogger<TripleEntityStore> logger, IConfiguration configuration, DaprClient daprClient)
     {
       _connection = connection;
       _attributeConnection = new NpgsqlConnection(configuration.GetConnectionString("Default"));
       _logger = logger;
+      _daprClient = daprClient;
     }
 
     public IEntityStore Bypass { get; set; }
@@ -370,12 +374,36 @@ namespace Kroeg.EntityStore.Store
 
       entity.DbId = exists.EntityId;
 
+      await PublishNoteToTimon(entity);
+
       return entity;
     }
 
     public async Task CommitChanges()
     {
       await Task.CompletedTask;
+    }
+
+    private async Task PublishNoteToTimon(APEntity entity)
+    {
+      if (entity.Type == "https://www.w3.org/ns/activitystreams#Note")
+      {
+        var content = entity.Data.FirstOrDefault(x => x.Key == "https://www.w3.org/ns/activitystreams#content");
+        var attributedTo = entity.Data.FirstOrDefault(x => x.Key == "https://www.w3.org/ns/activitystreams#attributedTo");
+
+        var text = content.Value.FirstOrDefault()?.Primitive as string;
+        var userId = attributedTo.Value.FirstOrDefault()?.Id;
+
+        var message = new AddNoteToTimonMessage
+        {
+          Content = text,
+          ActivityPubChannelId = userId
+        };
+
+        await _daprClient.PublishEventAsync<AddNoteToTimonMessage>(
+          "messagebus", "add-note-to-timon", message
+        );
+      }
     }
   }
 }

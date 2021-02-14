@@ -322,12 +322,18 @@ namespace Kroeg.ActivityPub
           var actorObj = @object["actor"].First();
           string subjectId = actorObj.Id ?? actorObj.SubObject.Id;
           subjectId = await _verifier.Verify(fullpath, context) ?? subjectId;
-          if (subjectId == null) throw new UnauthorizedAccessException("Invalid signature");
+
+          if (subjectId == null)
+          {
+            throw new UnauthorizedAccessException("Invalid signature");
+          }
           return await ServerToServer(original, @object, subjectId);
         case "_outbox":
           var userId = original.Data["attributedTo"].FirstOrDefault() ?? original.Data["actor"].FirstOrDefault();
           if (userId == null || _user.FindFirst("actor").Value == userId.Id)
+          {
             return await ClientToServer(original, @object);
+          }
           throw new UnauthorizedAccessException("Cannot post to the outbox of another actor");
       }
 

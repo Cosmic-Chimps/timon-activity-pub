@@ -30,7 +30,9 @@ namespace Kroeg.EntityStore.Store
     public async Task CommitChanges()
     {
       foreach (var item in _entities.ToList())
+      {
         await Bypass.StoreEntity(item.Value);
+      }
 
       _entities.Clear();
 

@@ -16,14 +16,13 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "puckipedia.ActivityPub": {
+    "TimonActivityPub": {
       "commandName": "Project",
-      "launchBrowser": true,
-      "launchUrl": "api/values",
+      "launchBrowser": false,
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "applicationUrl": "http://localhost:55336"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://localhost:5010"
+      }
     }
   }
 }

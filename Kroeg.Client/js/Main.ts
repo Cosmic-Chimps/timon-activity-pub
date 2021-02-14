@@ -1,14 +1,14 @@
-import { Session } from "./Session";
-import { TemplateService, TemplateRenderer } from "./TemplateService";
-import { EntityStore } from "./EntityStore";
-import { RenderHost } from "./RenderHost";
-import { SessionObjects } from "./SessionObjects";
-import { SubRenderhost } from "./Components/SubRenderhost";
+import { Session } from './Session';
+import { TemplateService, TemplateRenderer } from './TemplateService';
+import { EntityStore } from './EntityStore';
+import { RenderHost } from './RenderHost';
+import { SessionObjects } from './SessionObjects';
+import { SubRenderhost } from './Components/SubRenderhost';
 
-let statusUpdate: HTMLSpanElement = document.getElementById("navbar-js-error");
-document.addEventListener("error", (e) => {
+let statusUpdate: HTMLSpanElement = document.getElementById('navbar-js-error');
+document.addEventListener('error', (e) => {
     statusUpdate.innerText = e.error.toString();
-})
+});
 
 export class Kroeg {
     private _container: RenderHost;
@@ -19,9 +19,9 @@ export class Kroeg {
     private _templateRenderer: TemplateRenderer;
     private _sessionObjects: SessionObjects;
 
-    private _parseHash(): {[name: string]: string} {
+    private _parseHash(): { [name: string]: string } {
         let split = window.location.hash.substring(1).split('&');
-        let kvp: {[a: string]: string} = {};
+        let kvp: { [a: string]: string } = {};
         for (let item of split) {
             let splitItem = item.split('=');
             kvp[splitItem[0]] = decodeURIComponent(splitItem[1]);
@@ -38,25 +38,22 @@ export class Kroeg {
     }
 
     constructor() {
-        if (window.location.hash.startsWith("#oauth"))
-            this._finish_oauth();
+        if (window.location.hash.startsWith('#oauth')) this._finish_oauth();
 
         this._session = new Session();
         this._setup();
     }
 
     private _getLocation(): string {
-        if ("id" in this._parseHash())
-            return this._parseHash()["id"];
+        if ('id' in this._parseHash()) return this._parseHash()['id'];
         return window.location.toString().split('#')[0];
     }
 
-
     private loggedIn: boolean = false;
     private async _setup() {
-        if (window.localStorage.getItem("expires") != null)
-            if (parseInt(window.localStorage.expires, 10) > +(new Date)) {
-                this._log("Logging you in...")
+        if (window.localStorage.getItem('expires') != null)
+            if (parseInt(window.localStorage.expires, 10) > +new Date()) {
+                this._log('Logging you in...');
                 await this._session.set(window.localStorage.access_token, window.localStorage.id);
                 this.loggedIn = true;
             }
@@ -67,60 +64,73 @@ export class Kroeg {
         this._templateRenderer = new TemplateRenderer(new TemplateService(), this._entityStore);
 
         this._sessionObjects = new SessionObjects(this._entityStore, this._session);
-        
-        document.addEventListener("click", (e) => this._handleClick(e), true);
-        window.addEventListener("popstate", (e) => this._update(this._getLocation()));
-        this._log("Getting your templates...")
+
+        document.addEventListener('click', (e) => this._handleClick(e), true);
+        window.addEventListener('popstate', (e) => this._update(this._getLocation()));
+        this._log('Getting your templates...');
         await this._templateRenderer.prepare();
 
-        let container = document.getElementsByClassName("container")[0] as HTMLElement;
-        this._container = new RenderHost(this._templateRenderer, this._entityStore, this._getLocation(), "body", container, null, this._parseHash());
+        let container = document.getElementsByClassName('container')[0] as HTMLElement;
+        this._container = new RenderHost(
+            this._templateRenderer,
+            this._entityStore,
+            this._getLocation(),
+            'body',
+            container,
+            null,
+            this._parseHash()
+        );
 
-        let navbar = document.getElementsByClassName("navbar")[0] as HTMLElement;
-        this._navbar = new RenderHost(this._templateRenderer, this._entityStore, this._sessionObjects.navbar, "navbar/bar", navbar);
+        let navbar = document.getElementsByClassName('navbar')[0] as HTMLElement;
+        this._navbar = new RenderHost(
+            this._templateRenderer,
+            this._entityStore,
+            this._sessionObjects.navbar,
+            'navbar/bar',
+            navbar
+        );
     }
 
     private _finish_oauth() {
-        this._log("Finishing up login...");
+        this._log('Finishing up login...');
         let split = window.location.hash.substring(1).split('&');
-        let kvp: {[a: string]: string} = {};
+        let kvp: { [a: string]: string } = {};
         for (let item of split) {
             let splitItem = item.split('=');
             kvp[splitItem[0]] = decodeURIComponent(splitItem[1]);
         }
         //[oauth2]&response_type=token&redirect_uri=http://localhost:5000/asdf/&state=asdf
-        if ("access_token" in kvp && "state" in kvp && "expires_in" in kvp) {
-            window.localStorage.setItem("id", kvp.state);
-            window.localStorage.setItem("access_token", kvp.access_token);
-            window.localStorage.setItem("expires", (+(new Date) + parseInt(kvp.expires_in) * 1000).toString());
+        if ('access_token' in kvp && 'state' in kvp && 'expires_in' in kvp) {
+            window.localStorage.setItem('id', kvp.state);
+            window.localStorage.setItem('access_token', kvp.access_token);
+            window.localStorage.setItem('expires', (+new Date() + parseInt(kvp.expires_in) * 1000).toString());
         }
-        window.history.replaceState({}, document.title, window.location.toString().replace(window.location.hash, ""));    
+        window.history.replaceState({}, document.title, window.location.toString().replace(window.location.hash, ''));
     }
 
     private _update(id: string) {
         this._container.data = this._parseHash();
         this._container.id = id;
-        if (!id.startsWith("kroeg:"))
-	        this._entityStore.get(id, false);
+        if (!id.startsWith('kroeg:')) this._entityStore.get(id, false);
     }
 
     private _handleClick(e: MouseEvent) {
         if (e.button != 0) return;
         let target = e.target as Element;
-        while (target != null && target.tagName != "A") target = target.parentElement;
+        while (target != null && target.tagName != 'A') target = target.parentElement;
         if (target == null) return;
 
         let link = target as HTMLAnchorElement;
-        if (link.href.length == 0 || link.href.startsWith("javascript:") || link.dataset["open"] == "ext") return;
+        if (link.href.length == 0 || link.href.startsWith('javascript:') || link.dataset['open'] == 'ext') return;
 
         let href = link.href.split('#')[0];
         let hash = link.href.split('#')[1];
         if (this._isRemote(href)) {
             if (!this.loggedIn) return;
-            href = window.location.toString().split('#')[0] + "#id=" + href + (hash ? ('&' + hash) : '');
+            href = window.location.toString().split('#')[0] + '#id=' + href + (hash ? '&' + hash : '');
         }
         let elem = link.parentElement;
-        if (link.dataset["open"] == "renderhost")
+        if (link.dataset['open'] == 'renderhost')
             while (elem != null && !SubRenderhost.RenderhostMap.has(elem)) {
                 elem = elem.parentElement;
             }
@@ -128,22 +138,24 @@ export class Kroeg {
         console.log(elem);
         e.preventDefault();
         e.stopPropagation();
-        if (elem == null || link.dataset["open"] != "renderhost") {
-            window.history.pushState({id: link.href.split('#')[0]}, document.title, href);
+        if (elem == null || link.dataset['open'] != 'renderhost') {
+            window.history.pushState({ id: link.href.split('#')[0] }, document.title, href);
             this._update(link.href.split('#')[0]);
         } else {
             SubRenderhost.RenderhostMap.get(elem).navigate(link.href);
         }
     }
 
-
     public async login() {
-        let id = prompt("Log in as?", window.location.toString());
+        let id = prompt('Log in as?', window.location.toString());
         let data = await this._entityStore.get(id, false);
-        let endpoints = await this._entityStore.get(data["endpoints"]);
-        let oauthEndpoint = endpoints["oauthAuthorizationEndpoint"] as string;
-        if (oauthEndpoint.indexOf("?") == -1) oauthEndpoint += "?"; else oauthEndpoint += "&";
-        oauthEndpoint += `state=${encodeURIComponent(id)}&response_type=token&redirect_uri=${window.location.toString()}%23oauth=1`;
+        let endpoints = await this._entityStore.get(data['endpoints']);
+        let oauthEndpoint = endpoints['oauthAuthorizationEndpoint'] as string;
+        if (oauthEndpoint.indexOf('?') == -1) oauthEndpoint += '?';
+        else oauthEndpoint += '&';
+        oauthEndpoint += `state=${encodeURIComponent(
+            id
+        )}&response_type=token&redirect_uri=${window.location.toString()}%23oauth=1`;
         window.location.assign(oauthEndpoint);
     }
 
@@ -155,7 +167,6 @@ export class Kroeg {
 
         this._navbar.id = this._sessionObjects.navbar;
     }
-
 
     public static instance = new Kroeg();
 }

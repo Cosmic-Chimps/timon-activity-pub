@@ -1,4 +1,4 @@
-import { ASObject } from "./AS";
+import { ASObject } from './AS';
 
 function getHost(url: string) {
     try {
@@ -9,11 +9,8 @@ function getHost(url: string) {
     }
 }
 
-
 export class Session {
-    constructor() {
-
-    }
+    constructor() {}
 
     private _token: string;
     private _host: string;
@@ -25,10 +22,18 @@ export class Session {
     private _user: ASObject;
     private _search: string;
 
-    public get token() { return this._token; }
-    public get user() { return this._user; }
-    public get outbox() { return this._outbox; }
-    public get search() { return this._search; }
+    public get token() {
+        return this._token;
+    }
+    public get user() {
+        return this._user;
+    }
+    public get outbox() {
+        return this._outbox;
+    }
+    public get search() {
+        return this._search;
+    }
 
     public async set(token: string, user: string): Promise<void> {
         this._token = token;
@@ -37,31 +42,34 @@ export class Session {
         this._host = getHost(this._userId);
 
         this._user = await (await this.authFetch(user)).json();
-        this._outbox = this._user["outbox"];
-        if ("endpoints" in this._user) {
-            const endpoints = this._user["endpoints"];
-            if ("proxyUrl" in endpoints) this._proxyUrl = endpoints["proxyUrl"];
-            if ("uploadMedia" in endpoints) this._uploadMedia = endpoints["uploadMedia"];
-            if ("search" in endpoints) this._search = endpoints["search"];
+        this._outbox = this._user['outbox'];
+        if ('endpoints' in this._user) {
+            const endpoints = this._user['endpoints'];
+            if ('proxyUrl' in endpoints) this._proxyUrl = endpoints['proxyUrl'];
+            if ('uploadMedia' in endpoints) this._uploadMedia = endpoints['uploadMedia'];
+            if ('search' in endpoints) this._search = endpoints['search'];
         }
     }
 
     public authFetch(input: string | Request, init?: RequestInit): Promise<Response> {
         let request = new Request(input, init);
-        if (this._token != null)
-            request.headers.set("Authorization", "Bearer " + this._token);
-        request.headers.set("Accept", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\", application/activity+json");
+        if (this._token != null) request.headers.set('Authorization', 'Bearer ' + this._token);
+        request.headers.set(
+            'Accept',
+            'application/ld+json; profile="https://www.w3.org/ns/activitystreams", application/activity+json'
+        );
+        console.dir(request);
         return fetch(request);
     }
 
     public async getObject(url: string): Promise<ASObject> {
         const requestHost = getHost(url);
-        if ((url.startsWith("@") || requestHost != this._host) && this._proxyUrl !== undefined) {
+        if ((url.startsWith('@') || requestHost != this._host) && this._proxyUrl !== undefined) {
             const parms = new URLSearchParams();
-            parms.append("id", url);
+            parms.append('id', url);
             let requestInit: RequestInit = {
                 method: 'POST',
-                body: parms
+                body: parms,
             };
 
             return await (await this.authFetch(this._proxyUrl, requestInit)).json();

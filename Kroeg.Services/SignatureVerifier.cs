@@ -18,6 +18,8 @@ using System.Data;
 using Dapper;
 using System.Data.Common;
 using Kroeg.EntityStore;
+using Npgsql;
+using Microsoft.Extensions.Configuration;
 
 namespace Kroeg.Services
 {
@@ -25,11 +27,13 @@ namespace Kroeg.Services
   {
     private readonly IEntityStore _entityStore;
     private readonly DbConnection _connection;
+    private readonly DbConnection _jwskConnection;
 
-    public SignatureVerifier(IEntityStore entityStore, DbConnection connection)
+    public SignatureVerifier(IEntityStore entityStore, DbConnection connection, IConfiguration configuration)
     {
       _entityStore = entityStore;
       _connection = connection;
+      _jwskConnection = new NpgsqlConnection(configuration.GetConnectionString("Default"));
     }
 
     public async Task<Tuple<bool, string>> VerifyHttpSignature(HttpContext context)
@@ -82,8 +86,7 @@ namespace Kroeg.Services
       switch (parameters["algorithm"])
       {
         case "rsa-sha256":
-          var isValid = signKey.VerifyData(Encoding.UTF8.GetBytes(toSign.ToString()), signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-          return new Tuple<bool, string>(isValid, owner.Id);
+          return new Tuple<bool, string>(signKey.VerifyData(Encoding.UTF8.GetBytes(toSign.ToString()), signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1), owner.Id);
         default:
           break;
       }
@@ -93,17 +96,17 @@ namespace Kroeg.Services
 
     public async Task<string> Verify(string fullpath, HttpContext context)
     {
+      if (context.Request.Headers["Signature"].Count > 0)
+      {
+        var httpSignature = await VerifyHttpSignature(context);
+        if (httpSignature.Item1) return httpSignature.Item2;
+      }
+
       if (context.Request.Headers["Authorization"].Count > 0)
       {
         var jws = context.Request.Headers["Authorization"][0].Split(new[] { ' ' }, 2)[1];
         var verified = await VerifyJWS(fullpath, jws);
         if (verified != null) return verified;
-      }
-
-      if (context.Request.Headers["Signature"].Count > 0)
-      {
-        var httpSignature = await VerifyHttpSignature(context);
-        if (httpSignature.Item1) return httpSignature.Item2;
       }
 
       return null;
@@ -117,19 +120,28 @@ namespace Kroeg.Services
 
     public async Task<JWKEntry> GetJWK(APEntity actor, string kid = null)
     {
-      if (actor == null) return null;
+      if (actor == null)
+      {
+        return null;
+      }
 
       if (!actor.IsOwner)
       {
-        if (kid == null) return null; // can't do that for remote actors
+        if (kid == null)
+        {
+          return null; // can't do that for remote actors
+        }
 
-        var key = await _connection.QuerySingleOrDefaultAsync<JWKEntry>("select * from \"JsonWebKeys\" where \"OwnerId\" = @OwnerId and \"Id\" = @KeyId", new { OwnerId = actor.DbId, KeyId = kid });
+        var key = await _jwskConnection.QuerySingleOrDefaultAsync<JWKEntry>("select * from \"JsonWebKeys\" where \"OwnerId\" = @OwnerId and \"Id\" = @KeyId", new { OwnerId = actor.DbId, KeyId = kid });
         if (key == null)
         {
           // well here we go
 
           var endpoints = actor.Data["endpoints"].FirstOrDefault();
-          if (endpoints == null) return null;
+          if (endpoints == null)
+          {
+            return null;
+          }
           ASObject endpointsData;
           if (endpoints.Id != null)
             endpointsData = (await _entityStore.GetEntity(endpoints.Id, true)).Data;
@@ -137,12 +149,18 @@ namespace Kroeg.Services
             endpointsData = endpoints.SubObject;
 
           var jwks = endpointsData["jwks"].FirstOrDefault()?.Id; // not actually an entity!
-          if (jwks == null) return null;
+          if (jwks == null)
+          {
+            return null;
+          }
 
           var keys = await _getKey(jwks);
           var jwkey = keys.Keys.FirstOrDefault(a => a.Kid == kid);
 
-          if (jwkey == null) return null; // couldn't find key
+          if (jwkey == null)
+          {
+            return null; // couldn't find key
+          }
 
           key = new JWKEntry
           {
@@ -150,15 +168,13 @@ namespace Kroeg.Services
             Id = kid,
             SerializedData = JsonConvert.SerializeObject(jwkey)
           };
-
-          await _connection.ExecuteAsync("insert into \"JsonWebKeys\" (\"OwnerId\", \"Id\", \"SerializedData\") values (@OwnerId, @Id, @SerializedData)", key);
+          await _jwskConnection.ExecuteAsync("insert into \"JsonWebKeys\" (\"OwnerId\", \"Id\", \"SerializedData\") values (@OwnerId, @Id, @SerializedData)", key);
         }
-
         return key;
       }
       else
       {
-        var key = await _connection.QuerySingleOrDefaultAsync<JWKEntry>("select * from \"JsonWebKeys\" where \"OwnerId\" = @OwnerId", new { OwnerId = actor.DbId });
+        var key = await _jwskConnection.QuerySingleOrDefaultAsync<JWKEntry>("select * from \"JsonWebKeys\" where \"OwnerId\" = @OwnerId", new { OwnerId = actor.DbId });
         if (key == null)
         {
           var jwk = new JsonWebKey();
@@ -175,9 +191,8 @@ namespace Kroeg.Services
           jwk.D = Base64UrlEncoder.Encode(parms.D);
 
           key = new JWKEntry { Id = jwk.Kid, OwnerId = actor.DbId, SerializedData = JsonConvert.SerializeObject(jwk) };
-          await _connection.ExecuteAsync("insert into \"JsonWebKeys\" (\"OwnerId\", \"Id\", \"SerializedData\") values (@OwnerId, @Id, @SerializedData)", key);
+          await _jwskConnection.ExecuteAsync("insert into \"JsonWebKeys\" (\"OwnerId\", \"Id\", \"SerializedData\") values (@OwnerId, @Id, @SerializedData)", key);
         }
-
         return key;
       }
     }

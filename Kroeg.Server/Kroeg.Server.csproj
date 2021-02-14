@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Asn1" Version="*" />
+    <PackageReference Include="Dapr.AspNetCore" Version="1.0.0-rc06" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="*" />
     <PackageReference Include="Microsoft.AspNetCore" Version="*" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="*" />
@@ -19,7 +20,7 @@
     <PackageReference Include="Npgsql" Version="*" />
     <PackageReference Include="HtmlAgilityPack" Version="*" />
     <PackageReference Include="Jint" Version="*" />
-    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="5.0.3"/>
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="5.0.3" />
     <PackageReference Include="Microsoft.TypeScript.MSBuild" Version="4.1.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
