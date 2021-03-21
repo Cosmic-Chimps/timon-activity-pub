@@ -4,7 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Asn1" Version="*" />
-    <PackageReference Include="Dapr.AspNetCore" Version="1.0.0-rc06" />
+    <PackageReference Include="Dapr.AspNetCore" Version="1.0.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="*" />
     <PackageReference Include="Microsoft.AspNetCore" Version="*" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="*" />

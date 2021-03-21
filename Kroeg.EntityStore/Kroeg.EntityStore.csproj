@@ -14,7 +14,7 @@
     <PackageReference Include="Dapper.Contrib" Version="*" />
     <PackageReference Include="Npgsql" Version="*" />
     <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="5.0.3"/>
-    <PackageReference Include="Dapr.AspNetCore" Version="1.0.0-rc06" />
+    <PackageReference Include="Dapr.AspNetCore" Version="1.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Kroeg.ActivityStreams\Kroeg.ActivityStreams.csproj" />

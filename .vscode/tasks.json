@@ -45,7 +45,6 @@
             "type": "daprd",
             "dependsOn": "build",
             "componentsPath": "./components",
-            "enableMetrics": false,
             "grpcPort": 50001,
             "httpPort": 3511
         },

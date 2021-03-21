@@ -167,7 +167,10 @@ namespace Kroeg.Server.Controllers
       await delivery.Handle();
 
       trans.Commit();
-      return Created("", "");
+
+      var activityPubUserId = handler.MainObject.Data["object"].First().Id;
+
+      return Created(activityPubUserId, "");
     }
 
     [Topic("messagebus", "login-channel-activitypub")]
