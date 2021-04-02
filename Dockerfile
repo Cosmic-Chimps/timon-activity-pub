@@ -6,10 +6,10 @@ FROM mcr.microsoft.com/dotnet/sdk:5.0-alpine AS build
 WORKDIR /build
 COPY . .
 
-RUN dotnet restore "Kroeg.Server.csproj"
+RUN dotnet restore "Kroeg.Server/Kroeg.Server.csproj"
 
 FROM build AS publish
-RUN dotnet publish "Kroeg.Server.csproj" -c Release -o /app/publish
+RUN dotnet publish "Kroeg.Server/Kroeg.Server.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
@@ -29,4 +29,4 @@ RUN addgroup --gid 998 --system appgroup \
 
 USER appuser
 
-ENTRYPOINT ["dotnet", "Kroeg.Server.dll"]
+ENTRYPOINT ["dotnet", "Kroeg.Server/Kroeg.Server.dll"]
