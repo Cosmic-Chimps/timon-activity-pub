@@ -25,4 +25,6 @@ RUN addgroup --gid 998 --system appgroup \
 
 USER appuser
 
+RUN dotnet CreateDatabase.dll
+
 ENTRYPOINT ["dotnet", "Kroeg.Server.dll"]

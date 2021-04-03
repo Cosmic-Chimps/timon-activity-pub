@@ -36,6 +36,7 @@
     <ProjectReference Include="..\Kroeg.Services\Kroeg.Services.csproj" />
     <ProjectReference Include="..\Kroeg.ActivityPub\Kroeg.ActivityPub.csproj" />
     <ProjectReference Include="..\Kroeg.Mastodon\Kroeg.Mastodon.csproj" />
+    <ProjectReference Include="..\CreateDatabase\CreateDatabase.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\images\" />
