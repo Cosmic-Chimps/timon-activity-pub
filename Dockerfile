@@ -25,4 +25,4 @@ RUN addgroup --gid 998 --system appgroup \
 
 USER appuser
 
-ENTRYPOINT ["dotnet", "Kroeg.Server/Kroeg.Server.dll"]
+ENTRYPOINT ["dotnet", "Kroeg.Server.dll"]
