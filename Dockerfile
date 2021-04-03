@@ -20,11 +20,11 @@ ENV ASPNETCORE_ENVIRONMENT=Production
 ENV ASPNETCORE_URLS="http://*:8080"
 EXPOSE 8080
 
+RUN chmod +x run.sh
+
 RUN addgroup --gid 998 --system appgroup \
     && adduser --uid 1004 --system appuser --ingroup appgroup
 
 USER appuser
 
-RUN dotnet CreateDatabase.dll
-
-ENTRYPOINT ["dotnet", "Kroeg.Server.dll"]
+ENTRYPOINT ["./run.sh"]
